@@ -1,18 +1,11 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
 import { QRCodeSVG } from "qrcode.react";
+
+/* ─── Types ──────────────────────────────────────────────── */
 
 type FlowState =
   | { step: "idle" }
@@ -27,12 +20,32 @@ type FlowState =
   | { step: "fortune"; fortune: string; timestamp: string }
   | { step: "error"; message: string };
 
+/* ─── Animation config ───────────────────────────────────── */
+
+const ease = [0.23, 1, 0.32, 1] as const;
+
+const fadeUp = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -8 },
+  transition: { duration: 0.45, ease },
+};
+
+const scaleFade = {
+  initial: { opacity: 0, scale: 0.96 },
+  animate: { opacity: 1, scale: 1 },
+  exit: { opacity: 0, scale: 0.98 },
+  transition: { duration: 0.5, ease },
+};
+
+/* ─── Component ──────────────────────────────────────────── */
+
 export function FortuneMachine() {
   const [state, setState] = useState<FlowState>({ step: "idle" });
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"invoice" | "fortune" | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Poll for payment confirmation when invoice is showing
+  /* ── Poll for external wallet payment ── */
   useEffect(() => {
     if (state.step !== "invoice") {
       if (pollRef.current) {
@@ -42,7 +55,7 @@ export function FortuneMachine() {
       return;
     }
 
-    const { paymentHash, macaroon } = state;
+    const { paymentHash } = state;
 
     pollRef.current = setInterval(async () => {
       try {
@@ -61,7 +74,7 @@ export function FortuneMachine() {
           });
         }
       } catch {
-        // silently retry on next interval
+        // silently retry
       }
     }, 2000);
 
@@ -73,13 +86,11 @@ export function FortuneMachine() {
     };
   }, [state]);
 
-
+  /* ── Request fortune (triggers 402) ── */
   const requestFortune = useCallback(async () => {
     setState({ step: "requesting" });
-
     try {
       const res = await fetch("/api/fortune");
-
       if (res.status === 402) {
         const data = await res.json();
         setState({
@@ -91,7 +102,6 @@ export function FortuneMachine() {
         });
         return;
       }
-
       if (res.ok) {
         const data = await res.json();
         setState({
@@ -101,11 +111,7 @@ export function FortuneMachine() {
         });
         return;
       }
-
-      setState({
-        step: "error",
-        message: `Unexpected response: ${res.status}`,
-      });
+      setState({ step: "error", message: `Unexpected response: ${res.status}` });
     } catch (e) {
       setState({
         step: "error",
@@ -114,6 +120,7 @@ export function FortuneMachine() {
     }
   }, []);
 
+  /* ── WebLN payment ── */
   const payWithWebLN = useCallback(
     async (invoice: string, macaroon: string) => {
       try {
@@ -130,11 +137,9 @@ export function FortuneMachine() {
           ).webln;
           await webln.enable();
           const { preimage } = await webln.sendPayment(invoice);
-
           const res = await fetch("/api/fortune", {
             headers: { Authorization: `L402 ${macaroon}:${preimage}` },
           });
-
           if (res.ok) {
             const data = await res.json();
             setState({
@@ -144,7 +149,6 @@ export function FortuneMachine() {
             });
             return;
           }
-
           setState({
             step: "error",
             message: `Payment accepted but fortune failed: ${res.status}`,
@@ -160,143 +164,253 @@ export function FortuneMachine() {
     [],
   );
 
+  /* ── Copy helper ── */
+  const copyText = useCallback((text: string, type: "invoice" | "fortune") => {
+    navigator.clipboard.writeText(text);
+    setCopied(type);
+    setTimeout(() => setCopied(null), 2000);
+  }, []);
+
+  /* ── Share helper ── */
+  const shareFortune = useCallback((fortune: string) => {
+    const text = `"${fortune}"\n\n— Fortune Sats (10 sats, one fortune)`;
+    if (navigator.share) {
+      navigator.share({ text }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text);
+      setCopied("fortune");
+      setTimeout(() => setCopied(null), 2000);
+    }
+  }, []);
+
   return (
-    <Card className="border-border/50">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Fortune Machine</CardTitle>
-          <Badge variant="secondary" className="font-mono text-xs">
-            10 sats
-          </Badge>
-        </div>
-        <CardDescription>
-          {state.step === "idle" &&
-            "Request a fortune to start the L402 flow."}
-          {state.step === "requesting" && "Requesting..."}
-          {state.step === "invoice" &&
-            "Scan or copy the invoice — fortune appears when paid."}
-          {state.step === "fortune" && "Fortune revealed!"}
-          {state.step === "error" && "Something went wrong."}
-        </CardDescription>
-      </CardHeader>
-
-      <Separator />
-
-      <CardContent className="pt-4 space-y-4">
-        {/* IDLE */}
+    <div className="w-full">
+      <AnimatePresence mode="wait">
+        {/* ── IDLE ── */}
         {state.step === "idle" && (
-          <Button onClick={requestFortune} className="w-full">
-            Get Fortune
-          </Button>
+          <motion.div key="idle" {...fadeUp} className="space-y-6">
+            <Button
+              onClick={requestFortune}
+              className="w-full h-12 text-sm font-medium tracking-wide cursor-pointer"
+            >
+              Get Your Fortune
+            </Button>
+
+            <div className="flex items-center justify-center gap-6 text-[11px] tracking-widest uppercase text-muted-foreground/50">
+              <span>Request</span>
+              <Dot />
+              <span>Invoice</span>
+              <Dot />
+              <span>Pay</span>
+              <Dot />
+              <span>Fortune</span>
+            </div>
+          </motion.div>
         )}
 
-        {/* REQUESTING */}
+        {/* ── REQUESTING ── */}
         {state.step === "requesting" && (
-          <div className="space-y-3">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-          </div>
+          <motion.div key="requesting" {...fadeUp} className="space-y-5">
+            <div className="flex flex-col items-center gap-4 py-8">
+              <Spinner />
+              <p className="text-sm text-muted-foreground">
+                Preparing your fortune...
+              </p>
+            </div>
+          </motion.div>
         )}
 
-        {/* INVOICE — 402 received */}
+        {/* ── INVOICE ── */}
         {state.step === "invoice" && (
-          <div className="space-y-4">
-            <div className="rounded-lg border border-border/50 bg-muted/30 p-4 space-y-3">
+          <motion.div key="invoice" {...scaleFade} className="space-y-5">
+            <div className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm p-6 space-y-5">
+              {/* Header */}
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">
-                  HTTP 402 — Payment Required
-                </span>
-                <Badge variant="outline" className="font-mono text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  <span className="text-xs text-muted-foreground">
+                    Waiting for payment
+                  </span>
+                </div>
+                <span className="font-mono text-xs text-muted-foreground/60">
                   {state.amountSats} sats
-                </Badge>
+                </span>
               </div>
-              <div className="flex justify-center py-2">
-                <div className="rounded-lg bg-white p-3">
+
+              {/* QR Code */}
+              <div className="flex justify-center">
+                <div className="rounded-xl bg-white p-4 shadow-sm">
                   <QRCodeSVG
                     value={state.invoice.toUpperCase()}
-                    size={200}
+                    size={180}
                     level="M"
+                    bgColor="transparent"
                   />
                 </div>
               </div>
-              <div className="font-mono text-[10px] break-all text-muted-foreground/60 leading-relaxed max-h-16 overflow-y-auto text-center">
-                {state.invoice}
-              </div>
-              <div className="flex items-center justify-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                <span className="text-xs text-muted-foreground">
-                  Waiting for payment...
-                </span>
-              </div>
+
+              {/* Invoice string */}
+              <button
+                onClick={() => copyText(state.invoice, "invoice")}
+                className="w-full group cursor-pointer"
+              >
+                <div className="font-mono text-[9px] leading-relaxed text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors line-clamp-2 text-center">
+                  {state.invoice}
+                </div>
+                <div className="text-[10px] text-muted-foreground/30 mt-1 group-hover:text-muted-foreground/50 transition-colors">
+                  {copied === "invoice" ? "Copied!" : "Tap to copy"}
+                </div>
+              </button>
             </div>
 
+            {/* Actions */}
             <div className="space-y-2">
               <Button
                 onClick={() => payWithWebLN(state.invoice, state.macaroon)}
-                className="w-full"
+                className="w-full h-11 text-sm cursor-pointer"
               >
                 Pay with WebLN
               </Button>
               <Button
-                variant="outline"
-                className="w-full font-mono text-xs"
-                onClick={() => {
-                  navigator.clipboard.writeText(state.invoice);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
-                }}
+                variant="ghost"
+                className="w-full h-9 text-xs text-muted-foreground cursor-pointer"
+                onClick={() => copyText(state.invoice, "invoice")}
               >
-                {copied ? "Copied!" : "Copy Invoice"}
+                {copied === "invoice" ? "Copied to clipboard" : "Copy invoice"}
               </Button>
             </div>
-          </div>
+
+            {/* Cancel */}
+            <div className="text-center">
+              <button
+                onClick={() => setState({ step: "idle" })}
+                className="text-[11px] text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
         )}
 
-        {/* FORTUNE REVEALED */}
+        {/* ── FORTUNE REVEALED ── */}
         {state.step === "fortune" && (
-          <div className="space-y-4">
-            <blockquote className="border-l-2 border-primary pl-4 py-2 text-base italic leading-relaxed">
-              &ldquo;{state.fortune}&rdquo;
-            </blockquote>
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-xs text-muted-foreground">
-                {new Date(state.timestamp).toLocaleTimeString()}
-              </span>
-              <Badge className="bg-green-900/30 text-green-400 border-green-800/50">
-                Paid
-              </Badge>
+          <motion.div
+            key="fortune"
+            initial={{ opacity: 0, scale: 0.94, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.6, ease }}
+            className="space-y-6"
+          >
+            {/* Fortune card */}
+            <div className="relative rounded-2xl border border-warm-muted/20 bg-gradient-to-b from-card via-card to-card/80 p-8 space-y-6 overflow-hidden">
+              {/* Subtle glow */}
+              <div className="absolute inset-0 bg-gradient-to-br from-warm/[0.03] via-transparent to-warm/[0.02] pointer-events-none" />
+
+              <div className="relative space-y-5">
+                {/* Sparkle */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2, duration: 0.4, ease }}
+                  className="text-warm/60 text-sm"
+                >
+                  &#10022;
+                </motion.div>
+
+                {/* Fortune text */}
+                <motion.blockquote
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.5, ease }}
+                  className="text-lg leading-relaxed tracking-tight font-light"
+                >
+                  &ldquo;{state.fortune}&rdquo;
+                </motion.blockquote>
+
+                {/* Meta */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5, duration: 0.4 }}
+                  className="flex items-center gap-2"
+                >
+                  <div className="h-1 w-1 rounded-full bg-success" />
+                  <span className="font-mono text-[10px] text-muted-foreground/50">
+                    {new Date(state.timestamp).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </motion.div>
+              </div>
             </div>
-            <Separator />
-            <Button
-              onClick={() => {
-                setState({ step: "idle" });
-              }}
-              variant="outline"
-              className="w-full"
+
+            {/* Actions */}
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.4, ease }}
+              className="space-y-3"
             >
-              Another Fortune
-            </Button>
-          </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 h-9 text-xs cursor-pointer"
+                  onClick={() => copyText(state.fortune, "fortune")}
+                >
+                  {copied === "fortune" ? "Copied!" : "Copy"}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 h-9 text-xs cursor-pointer"
+                  onClick={() => shareFortune(state.fortune)}
+                >
+                  Share
+                </Button>
+              </div>
+
+              <Button
+                onClick={() => setState({ step: "idle" })}
+                className="w-full h-11 text-sm cursor-pointer"
+              >
+                Another Fortune
+              </Button>
+            </motion.div>
+          </motion.div>
         )}
 
-        {/* ERROR */}
+        {/* ── ERROR ── */}
         {state.step === "error" && (
-          <div className="space-y-3">
-            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3">
-              <p className="text-sm text-destructive">{state.message}</p>
+          <motion.div key="error" {...fadeUp} className="space-y-4">
+            <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-5">
+              <p className="text-sm text-destructive/80">{state.message}</p>
             </div>
             <Button
-              onClick={() => {
-                setState({ step: "idle" });
-              }}
+              onClick={() => setState({ step: "idle" })}
               variant="outline"
-              className="w-full"
+              className="w-full h-10 text-sm cursor-pointer"
             >
               Try Again
             </Button>
-          </div>
+          </motion.div>
         )}
-      </CardContent>
-    </Card>
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ─── Small helpers ──────────────────────────────────────── */
+
+function Dot() {
+  return <div className="h-0.5 w-0.5 rounded-full bg-muted-foreground/30" />;
+}
+
+function Spinner() {
+  return (
+    <div className="relative h-8 w-8">
+      <div className="absolute inset-0 rounded-full border-2 border-muted-foreground/10" />
+      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-foreground/40 animate-spin" />
+    </div>
   );
 }

@@ -14,7 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Fortune Sats",
-  description: "Pay 10 sats, get a fortune. L402 powered.",
+  description:
+    "10 sats. One fortune. A tiny Lightning-powered ritual using the L402 protocol.",
 };
 
 export default function RootLayout({
@@ -27,7 +28,7 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-background text-foreground">
+      <body className="min-h-full flex flex-col bg-background text-foreground selection:bg-foreground/10">
         {children}
       </body>
     </html>

@@ -2,31 +2,49 @@ import { FortuneMachine } from "@/components/fortune-machine";
 
 export default function Home() {
   return (
-    <main className="flex-1 flex items-center justify-center p-6">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center space-y-2">
-          <div className="text-5xl">🥠</div>
-          <h1 className="text-2xl font-bold tracking-tight">Fortune Sats</h1>
-          <p className="text-muted-foreground text-sm">
-            Pay <span className="font-mono text-foreground">10 sats</span>, get
-            a fortune.
-          </p>
-        </div>
+    <main className="flex-1 flex flex-col items-center justify-center px-6 py-16">
+      <div className="w-full max-w-sm space-y-12">
+        {/* Hero */}
+        <header className="text-center space-y-4">
+          <div className="text-muted-foreground/30 text-sm tracking-widest">
+            &#10022;
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Fortune Sats
+            </h1>
+            <p className="text-[15px] text-muted-foreground leading-relaxed">
+              10 sats. One fortune.
+              <br />
+              <span className="text-muted-foreground/60">
+                A tiny ritual powered by Lightning.
+              </span>
+            </p>
+          </div>
+        </header>
+
+        {/* Machine */}
         <FortuneMachine />
-        <footer className="text-center text-xs text-muted-foreground space-y-1">
-          <p>
-            Powered by{" "}
-            <a
-              href="https://mpp.dev/overview"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline underline-offset-4 hover:text-foreground transition-colors"
-            >
-              MoneyDevKit
-            </a>{" "}
-            &middot; L402 Protocol
-          </p>
-          <p className="font-mono opacity-60">HTTP 402 Payment Required</p>
+
+        {/* Footer */}
+        <footer className="space-y-4 text-center">
+          <div className="h-px w-12 mx-auto bg-border/50" />
+          <div className="space-y-2">
+            <p className="text-[11px] tracking-widest uppercase text-muted-foreground/40">
+              L402 &middot; Pay per request &middot; Lightning Network
+            </p>
+            <p className="text-[11px] text-muted-foreground/30">
+              Powered by{" "}
+              <a
+                href="https://mpp.dev/overview"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-4 decoration-muted-foreground/20 hover:text-muted-foreground/50 hover:decoration-muted-foreground/40 transition-colors"
+              >
+                MoneyDevKit
+              </a>
+            </p>
+          </div>
         </footer>
       </div>
     </main>
