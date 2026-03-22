@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QRCodeSVG } from "qrcode.react";
 
 type FlowState =
   | { step: "idle" }
@@ -138,7 +139,7 @@ export function FortuneMachine() {
         {/* INVOICE — 402 received */}
         {state.step === "invoice" && (
           <div className="space-y-4">
-            <div className="rounded-lg border border-border/50 bg-muted/30 p-3 space-y-2">
+            <div className="rounded-lg border border-border/50 bg-muted/30 p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">
                   HTTP 402 — Payment Required
@@ -147,7 +148,16 @@ export function FortuneMachine() {
                   {state.amountSats} sats
                 </Badge>
               </div>
-              <div className="font-mono text-xs break-all text-muted-foreground leading-relaxed max-h-24 overflow-y-auto">
+              <div className="flex justify-center py-2">
+                <div className="rounded-lg bg-white p-3">
+                  <QRCodeSVG
+                    value={state.invoice.toUpperCase()}
+                    size={200}
+                    level="M"
+                  />
+                </div>
+              </div>
+              <div className="font-mono text-[10px] break-all text-muted-foreground/60 leading-relaxed max-h-16 overflow-y-auto text-center">
                 {state.invoice}
               </div>
             </div>
