@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -21,14 +21,58 @@ type FlowState =
       step: "invoice";
       invoice: string;
       macaroon: string;
+      paymentHash: string;
       amountSats: number;
     }
-  | { step: "paying" }
   | { step: "fortune"; fortune: string; timestamp: string }
   | { step: "error"; message: string };
 
 export function FortuneMachine() {
   const [state, setState] = useState<FlowState>({ step: "idle" });
+  const [copied, setCopied] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Poll for payment confirmation when invoice is showing
+  useEffect(() => {
+    if (state.step !== "invoice") {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      return;
+    }
+
+    const { paymentHash, macaroon } = state;
+
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(
+          `/api/fortune/status?paymentHash=${encodeURIComponent(paymentHash)}`,
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.paid) {
+          if (pollRef.current) clearInterval(pollRef.current);
+          pollRef.current = null;
+          setState({
+            step: "fortune",
+            fortune: data.fortune,
+            timestamp: data.timestamp,
+          });
+        }
+      } catch {
+        // silently retry on next interval
+      }
+    }, 2000);
+
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [state]);
+
 
   const requestFortune = useCallback(async () => {
     setState({ step: "requesting" });
@@ -42,6 +86,7 @@ export function FortuneMachine() {
           step: "invoice",
           invoice: data.invoice,
           macaroon: data.macaroon,
+          paymentHash: data.paymentHash,
           amountSats: data.amountSats,
         });
         return;
@@ -49,11 +94,18 @@ export function FortuneMachine() {
 
       if (res.ok) {
         const data = await res.json();
-        setState({ step: "fortune", fortune: data.fortune, timestamp: data.timestamp });
+        setState({
+          step: "fortune",
+          fortune: data.fortune,
+          timestamp: data.timestamp,
+        });
         return;
       }
 
-      setState({ step: "error", message: `Unexpected response: ${res.status}` });
+      setState({
+        step: "error",
+        message: `Unexpected response: ${res.status}`,
+      });
     } catch (e) {
       setState({
         step: "error",
@@ -62,42 +114,51 @@ export function FortuneMachine() {
     }
   }, []);
 
-  const payInvoice = useCallback(async (invoice: string, macaroon: string) => {
-    setState({ step: "paying" });
+  const payWithWebLN = useCallback(
+    async (invoice: string, macaroon: string) => {
+      try {
+        if (typeof window !== "undefined" && "webln" in window) {
+          const webln = (
+            window as unknown as {
+              webln: {
+                enable: () => Promise<void>;
+                sendPayment: (
+                  invoice: string,
+                ) => Promise<{ preimage: string }>;
+              };
+            }
+          ).webln;
+          await webln.enable();
+          const { preimage } = await webln.sendPayment(invoice);
 
-    try {
-      if (typeof window !== "undefined" && "webln" in window) {
-        const webln = (window as unknown as { webln: { enable: () => Promise<void>; sendPayment: (invoice: string) => Promise<{ preimage: string }> } }).webln;
-        await webln.enable();
-        const { preimage } = await webln.sendPayment(invoice);
+          const res = await fetch("/api/fortune", {
+            headers: { Authorization: `L402 ${macaroon}:${preimage}` },
+          });
 
-        const res = await fetch("/api/fortune", {
-          headers: { Authorization: `L402 ${macaroon}:${preimage}` },
-        });
+          if (res.ok) {
+            const data = await res.json();
+            setState({
+              step: "fortune",
+              fortune: data.fortune,
+              timestamp: data.timestamp,
+            });
+            return;
+          }
 
-        if (res.ok) {
-          const data = await res.json();
-          setState({ step: "fortune", fortune: data.fortune, timestamp: data.timestamp });
-          return;
+          setState({
+            step: "error",
+            message: `Payment accepted but fortune failed: ${res.status}`,
+          });
         }
-
-        setState({ step: "error", message: `Payment accepted but fortune failed: ${res.status}` });
-        return;
+      } catch (e) {
+        setState({
+          step: "error",
+          message: e instanceof Error ? e.message : "Payment failed",
+        });
       }
-
-      setState({
-        step: "invoice",
-        invoice,
-        macaroon,
-        amountSats: 10,
-      });
-    } catch (e) {
-      setState({
-        step: "error",
-        message: e instanceof Error ? e.message : "Payment failed",
-      });
-    }
-  }, []);
+    },
+    [],
+  );
 
   return (
     <Card className="border-border/50">
@@ -109,10 +170,11 @@ export function FortuneMachine() {
           </Badge>
         </div>
         <CardDescription>
-          {state.step === "idle" && "Request a fortune to start the L402 flow."}
+          {state.step === "idle" &&
+            "Request a fortune to start the L402 flow."}
           {state.step === "requesting" && "Requesting..."}
-          {state.step === "invoice" && "Invoice ready — pay to reveal your fortune."}
-          {state.step === "paying" && "Paying invoice..."}
+          {state.step === "invoice" &&
+            "Scan or copy the invoice — fortune appears when paid."}
           {state.step === "fortune" && "Fortune revealed!"}
           {state.step === "error" && "Something went wrong."}
         </CardDescription>
@@ -160,11 +222,17 @@ export function FortuneMachine() {
               <div className="font-mono text-[10px] break-all text-muted-foreground/60 leading-relaxed max-h-16 overflow-y-auto text-center">
                 {state.invoice}
               </div>
+              <div className="flex items-center justify-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-xs text-muted-foreground">
+                  Waiting for payment...
+                </span>
+              </div>
             </div>
 
             <div className="space-y-2">
               <Button
-                onClick={() => payInvoice(state.invoice, state.macaroon)}
+                onClick={() => payWithWebLN(state.invoice, state.macaroon)}
                 className="w-full"
               >
                 Pay with WebLN
@@ -174,22 +242,13 @@ export function FortuneMachine() {
                 className="w-full font-mono text-xs"
                 onClick={() => {
                   navigator.clipboard.writeText(state.invoice);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
                 }}
               >
-                Copy Invoice
+                {copied ? "Copied!" : "Copy Invoice"}
               </Button>
             </div>
-          </div>
-        )}
-
-        {/* PAYING */}
-        {state.step === "paying" && (
-          <div className="space-y-3">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-2/3" />
-            <p className="text-xs text-muted-foreground text-center">
-              Waiting for payment confirmation...
-            </p>
           </div>
         )}
 
