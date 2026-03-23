@@ -13,11 +13,25 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://fortunesats.com"),
   title: "Fortune Sats",
   description:
     "100 sats. One fortune. A tiny Lightning-powered ritual using the L402 protocol.",
   icons: {
     icon: "/icon.svg",
+  },
+  openGraph: {
+    title: "Fortune Sats",
+    description:
+      "100 sats. One fortune. A tiny Lightning-powered ritual using the L402 protocol.",
+    siteName: "Fortune Sats",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Fortune Sats",
+    description:
+      "100 sats. One fortune. A tiny Lightning-powered ritual using the L402 protocol.",
   },
 };
 
