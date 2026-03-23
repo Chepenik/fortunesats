@@ -173,7 +173,7 @@ export function FortuneMachine() {
 
   /* ── Share helper ── */
   const shareFortune = useCallback((fortune: string) => {
-    const text = `"${fortune}"\n\n— Fortune Sats (10 sats, one fortune)`;
+    const text = `"${fortune}"\n\n— Fortune Sats (100 sats, one fortune)`;
     if (navigator.share) {
       navigator.share({ text }).catch(() => {});
     } else {
@@ -315,7 +315,7 @@ export function FortuneMachine() {
                   transition={{ delay: 0.2, duration: 0.4, ease }}
                   className="text-warm/60 text-sm"
                 >
-                  &#10022;
+                  🥠
                 </motion.div>
 
                 {/* Fortune text */}

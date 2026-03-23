@@ -77,7 +77,7 @@ export const fortunes = [
   "Be the person your dog thinks you are.",
   "Everything is a file if you're brave enough.",
   "Your imposter syndrome is lying to you.",
-  "This fortune cost 10 sats. Your smile? Priceless.",
+  "This fortune cost 100 sats. Your smile? Priceless.",
   "Someone, somewhere, is Googling exactly what you know.",
 
   // — Mystical Fortune-Cookie —

@@ -8,4 +8,4 @@ const handler = async () => {
   });
 };
 
-export const GET = withPayment({ amount: 10, currency: "SAT" }, handler);
+export const GET = withPayment({ amount: 100, currency: "SAT" }, handler);

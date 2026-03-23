@@ -6,15 +6,15 @@ export default function Home() {
       <div className="w-full max-w-sm space-y-12">
         {/* Hero */}
         <header className="text-center space-y-4">
-          <div className="text-muted-foreground/30 text-sm tracking-widest">
-            &#10022;
+          <div className="text-4xl">
+            🥠
           </div>
           <div className="space-y-2">
             <h1 className="text-2xl font-semibold tracking-tight">
               Fortune Sats
             </h1>
             <p className="text-[15px] text-muted-foreground leading-relaxed">
-              10 sats. One fortune.
+              100 sats. One fortune.
               <br />
               <span className="text-muted-foreground/60">
                 A tiny ritual powered by Lightning.

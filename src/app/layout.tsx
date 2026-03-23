@@ -15,7 +15,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Fortune Sats",
   description:
-    "10 sats. One fortune. A tiny Lightning-powered ritual using the L402 protocol.",
+    "100 sats. One fortune. A tiny Lightning-powered ritual using the L402 protocol.",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
