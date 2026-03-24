@@ -55,12 +55,35 @@ export function FortuneMachine() {
   const [state, setState] = useState<FlowState>({ step: "idle" });
   const [copied, setCopied] = useState<string | null>(null);
   const [hasNativeShare, setHasNativeShare] = useState(false);
+  const [waitingSecs, setWaitingSecs] = useState(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const variantRef = useRef<ShareVariant>(pickVariant());
 
   useEffect(() => {
     setHasNativeShare(canNativeShare());
   }, []);
+
+  /* ── Elapsed timer for invoice state ── */
+  useEffect(() => {
+    if (state.step !== "invoice") {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      setWaitingSecs(0);
+      return;
+    }
+    timerRef.current = setInterval(() => {
+      setWaitingSecs((s) => s + 1);
+    }, 1000);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [state.step]);
 
   /* ── Poll for external wallet payment (1s interval, 5 min timeout) ── */
   useEffect(() => {
@@ -278,7 +301,11 @@ export function FortuneMachine() {
                 <div className="flex items-center gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-lacquer animate-glow-pulse" />
                   <span className="text-xs text-gold/50 font-mono tracking-wide">
-                    Awaiting payment
+                    {waitingSecs < 5
+                      ? "Awaiting payment"
+                      : waitingSecs < 20
+                        ? "Listening for payment\u2026"
+                        : "Still checking\u2026 this can take up to 30s"}
                   </span>
                 </div>
                 <span className="font-mono text-xs text-ember/60">
@@ -311,6 +338,17 @@ export function FortuneMachine() {
                   {copied === "invoice" ? "Copied!" : "Tap to copy"}
                 </div>
               </button>
+
+              {/* Elapsed indicator */}
+              {waitingSecs > 3 && (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="h-px flex-1 bg-gold/5" />
+                  <span className="font-mono text-[9px] text-gold/20">
+                    {waitingSecs}s
+                  </span>
+                  <div className="h-px flex-1 bg-gold/5" />
+                </div>
+              )}
             </div>
 
             {/* Actions */}
@@ -319,7 +357,7 @@ export function FortuneMachine() {
                 onClick={() => payWithWebLN(state.invoice, state.macaroon)}
                 className="btn-lacquer w-full h-11 rounded-xl text-sm font-medium cursor-pointer active:scale-[0.98]"
               >
-                Pay with WebLN
+                ⚡ Pay with Lightning Wallet
               </button>
               <button
                 className="w-full h-9 rounded-lg text-xs text-gold/40 hover:text-gold/60 transition-colors cursor-pointer"
@@ -328,6 +366,15 @@ export function FortuneMachine() {
                 {copied === "invoice" ? "Copied to clipboard" : "Copy invoice"}
               </button>
             </div>
+
+            {/* Hint after waiting */}
+            {waitingSecs > 25 && (
+              <p className="text-[10px] text-center text-gold/25 leading-relaxed">
+                QR payments can take a moment to confirm.
+                <br />
+                For instant results, use a WebLN-enabled wallet like Alby.
+              </p>
+            )}
 
             {/* Cancel */}
             <div className="text-center">
