@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://fortunesats.com"),
+  metadataBase: new URL("https://fortunesats.vercel.app"),
   title: "Fortune Sats",
   description:
     "100 sats. One fortune. A tiny Lightning-powered ritual using the L402 protocol.",

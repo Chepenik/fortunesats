@@ -1,4 +1,4 @@
-export const SITE_URL = "https://fortunesats.com";
+export const SITE_URL = "https://fortunesats.vercel.app";
 
 const X_TCO_LENGTH = 23; // X shortens all URLs to 23 chars
 

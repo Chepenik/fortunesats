@@ -27,6 +27,7 @@ type FlowState =
       paymentHash: string;
       amountSats: number;
     }
+  | { step: "revealing"; fortune: string; timestamp: string }
   | { step: "fortune"; fortune: string; timestamp: string }
   | { step: "error"; message: string };
 
@@ -61,7 +62,7 @@ export function FortuneMachine() {
     setHasNativeShare(canNativeShare());
   }, []);
 
-  /* ── Poll for external wallet payment (5 min timeout) ── */
+  /* ── Poll for external wallet payment (1s interval, 5 min timeout) ── */
   useEffect(() => {
     if (state.step !== "invoice") {
       if (pollRef.current) {
@@ -73,9 +74,9 @@ export function FortuneMachine() {
 
     const { paymentHash } = state;
     let pollCount = 0;
-    const MAX_POLLS = 150;
+    const MAX_POLLS = 300; // 300 × 1s = 5 minutes
 
-    pollRef.current = setInterval(async () => {
+    const checkPayment = async () => {
       pollCount++;
       if (pollCount > MAX_POLLS) {
         if (pollRef.current) clearInterval(pollRef.current);
@@ -93,16 +94,17 @@ export function FortuneMachine() {
           if (pollRef.current) clearInterval(pollRef.current);
           pollRef.current = null;
           variantRef.current = pickVariant();
-          setState({
-            step: "fortune",
-            fortune: data.fortune,
-            timestamp: data.timestamp,
-          });
+          // Brief "revealing" state for smooth transition
+          setState({ step: "revealing", fortune: data.fortune, timestamp: data.timestamp });
         }
       } catch {
         /* silently retry */
       }
-    }, 2000);
+    };
+
+    // Immediate first check, then every 1s
+    checkPayment();
+    pollRef.current = setInterval(checkPayment, 1000);
 
     return () => {
       if (pollRef.current) {
@@ -110,6 +112,15 @@ export function FortuneMachine() {
         pollRef.current = null;
       }
     };
+  }, [state]);
+
+  /* ── "Revealing" → fortune transition ── */
+  useEffect(() => {
+    if (state.step !== "revealing") return;
+    const timer = setTimeout(() => {
+      setState({ step: "fortune", fortune: state.fortune, timestamp: state.timestamp });
+    }, 1200);
+    return () => clearTimeout(timer);
   }, [state]);
 
   /* ── Request fortune ── */
@@ -131,11 +142,7 @@ export function FortuneMachine() {
       if (res.ok) {
         const data = await res.json();
         variantRef.current = pickVariant();
-        setState({
-          step: "fortune",
-          fortune: data.fortune,
-          timestamp: data.timestamp,
-        });
+        setState({ step: "revealing", fortune: data.fortune, timestamp: data.timestamp });
         return;
       }
       setState({ step: "error", message: "Something went wrong. Please try again." });
@@ -170,11 +177,7 @@ export function FortuneMachine() {
           if (res.ok) {
             const data = await res.json();
             variantRef.current = pickVariant();
-            setState({
-              step: "fortune",
-              fortune: data.fortune,
-              timestamp: data.timestamp,
-            });
+            setState({ step: "revealing", fortune: data.fortune, timestamp: data.timestamp });
             return;
           }
           setState({
@@ -334,6 +337,30 @@ export function FortuneMachine() {
                 Cancel
               </button>
             </div>
+          </motion.div>
+        )}
+
+        {/* ────────────────── REVEALING (suspense) ────────────────── */}
+        {state.step === "revealing" && (
+          <motion.div
+            key="revealing"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 1.02 }}
+            transition={{ duration: 0.4, ease }}
+            className="flex flex-col items-center gap-5 py-12"
+          >
+            <motion.div
+              animate={{ scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }}
+              transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+              className="text-4xl drop-shadow-[0_0_20px_rgba(212,162,87,0.3)]"
+            >
+              🥠
+            </motion.div>
+            <p className="text-sm text-gold/60 tracking-wide">
+              Revealing your fortune&hellip;
+            </p>
+            <div className="w-16 dragon-line shimmer-gold h-px" />
           </motion.div>
         )}
 
