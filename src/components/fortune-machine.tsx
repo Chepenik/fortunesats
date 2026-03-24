@@ -226,6 +226,27 @@ export function FortuneMachine() {
     setTimeout(() => setCopied(null), 2000);
   }, []);
 
+  /* ── Manual claim (fallback for broken webhook) ── */
+  const claimFortune = useCallback(async () => {
+    // Fetch a fortune directly — the user has already paid MDK
+    try {
+      const res = await fetch("/api/fortune/claim");
+      if (res.ok) {
+        const data = await res.json();
+        variantRef.current = pickVariant();
+        setState({ step: "revealing", fortune: data.fortune, timestamp: data.timestamp });
+        return;
+      }
+    } catch { /* fall through */ }
+    // If endpoint fails, generate locally as last resort
+    variantRef.current = pickVariant();
+    setState({
+      step: "revealing",
+      fortune: "The path forward is revealed to those who take the first step.",
+      timestamp: new Date().toISOString(),
+    });
+  }, []);
+
   /* ── Share handlers ── */
   const shareOnX = useCallback((fortune: string) => {
     const v = variantRef.current;
@@ -367,13 +388,19 @@ export function FortuneMachine() {
               </button>
             </div>
 
-            {/* Hint after waiting */}
-            {waitingSecs > 25 && (
-              <p className="text-[10px] text-center text-gold/25 leading-relaxed">
-                QR payments can take a moment to confirm.
-                <br />
-                For instant results, use a WebLN-enabled wallet like Alby.
-              </p>
+            {/* Manual claim after waiting — webhook is unreliable */}
+            {waitingSecs > 15 && (
+              <div className="space-y-2">
+                <button
+                  onClick={claimFortune}
+                  className="btn-lacquer w-full h-11 rounded-xl text-sm font-medium cursor-pointer active:scale-[0.98]"
+                >
+                  I&apos;ve Paid — Reveal My Fortune
+                </button>
+                <p className="text-[10px] text-center text-gold/20 leading-relaxed">
+                  Payment confirmation can be slow. If you&apos;ve already paid, tap above.
+                </p>
+              </div>
             )}
 
             {/* Cancel */}
