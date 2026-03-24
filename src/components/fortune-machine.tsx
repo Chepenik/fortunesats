@@ -114,14 +114,15 @@ export function FortuneMachine() {
     };
   }, [state]);
 
-  /* ── "Revealing" → fortune transition ── */
+  /* ── "Revealing" → fortune transition (brief suspense) ── */
   useEffect(() => {
     if (state.step !== "revealing") return;
+    const { fortune, timestamp } = state;
     const timer = setTimeout(() => {
-      setState({ step: "fortune", fortune: state.fortune, timestamp: state.timestamp });
-    }, 1200);
+      setState({ step: "fortune", fortune, timestamp });
+    }, 800);
     return () => clearTimeout(timer);
-  }, [state]);
+  }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Request fortune ── */
   const requestFortune = useCallback(async () => {
@@ -340,27 +341,40 @@ export function FortuneMachine() {
           </motion.div>
         )}
 
-        {/* ────────────────── REVEALING (suspense) ────────────────── */}
+        {/* ────────────────── REVEALING (payment success → fortune) ────────────────── */}
         {state.step === "revealing" && (
           <motion.div
             key="revealing"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.02 }}
-            transition={{ duration: 0.4, ease }}
-            className="flex flex-col items-center gap-5 py-12"
+            transition={{ duration: 0.35, ease }}
+            className="flex flex-col items-center gap-4 py-10"
           >
+            {/* Success indicator */}
             <motion.div
-              animate={{ scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }}
-              transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
-              className="text-4xl drop-shadow-[0_0_20px_rgba(212,162,87,0.3)]"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="h-10 w-10 rounded-full bg-cyan/10 border border-cyan/20 flex items-center justify-center"
             >
-              🥠
+              <svg className="h-5 w-5 text-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
             </motion.div>
-            <p className="text-sm text-gold/60 tracking-wide">
-              Revealing your fortune&hellip;
-            </p>
-            <div className="w-16 dragon-line shimmer-gold h-px" />
+
+            <div className="text-center space-y-1.5">
+              <p className="text-sm font-medium text-foreground/90">
+                Payment received
+              </p>
+              <p className="text-xs text-gold/40">
+                Revealing your fortune&hellip;
+              </p>
+            </div>
+
+            <motion.div
+              animate={{ scaleX: [0.3, 1, 0.3] }}
+              transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
+              className="w-20 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent"
+            />
           </motion.div>
         )}
 
