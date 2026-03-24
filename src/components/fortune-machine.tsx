@@ -45,7 +45,7 @@ export function FortuneMachine() {
   const [copied, setCopied] = useState<"invoice" | "fortune" | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  /* ── Poll for external wallet payment ── */
+  /* ── Poll for external wallet payment (5 min timeout) ── */
   useEffect(() => {
     if (state.step !== "invoice") {
       if (pollRef.current) {
@@ -56,8 +56,17 @@ export function FortuneMachine() {
     }
 
     const { paymentHash } = state;
+    let pollCount = 0;
+    const MAX_POLLS = 150; // 150 × 2s = 5 minutes
 
     pollRef.current = setInterval(async () => {
+      pollCount++;
+      if (pollCount > MAX_POLLS) {
+        if (pollRef.current) clearInterval(pollRef.current);
+        pollRef.current = null;
+        setState({ step: "error", message: "Invoice expired. Please try again." });
+        return;
+      }
       try {
         const res = await fetch(
           `/api/fortune/status?paymentHash=${encodeURIComponent(paymentHash)}`,

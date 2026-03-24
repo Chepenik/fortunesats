@@ -1,27 +1,29 @@
-import { isPaid } from "@/lib/payment-store";
+import { consumePayment } from "@/lib/payment-store";
 import { getRandomFortune } from "@/lib/fortunes";
+
+const PAYMENT_HASH_RE = /^[a-f0-9]{64}$/i;
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const paymentHash = url.searchParams.get("paymentHash");
 
-  if (!paymentHash) {
+  if (!paymentHash || !PAYMENT_HASH_RE.test(paymentHash)) {
     return Response.json(
-      { error: { code: "missing_param", message: "paymentHash is required" } },
+      { error: { code: "invalid_param", message: "Valid paymentHash is required" } },
       { status: 400 },
     );
   }
 
-  const paid = isPaid(paymentHash);
+  const valid = consumePayment(paymentHash);
 
-  if (paid) {
+  if (valid) {
     return Response.json({
-      paid,
+      paid: true,
       paymentHash,
       fortune: getRandomFortune(),
       timestamp: new Date().toISOString(),
     });
   }
 
-  return Response.json({ paid, paymentHash });
+  return Response.json({ paid: false, paymentHash });
 }

@@ -10,10 +10,24 @@ interface MdkPaymentState {
   receivedPaymentHashes: Set<string>;
 }
 
+/** Hashes that have already been redeemed for a fortune. */
+const consumedHashes = new Set<string>();
+
 export function isPaid(paymentHash: string): boolean {
   const state = (globalThis as Record<symbol, MdkPaymentState | undefined>)[
     MDK_PAYMENT_STATE_KEY
   ];
   if (!state) return false;
   return state.receivedPaymentHashes.has(paymentHash);
+}
+
+/**
+ * Atomically check payment and consume it. Returns true only once per hash,
+ * preventing replay attacks where one payment yields unlimited fortunes.
+ */
+export function consumePayment(paymentHash: string): boolean {
+  if (!isPaid(paymentHash)) return false;
+  if (consumedHashes.has(paymentHash)) return false;
+  consumedHashes.add(paymentHash);
+  return true;
 }
