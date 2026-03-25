@@ -145,6 +145,63 @@ export async function isTxConfirmed(
   };
 }
 
+/**
+ * Verify a specific txid pays the expected address with at least minSats.
+ * Makes exactly ONE API call to mempool.space — no polling, no rate limit risk.
+ */
+export async function verifyTxPayment(
+  txid: string,
+  expectedAddress: string,
+  minSats: number,
+): Promise<{
+  valid: boolean;
+  confirmed: boolean;
+  amountSats?: number;
+  error?: string;
+}> {
+  const res = await fetch(`${API_BASE}/tx/${txid}`, {
+    next: { revalidate: 0 },
+  });
+
+  if (res.status === 404) {
+    return { valid: false, confirmed: false, error: "Transaction not found. It may not have been broadcast yet." };
+  }
+
+  if (!res.ok) {
+    return { valid: false, confirmed: false, error: `Could not verify transaction (${res.status})` };
+  }
+
+  const data = await res.json();
+
+  // Sum all outputs to the expected address
+  const amountSats = (data.vout ?? [])
+    .filter((v: { scriptpubkey_address?: string }) => v.scriptpubkey_address === expectedAddress)
+    .reduce((sum: number, v: { value?: number }) => sum + (v.value ?? 0), 0);
+
+  if (amountSats === 0) {
+    return {
+      valid: false,
+      confirmed: false,
+      error: "This transaction does not pay to the correct address.",
+    };
+  }
+
+  if (amountSats < minSats) {
+    return {
+      valid: false,
+      confirmed: false,
+      amountSats,
+      error: `Underpayment: received ${amountSats.toLocaleString()} sats, need ${minSats.toLocaleString()} sats.`,
+    };
+  }
+
+  return {
+    valid: true,
+    confirmed: !!data.status?.confirmed,
+    amountSats,
+  };
+}
+
 /* ─── Helpers ────────────────────────────────────────────── */
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

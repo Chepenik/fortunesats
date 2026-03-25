@@ -35,6 +35,13 @@ type PackStep =
       expiresAt: string;
     }
   | {
+      step: "verifying";
+      orderId: string;
+      secret: string;
+      address: string;
+      amountSats: number;
+    }
+  | {
       step: "celebration";
       orderId: string;
       secret: string;
@@ -101,7 +108,6 @@ function fireConfetti() {
   const red = "#c41e3a";
   const cyan = "#00c8d4";
 
-  // Initial burst
   confetti({
     particleCount: 80,
     spread: 70,
@@ -110,7 +116,6 @@ function fireConfetti() {
     scalar: 1.2,
   });
 
-  // Delayed side bursts
   setTimeout(() => {
     confetti({
       particleCount: 40,
@@ -128,7 +133,6 @@ function fireConfetti() {
     });
   }, 250);
 
-  // Final sparkle
   setTimeout(() => {
     confetti({
       particleCount: 30,
@@ -164,9 +168,8 @@ export function FortunePack() {
   const [state, setState] = useState<PackStep>({ step: "idle" });
   const [copied, setCopied] = useState<string | null>(null);
   const [hasNativeShare, setHasNativeShare] = useState(false);
-  const [waitingSecs, setWaitingSecs] = useState(0);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [txidInput, setTxidInput] = useState("");
+  const [txidError, setTxidError] = useState<string | null>(null);
   const variantRef = useRef<ShareVariant>(pickVariant());
   const mountedRef = useRef(false);
 
@@ -221,87 +224,6 @@ export function FortunePack() {
       })
       .catch(() => clearPack());
   }, []);
-
-  /* ── Elapsed timer for awaiting-payment ── */
-  useEffect(() => {
-    if (state.step !== "awaiting-payment") {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      setWaitingSecs(0);
-      return;
-    }
-    timerRef.current = setInterval(() => setWaitingSecs((s) => s + 1), 1000);
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [state.step]);
-
-  /* ── Poll for payment (3s interval, 1 hour timeout) ── */
-  useEffect(() => {
-    if (state.step !== "awaiting-payment") {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
-      return;
-    }
-
-    const { orderId, secret } = state;
-    let pollCount = 0;
-    const MAX_POLLS = 1200;
-
-    const checkPayment = async () => {
-      pollCount++;
-      if (pollCount > MAX_POLLS) {
-        if (pollRef.current) clearInterval(pollRef.current);
-        pollRef.current = null;
-        setState({
-          step: "error",
-          message: "Order expired. Please try again.",
-        });
-        clearPack();
-        return;
-      }
-      try {
-        const res = await fetch(
-          `/api/pack/status?orderId=${encodeURIComponent(orderId)}&secret=${encodeURIComponent(secret)}`,
-        );
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.status === "mempool" || data.status === "confirmed") {
-          if (pollRef.current) clearInterval(pollRef.current);
-          pollRef.current = null;
-          // Go to celebration state first!
-          setState({
-            step: "celebration",
-            orderId,
-            secret,
-            fortunesRemaining: data.fortunesRemaining,
-            fortunesTotal: data.fortunesTotal,
-            txid: data.txid,
-            txStatus: data.status,
-          });
-        }
-      } catch {
-        /* silently retry */
-      }
-    };
-
-    checkPayment();
-    pollRef.current = setInterval(checkPayment, 3000);
-
-    return () => {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
-    };
-  }, [state]);
 
   /* ── Fire confetti when celebration state begins ── */
   useEffect(() => {
@@ -379,6 +301,78 @@ export function FortunePack() {
       });
     }
   }, []);
+
+  /* ── Submit txid for verification ── */
+  const submitTxid = useCallback(async () => {
+    if (state.step !== "awaiting-payment") return;
+    const trimmed = txidInput.trim();
+    if (!/^[a-fA-F0-9]{64}$/.test(trimmed)) {
+      setTxidError("Please paste a valid 64-character transaction ID.");
+      return;
+    }
+    setTxidError(null);
+
+    const { orderId, secret, address, amountSats } = state;
+    setState({
+      step: "verifying",
+      orderId,
+      secret,
+      address,
+      amountSats,
+    });
+
+    try {
+      const res = await fetch(
+        `/api/pack/status?orderId=${encodeURIComponent(orderId)}&secret=${encodeURIComponent(secret)}&txid=${encodeURIComponent(trimmed)}`,
+      );
+      const data = await res.json();
+
+      if (data.error) {
+        setTxidError(data.error.message);
+        setState({
+          step: "awaiting-payment",
+          orderId,
+          secret,
+          address,
+          amountSats,
+          expiresAt: "",
+        });
+        return;
+      }
+
+      if (data.status === "mempool" || data.status === "confirmed") {
+        setState({
+          step: "celebration",
+          orderId,
+          secret,
+          fortunesRemaining: data.fortunesRemaining,
+          fortunesTotal: data.fortunesTotal,
+          txid: data.txid,
+          txStatus: data.status,
+        });
+      } else {
+        setTxidError("Transaction not yet detected. Try again in a moment.");
+        setState({
+          step: "awaiting-payment",
+          orderId,
+          secret,
+          address,
+          amountSats,
+          expiresAt: "",
+        });
+      }
+    } catch {
+      setTxidError("Network error. Please try again.");
+      setState({
+        step: "awaiting-payment",
+        orderId,
+        secret,
+        address,
+        amountSats,
+        expiresAt: "",
+      });
+    }
+  }, [state, txidInput]);
 
   /* ── Transition from celebration → paid ── */
   const startCracking = useCallback(() => {
@@ -505,7 +499,7 @@ export function FortunePack() {
               <GoldDot />
               <span className="text-gold/30">Pay</span>
               <GoldDot />
-              <span className="text-gold/30">Detect</span>
+              <span className="text-gold/30">Paste txid</span>
               <GoldDot />
               <span className="text-gold/30">Fortunes</span>
             </div>
@@ -532,9 +526,7 @@ export function FortunePack() {
                 <div className="flex items-center gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-lacquer animate-glow-pulse" />
                   <span className="text-xs text-gold/50 font-mono tracking-wide">
-                    {waitingSecs < 10
-                      ? "Awaiting payment"
-                      : "Scanning mempool\u2026"}
+                    Send payment
                   </span>
                 </div>
                 <span className="font-mono text-xs text-ember/60">
@@ -573,42 +565,70 @@ export function FortunePack() {
                 </span>
                 <span>({state.amountSats.toLocaleString()} sats)</span>
               </div>
-
-              {waitingSecs > 5 && (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="h-px flex-1 bg-gold/5" />
-                  <span className="font-mono text-[9px] text-gold/20">
-                    {waitingSecs}s
-                  </span>
-                  <div className="h-px flex-1 bg-gold/5" />
-                </div>
-              )}
             </div>
 
-            <div className="space-y-2">
+            {/* Copy address button */}
+            <button
+              onClick={() => copyToClipboard(state.address, "address")}
+              className="btn-lacquer w-full h-11 rounded-xl text-sm font-medium cursor-pointer active:scale-[0.98]"
+            >
+              {copied === "address" ? "Copied!" : "Copy BTC Address"}
+            </button>
+
+            {/* ── Paste txid section ── */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/10 to-transparent" />
+                <span className="text-[9px] tracking-[0.2em] uppercase text-gold/25 font-mono">
+                  After paying
+                </span>
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/10 to-transparent" />
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="txid-input"
+                  className="block text-[11px] text-gold/40"
+                >
+                  Paste your transaction ID to verify payment
+                </label>
+                <input
+                  id="txid-input"
+                  type="text"
+                  value={txidInput}
+                  onChange={(e) => {
+                    setTxidInput(e.target.value);
+                    setTxidError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") submitTxid();
+                  }}
+                  placeholder="e.g. a1b2c3d4e5f6..."
+                  spellCheck={false}
+                  autoComplete="off"
+                  className="w-full h-10 px-3 rounded-lg bg-[#0c0a0e] border border-gold/10 focus:border-gold/30 focus:outline-none font-mono text-[11px] text-foreground/70 placeholder:text-gold/15 transition-colors"
+                />
+                {txidError && (
+                  <p className="text-[11px] text-lacquer/70">{txidError}</p>
+                )}
+              </div>
+
               <button
-                onClick={() => copyToClipboard(state.address, "address")}
-                className="btn-lacquer w-full h-11 rounded-xl text-sm font-medium cursor-pointer active:scale-[0.98]"
+                onClick={submitTxid}
+                disabled={!txidInput.trim()}
+                className="btn-lacquer w-full h-11 rounded-xl text-sm font-medium cursor-pointer active:scale-[0.98] disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                Copy BTC Address
-              </button>
-              <button
-                onClick={() =>
-                  copyToClipboard(
-                    `${(state.amountSats / 1e8).toFixed(8)}`,
-                    "amount",
-                  )
-                }
-                className="w-full h-9 rounded-lg text-xs text-gold/40 hover:text-gold/60 transition-colors cursor-pointer"
-              >
-                {copied === "amount" ? "Copied amount" : "Copy amount (BTC)"}
+                Verify Payment
               </button>
             </div>
 
+            {/* Cancel */}
             <div className="text-center">
               <button
                 onClick={() => {
                   clearPack();
+                  setTxidInput("");
+                  setTxidError(null);
                   setState({ step: "idle" });
                 }}
                 className="text-[11px] text-muted-foreground/30 hover:text-lacquer/50 transition-colors cursor-pointer"
@@ -619,7 +639,22 @@ export function FortunePack() {
           </motion.div>
         )}
 
-        {/* ────────────────── CELEBRATION (payment detected!) ────────────────── */}
+        {/* ────────────────── VERIFYING ────────────────── */}
+        {state.step === "verifying" && (
+          <motion.div key="verifying" {...fadeUp} className="space-y-5">
+            <div className="flex flex-col items-center gap-5 py-10">
+              <OracleSpinner />
+              <p className="text-sm text-gold/50 tracking-wide">
+                Verifying transaction&hellip;
+              </p>
+              <p className="text-[10px] text-gold/20 font-mono">
+                Checking mempool.space
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ────────────────── CELEBRATION ────────────────── */}
         {state.step === "celebration" && (
           <motion.div
             key="celebration"
@@ -635,7 +670,6 @@ export function FortunePack() {
               <div className="absolute inset-0 rounded-2xl border border-cyan/15" />
 
               <div className="relative p-8 space-y-6 text-center">
-                {/* Success check */}
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -667,7 +701,7 @@ export function FortunePack() {
                   className="space-y-3"
                 >
                   <h3 className="text-xl font-semibold text-foreground/90">
-                    Payment Detected
+                    Payment Verified
                   </h3>
                   <div className="dragon-line w-24 mx-auto" />
                 </motion.div>
