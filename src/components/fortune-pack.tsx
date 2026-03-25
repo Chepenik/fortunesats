@@ -1,0 +1,1116 @@
+"use client";
+
+import { useState, useCallback, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { QRCodeSVG } from "qrcode.react";
+import { Check, Copy, Link2 } from "lucide-react";
+import confetti from "canvas-confetti";
+import {
+  pickVariant,
+  buildXShareUrl,
+  buildShareText,
+  canNativeShare,
+  nativeShare,
+  trackShare,
+  SITE_URL,
+  type ShareVariant,
+} from "@/lib/share";
+
+/* ─── Types ──────────────────────────────────────────────── */
+
+interface StoredPack {
+  orderId: string;
+  secret: string;
+}
+
+type PackStep =
+  | { step: "idle" }
+  | { step: "creating" }
+  | {
+      step: "awaiting-payment";
+      orderId: string;
+      secret: string;
+      address: string;
+      amountSats: number;
+      expiresAt: string;
+    }
+  | {
+      step: "celebration";
+      orderId: string;
+      secret: string;
+      fortunesRemaining: number;
+      fortunesTotal: number;
+      txid: string;
+      txStatus: "mempool" | "confirmed";
+    }
+  | {
+      step: "paid";
+      orderId: string;
+      secret: string;
+      fortunesRemaining: number;
+      fortunesTotal: number;
+      txid: string;
+      txStatus: "mempool" | "confirmed";
+    }
+  | {
+      step: "revealing";
+      orderId: string;
+      secret: string;
+      fortunesRemaining: number;
+      fortunesTotal: number;
+    }
+  | {
+      step: "fortune";
+      orderId: string;
+      secret: string;
+      fortune: string;
+      timestamp: string;
+      fortunesRemaining: number;
+      fortunesTotal: number;
+    }
+  | { step: "depleted" }
+  | { step: "error"; message: string };
+
+/* ─── Persistence ────────────────────────────────────────── */
+
+const STORAGE_KEY = "fortunesats:pack";
+
+function loadPack(): StoredPack | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function savePack(pack: StoredPack) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(pack));
+}
+
+function clearPack() {
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+/* ─── Confetti ───────────────────────────────────────────── */
+
+function fireConfetti() {
+  const gold = "#d4a257";
+  const red = "#c41e3a";
+  const cyan = "#00c8d4";
+
+  // Initial burst
+  confetti({
+    particleCount: 80,
+    spread: 70,
+    origin: { y: 0.6 },
+    colors: [gold, red, cyan, "#fff"],
+    scalar: 1.2,
+  });
+
+  // Delayed side bursts
+  setTimeout(() => {
+    confetti({
+      particleCount: 40,
+      angle: 60,
+      spread: 55,
+      origin: { x: 0, y: 0.65 },
+      colors: [gold, red],
+    });
+    confetti({
+      particleCount: 40,
+      angle: 120,
+      spread: 55,
+      origin: { x: 1, y: 0.65 },
+      colors: [gold, cyan],
+    });
+  }, 250);
+
+  // Final sparkle
+  setTimeout(() => {
+    confetti({
+      particleCount: 30,
+      spread: 100,
+      origin: { y: 0.5 },
+      colors: [gold, "#fff"],
+      scalar: 0.8,
+    });
+  }, 500);
+}
+
+/* ─── Animation config ───────────────────────────────────── */
+
+const ease = [0.23, 1, 0.32, 1] as const;
+
+const fadeUp = {
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 },
+  transition: { duration: 0.5, ease },
+};
+
+const scaleFade = {
+  initial: { opacity: 0, scale: 0.95 },
+  animate: { opacity: 1, scale: 1 },
+  exit: { opacity: 0, scale: 0.97 },
+  transition: { duration: 0.55, ease },
+};
+
+/* ─── Component ──────────────────────────────────────────── */
+
+export function FortunePack() {
+  const [state, setState] = useState<PackStep>({ step: "idle" });
+  const [copied, setCopied] = useState<string | null>(null);
+  const [hasNativeShare, setHasNativeShare] = useState(false);
+  const [waitingSecs, setWaitingSecs] = useState(0);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const variantRef = useRef<ShareVariant>(pickVariant());
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    setHasNativeShare(canNativeShare());
+  }, []);
+
+  /* ── Restore pack from localStorage on mount ── */
+  useEffect(() => {
+    if (mountedRef.current) return;
+    mountedRef.current = true;
+
+    const stored = loadPack();
+    if (!stored) return;
+
+    fetch(
+      `/api/pack/status?orderId=${encodeURIComponent(stored.orderId)}&secret=${encodeURIComponent(stored.secret)}`,
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) {
+          clearPack();
+          return;
+        }
+        if (data.status === "mempool" || data.status === "confirmed") {
+          if (data.fortunesRemaining <= 0) {
+            clearPack();
+            setState({ step: "depleted" });
+          } else {
+            setState({
+              step: "paid",
+              orderId: stored.orderId,
+              secret: stored.secret,
+              fortunesRemaining: data.fortunesRemaining,
+              fortunesTotal: data.fortunesTotal,
+              txid: data.txid,
+              txStatus: data.status,
+            });
+          }
+        } else if (data.status === "pending") {
+          setState({
+            step: "awaiting-payment",
+            orderId: stored.orderId,
+            secret: stored.secret,
+            address: data.address,
+            amountSats: data.amountSats,
+            expiresAt: data.expiresAt,
+          });
+        } else {
+          clearPack();
+        }
+      })
+      .catch(() => clearPack());
+  }, []);
+
+  /* ── Elapsed timer for awaiting-payment ── */
+  useEffect(() => {
+    if (state.step !== "awaiting-payment") {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      setWaitingSecs(0);
+      return;
+    }
+    timerRef.current = setInterval(() => setWaitingSecs((s) => s + 1), 1000);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [state.step]);
+
+  /* ── Poll for payment (3s interval, 1 hour timeout) ── */
+  useEffect(() => {
+    if (state.step !== "awaiting-payment") {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      return;
+    }
+
+    const { orderId, secret } = state;
+    let pollCount = 0;
+    const MAX_POLLS = 1200;
+
+    const checkPayment = async () => {
+      pollCount++;
+      if (pollCount > MAX_POLLS) {
+        if (pollRef.current) clearInterval(pollRef.current);
+        pollRef.current = null;
+        setState({
+          step: "error",
+          message: "Order expired. Please try again.",
+        });
+        clearPack();
+        return;
+      }
+      try {
+        const res = await fetch(
+          `/api/pack/status?orderId=${encodeURIComponent(orderId)}&secret=${encodeURIComponent(secret)}`,
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.status === "mempool" || data.status === "confirmed") {
+          if (pollRef.current) clearInterval(pollRef.current);
+          pollRef.current = null;
+          // Go to celebration state first!
+          setState({
+            step: "celebration",
+            orderId,
+            secret,
+            fortunesRemaining: data.fortunesRemaining,
+            fortunesTotal: data.fortunesTotal,
+            txid: data.txid,
+            txStatus: data.status,
+          });
+        }
+      } catch {
+        /* silently retry */
+      }
+    };
+
+    checkPayment();
+    pollRef.current = setInterval(checkPayment, 3000);
+
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [state]);
+
+  /* ── Fire confetti when celebration state begins ── */
+  useEffect(() => {
+    if (state.step !== "celebration") return;
+    fireConfetti();
+  }, [state.step]);
+
+  /* ── "Revealing" → fortune transition ── */
+  useEffect(() => {
+    if (state.step !== "revealing") return;
+    const { orderId, secret, fortunesRemaining, fortunesTotal } = state;
+    const timer = setTimeout(() => {
+      fetch("/api/pack/fortune", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, secret }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.error) {
+            if (data.error.code === "depleted") {
+              clearPack();
+              setState({ step: "depleted" });
+            } else {
+              setState({ step: "error", message: data.error.message });
+            }
+            return;
+          }
+          variantRef.current = pickVariant();
+          setState({
+            step: "fortune",
+            orderId,
+            secret,
+            fortune: data.fortune,
+            timestamp: data.timestamp,
+            fortunesRemaining: data.fortunesRemaining,
+            fortunesTotal: data.fortunesTotal ?? fortunesTotal,
+          });
+        })
+        .catch(() => {
+          setState({
+            step: "paid",
+            orderId,
+            secret,
+            fortunesRemaining,
+            fortunesTotal,
+            txid: "",
+            txStatus: "mempool",
+          });
+        });
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [state]);
+
+  /* ── Create order ── */
+  const buyPack = useCallback(async () => {
+    setState({ step: "creating" });
+    try {
+      const res = await fetch("/api/pack", { method: "POST" });
+      if (!res.ok) throw new Error("Failed to create order");
+      const data = await res.json();
+      savePack({ orderId: data.orderId, secret: data.secret });
+      setState({
+        step: "awaiting-payment",
+        orderId: data.orderId,
+        secret: data.secret,
+        address: data.address,
+        amountSats: data.amountSats,
+        expiresAt: data.expiresAt,
+      });
+    } catch (e) {
+      setState({
+        step: "error",
+        message: e instanceof Error ? e.message : "Network error",
+      });
+    }
+  }, []);
+
+  /* ── Transition from celebration → paid ── */
+  const startCracking = useCallback(() => {
+    if (state.step !== "celebration") return;
+    const { orderId, secret, fortunesRemaining, fortunesTotal, txid, txStatus } =
+      state;
+    setState({
+      step: "paid",
+      orderId,
+      secret,
+      fortunesRemaining,
+      fortunesTotal,
+      txid,
+      txStatus,
+    });
+  }, [state]);
+
+  /* ── Reveal fortune ── */
+  const revealFortune = useCallback(() => {
+    if (state.step !== "paid" && state.step !== "fortune") return;
+    const { orderId, secret, fortunesRemaining, fortunesTotal } = state;
+    setState({
+      step: "revealing",
+      orderId,
+      secret,
+      fortunesRemaining,
+      fortunesTotal,
+    });
+  }, [state]);
+
+  /* ── Clipboard ── */
+  const copyToClipboard = useCallback((text: string, type: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(type);
+    setTimeout(() => setCopied(null), 2000);
+  }, []);
+
+  /* ── Share handlers ── */
+  const shareOnX = useCallback((fortune: string) => {
+    const v = variantRef.current;
+    trackShare("x_share", v.id);
+    window.open(buildXShareUrl(fortune, v), "_blank", "noopener,noreferrer");
+  }, []);
+
+  const copyShareText = useCallback(
+    (fortune: string) => {
+      const v = variantRef.current;
+      trackShare("copy_text", v.id);
+      copyToClipboard(buildShareText(fortune, v), "text");
+    },
+    [copyToClipboard],
+  );
+
+  const copyLink = useCallback(() => {
+    trackShare("copy_link", variantRef.current.id);
+    copyToClipboard(SITE_URL, "link");
+  }, [copyToClipboard]);
+
+  const handleNativeShare = useCallback(async (fortune: string) => {
+    const v = variantRef.current;
+    trackShare("native_share", v.id);
+    await nativeShare(fortune, v);
+  }, []);
+
+  return (
+    <div className="w-full">
+      <AnimatePresence mode="wait">
+        {/* ────────────────── IDLE ────────────────── */}
+        {state.step === "idle" && (
+          <motion.div key="idle" {...fadeUp} className="space-y-8">
+            <div className="jade-surface rounded-2xl p-6 space-y-4 ornamental-border">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gold/50 font-mono tracking-wide">
+                  Fortune Pack
+                </span>
+                <span className="font-mono text-xs text-ember/60">
+                  10,000 sats
+                </span>
+              </div>
+              <div className="text-center space-y-2 py-3">
+                <div className="text-4xl drop-shadow-[0_0_20px_rgba(212,162,87,0.15)]">
+                  🥠 &times;100
+                </div>
+                <p className="text-sm text-foreground/70 leading-relaxed">
+                  One hundred fortunes, unlocked instantly.
+                  <br />
+                  <span className="text-gold/40 text-xs">
+                    Paid on-chain. Accepted on mempool detection.
+                  </span>
+                </p>
+              </div>
+              <div className="dragon-line w-full" />
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div>
+                  <div className="font-mono text-lg text-gold/70">100</div>
+                  <div className="text-[10px] text-muted-foreground/40 uppercase tracking-wider">
+                    Fortunes
+                  </div>
+                </div>
+                <div>
+                  <div className="font-mono text-lg text-gold/70">100</div>
+                  <div className="text-[10px] text-muted-foreground/40 uppercase tracking-wider">
+                    sats/each
+                  </div>
+                </div>
+                <div>
+                  <div className="font-mono text-lg text-cyan/70">₿</div>
+                  <div className="text-[10px] text-muted-foreground/40 uppercase tracking-wider">
+                    On-chain
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={buyPack}
+              className="btn-lacquer w-full h-14 rounded-xl text-sm font-semibold tracking-wide cursor-pointer transition-all active:scale-[0.98]"
+            >
+              Buy Fortune Pack
+            </button>
+
+            <div className="flex items-center justify-center gap-4 text-[10px] tracking-[0.15em] uppercase font-mono">
+              <span className="text-lacquer/50">Order</span>
+              <GoldDot />
+              <span className="text-gold/30">Pay</span>
+              <GoldDot />
+              <span className="text-gold/30">Detect</span>
+              <GoldDot />
+              <span className="text-gold/30">Fortunes</span>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ────────────────── CREATING ────────────────── */}
+        {state.step === "creating" && (
+          <motion.div key="creating" {...fadeUp} className="space-y-5">
+            <div className="flex flex-col items-center gap-5 py-10">
+              <OracleSpinner />
+              <p className="text-sm text-gold/50 tracking-wide">
+                Creating your order&hellip;
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ────────────────── AWAITING PAYMENT ────────────────── */}
+        {state.step === "awaiting-payment" && (
+          <motion.div key="awaiting" {...scaleFade} className="space-y-5">
+            <div className="lacquer-surface rounded-2xl p-6 space-y-5 ornamental-border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-lacquer animate-glow-pulse" />
+                  <span className="text-xs text-gold/50 font-mono tracking-wide">
+                    {waitingSecs < 10
+                      ? "Awaiting payment"
+                      : "Scanning mempool\u2026"}
+                  </span>
+                </div>
+                <span className="font-mono text-xs text-ember/60">
+                  {state.amountSats.toLocaleString()} sats
+                </span>
+              </div>
+
+              <div className="flex justify-center">
+                <div className="rounded-xl bg-[#f0ece4] p-4 glow-gold">
+                  <QRCodeSVG
+                    value={`bitcoin:${state.address}?amount=${(state.amountSats / 1e8).toFixed(8)}`}
+                    size={200}
+                    level="M"
+                    bgColor="transparent"
+                    fgColor="#0c0a0e"
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={() => copyToClipboard(state.address, "address")}
+                className="w-full group cursor-pointer"
+              >
+                <div className="font-mono text-[9px] leading-relaxed text-gold/30 group-hover:text-gold/50 transition-colors text-center break-all">
+                  {state.address}
+                </div>
+                <div className="text-[10px] text-lacquer/40 mt-1 group-hover:text-lacquer/60 transition-colors text-center">
+                  {copied === "address" ? "Copied!" : "Tap to copy address"}
+                </div>
+              </button>
+
+              <div className="flex items-center justify-center gap-3 text-[10px] font-mono text-gold/20">
+                <span>Send exactly</span>
+                <span className="text-ember/50">
+                  {(state.amountSats / 1e8).toFixed(8)} BTC
+                </span>
+                <span>({state.amountSats.toLocaleString()} sats)</span>
+              </div>
+
+              {waitingSecs > 5 && (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="h-px flex-1 bg-gold/5" />
+                  <span className="font-mono text-[9px] text-gold/20">
+                    {waitingSecs}s
+                  </span>
+                  <div className="h-px flex-1 bg-gold/5" />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <button
+                onClick={() => copyToClipboard(state.address, "address")}
+                className="btn-lacquer w-full h-11 rounded-xl text-sm font-medium cursor-pointer active:scale-[0.98]"
+              >
+                Copy BTC Address
+              </button>
+              <button
+                onClick={() =>
+                  copyToClipboard(
+                    `${(state.amountSats / 1e8).toFixed(8)}`,
+                    "amount",
+                  )
+                }
+                className="w-full h-9 rounded-lg text-xs text-gold/40 hover:text-gold/60 transition-colors cursor-pointer"
+              >
+                {copied === "amount" ? "Copied amount" : "Copy amount (BTC)"}
+              </button>
+            </div>
+
+            <div className="text-center">
+              <button
+                onClick={() => {
+                  clearPack();
+                  setState({ step: "idle" });
+                }}
+                className="text-[11px] text-muted-foreground/30 hover:text-lacquer/50 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ────────────────── CELEBRATION (payment detected!) ────────────────── */}
+        {state.step === "celebration" && (
+          <motion.div
+            key="celebration"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            transition={{ duration: 0.6, ease }}
+            className="space-y-6"
+          >
+            <div className="relative rounded-2xl overflow-hidden fortune-reveal-glow">
+              <div className="absolute inset-0 bg-gradient-to-b from-cyan/[0.08] via-[#0c0a0e] to-[#0c0a0e]" />
+              <div className="absolute inset-0 bg-gradient-to-br from-gold/[0.04] via-transparent to-cyan/[0.02]" />
+              <div className="absolute inset-0 rounded-2xl border border-cyan/15" />
+
+              <div className="relative p-8 space-y-6 text-center">
+                {/* Success check */}
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 20,
+                    delay: 0.2,
+                  }}
+                  className="mx-auto h-14 w-14 rounded-full bg-cyan/10 border border-cyan/20 flex items-center justify-center"
+                >
+                  <svg
+                    className="h-7 w-7 text-cyan"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.5, ease }}
+                  className="space-y-3"
+                >
+                  <h3 className="text-xl font-semibold text-foreground/90">
+                    Payment Detected
+                  </h3>
+                  <div className="dragon-line w-24 mx-auto" />
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6, duration: 0.5, ease }}
+                  className="space-y-4"
+                >
+                  <p className="text-sm text-gold/60 leading-relaxed max-w-[260px] mx-auto">
+                    We appreciate you investing in wisdom.
+                    <br />
+                    <span className="text-foreground/70 font-medium">
+                      Enjoy your 100 fortunes.
+                    </span>
+                  </p>
+
+                  <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-cyan/40">
+                    <span>txid:</span>
+                    <span className="text-cyan/50">
+                      {state.txid?.slice(0, 12)}&hellip;
+                    </span>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8, duration: 0.4 }}
+                  className="pt-2"
+                >
+                  <p className="text-[10px] text-cyan/25 italic">
+                    {state.txStatus === "mempool"
+                      ? "Transaction seen in mempool \u2014 your fortunes are fully unlocked"
+                      : "Transaction confirmed on-chain"}
+                  </p>
+                </motion.div>
+              </div>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.0, duration: 0.4, ease }}
+            >
+              <button
+                onClick={startCracking}
+                className="btn-lacquer w-full h-14 rounded-xl text-sm font-semibold tracking-wide cursor-pointer transition-all active:scale-[0.98]"
+              >
+                Start Cracking Fortunes
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {/* ────────────────── PAID — FORTUNE DISPENSER ────────────────── */}
+        {state.step === "paid" && (
+          <motion.div key="paid" {...scaleFade} className="space-y-6">
+            <div className="jade-surface rounded-2xl p-6 space-y-4 ornamental-border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-cyan shadow-[0_0_6px_rgba(0,200,212,0.4)]" />
+                  <span className="text-xs text-cyan/60 font-mono tracking-wide">
+                    {state.txStatus === "confirmed"
+                      ? "Confirmed on-chain"
+                      : "Detected in mempool"}
+                  </span>
+                </div>
+                <span className="font-mono text-xs text-gold/40">
+                  {state.txid?.slice(0, 8)}&hellip;
+                </span>
+              </div>
+
+              <div className="text-center py-4">
+                <motion.div
+                  className="text-5xl mb-3"
+                  animate={{ rotate: [0, -5, 5, -3, 0] }}
+                  transition={{ duration: 0.6, ease: "easeInOut" }}
+                  key={state.fortunesRemaining}
+                >
+                  🥠
+                </motion.div>
+                <motion.div
+                  className="font-mono text-4xl text-gold/80"
+                  key={`count-${state.fortunesRemaining}`}
+                  initial={{ scale: 1.2, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {state.fortunesRemaining}
+                </motion.div>
+                <div className="text-[11px] text-muted-foreground/40 mt-1">
+                  fortunes remaining
+                </div>
+
+                <div className="mt-4 mx-auto w-56 h-1.5 rounded-full bg-gold/5 overflow-hidden">
+                  <motion.div
+                    className="h-full rounded-full bg-gradient-to-r from-lacquer/60 via-gold/40 to-gold/60"
+                    animate={{
+                      width: `${(state.fortunesRemaining / state.fortunesTotal) * 100}%`,
+                    }}
+                    transition={{ duration: 0.5, ease }}
+                  />
+                </div>
+                <div className="mt-2 text-[10px] font-mono text-gold/20">
+                  {state.fortunesTotal - state.fortunesRemaining} claimed
+                  &middot; {state.fortunesRemaining} to go
+                </div>
+              </div>
+
+              {state.txStatus === "mempool" && (
+                <p className="text-[10px] text-center text-cyan/30 leading-relaxed">
+                  Transaction in mempool &mdash; awaiting block confirmation.
+                  <br />
+                  Your fortunes are fully unlocked.
+                </p>
+              )}
+            </div>
+
+            <button
+              onClick={revealFortune}
+              className="btn-lacquer w-full h-14 rounded-xl text-sm font-semibold tracking-wide cursor-pointer transition-all active:scale-[0.98]"
+            >
+              Crack Open a Fortune
+            </button>
+          </motion.div>
+        )}
+
+        {/* ────────────────── REVEALING ────────────────── */}
+        {state.step === "revealing" && (
+          <motion.div
+            key="revealing"
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.02 }}
+            transition={{ duration: 0.35, ease }}
+            className="flex flex-col items-center gap-4 py-10"
+          >
+            <motion.div
+              initial={{ scale: 0, rotate: -20 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="text-4xl"
+            >
+              🥠
+            </motion.div>
+            <p className="text-xs text-gold/40">
+              Cracking open your fortune&hellip;
+            </p>
+            <motion.div
+              animate={{ scaleX: [0.3, 1, 0.3] }}
+              transition={{
+                duration: 0.8,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className="w-20 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent"
+            />
+          </motion.div>
+        )}
+
+        {/* ────────────────── FORTUNE REVEALED ────────────────── */}
+        {state.step === "fortune" && (
+          <motion.div
+            key={`fortune-${state.fortunesRemaining}`}
+            initial={{ opacity: 0, scale: 0.92, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97 }}
+            transition={{ duration: 0.7, ease }}
+            className="space-y-5"
+          >
+            {/* Fortune card */}
+            <div className="relative rounded-2xl overflow-hidden fortune-reveal-glow scanlines">
+              <div className="absolute inset-0 bg-gradient-to-b from-lacquer/[0.06] via-[#0c0a0e] to-[#0c0a0e]" />
+              <div className="absolute inset-0 bg-gradient-to-br from-gold/[0.02] via-transparent to-lacquer/[0.02]" />
+              <div className="absolute inset-0 rounded-2xl border border-gold/10" />
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 dragon-line" />
+
+              <div className="relative p-7 space-y-5 ornamental-border">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0, rotate: -10 }}
+                  animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                  transition={{ delay: 0.15, duration: 0.4, ease }}
+                  className="text-xl drop-shadow-[0_0_12px_rgba(212,162,87,0.3)]"
+                >
+                  🥠
+                </motion.div>
+
+                <motion.blockquote
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.5, ease }}
+                  className="text-[17px] leading-relaxed tracking-tight font-light text-foreground/90"
+                >
+                  <span className="text-gold/60">&ldquo;</span>
+                  {state.fortune}
+                  <span className="text-gold/60">&rdquo;</span>
+                </motion.blockquote>
+
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5, duration: 0.3 }}
+                  className="flex items-center gap-3"
+                >
+                  <div className="h-1 w-1 rounded-full bg-cyan/60 shadow-[0_0_6px_rgba(0,200,212,0.4)]" />
+                  <span className="font-mono text-[10px] text-cyan/40">
+                    {new Date(state.timestamp).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                  <div className="h-px flex-1 bg-gradient-to-r from-gold/10 to-transparent" />
+                  <span className="font-mono text-[10px] text-gold/30">
+                    #{state.fortunesTotal - state.fortunesRemaining}
+                  </span>
+                  <span className="font-mono text-[10px] text-gold/15">
+                    of {state.fortunesTotal}
+                  </span>
+                </motion.div>
+              </div>
+            </div>
+
+            {/* Remaining mini-bar */}
+            <div className="flex items-center gap-3 px-1">
+              <div className="flex-1 h-1 rounded-full bg-gold/5 overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full bg-gradient-to-r from-lacquer/50 to-gold/30"
+                  initial={{ width: "100%" }}
+                  animate={{
+                    width: `${(state.fortunesRemaining / state.fortunesTotal) * 100}%`,
+                  }}
+                  transition={{ duration: 0.5, ease }}
+                />
+              </div>
+              <span className="font-mono text-[10px] text-gold/25 whitespace-nowrap">
+                {state.fortunesRemaining} left
+              </span>
+            </div>
+
+            {/* Share module */}
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.4, ease }}
+              className="space-y-2.5"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/10 to-transparent" />
+                <span className="text-[9px] tracking-[0.2em] uppercase text-gold/25 font-mono">
+                  Share
+                </span>
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/10 to-transparent" />
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => shareOnX(state.fortune)}
+                  className="btn-lacquer flex-1 h-9 rounded-lg text-xs font-medium cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
+                >
+                  <XIcon className="h-3 w-3" />
+                  Share on X
+                </button>
+                <button
+                  className="btn-jade h-9 w-9 rounded-lg cursor-pointer active:scale-[0.98] flex items-center justify-center"
+                  onClick={() => copyShareText(state.fortune)}
+                  title="Copy fortune text"
+                >
+                  <CopyIcon copied={copied === "text"} />
+                </button>
+                <button
+                  className="btn-jade h-9 w-9 rounded-lg cursor-pointer active:scale-[0.98] flex items-center justify-center"
+                  onClick={copyLink}
+                  title="Copy link"
+                >
+                  <LinkIcon copied={copied === "link"} />
+                </button>
+                {hasNativeShare && (
+                  <button
+                    className="btn-jade h-9 w-9 rounded-lg cursor-pointer active:scale-[0.98] flex items-center justify-center text-gold/40"
+                    onClick={() => handleNativeShare(state.fortune)}
+                    title="More sharing options"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-3.5 w-3.5"
+                    >
+                      <circle cx="18" cy="5" r="3" />
+                      <circle cx="6" cy="12" r="3" />
+                      <circle cx="18" cy="19" r="3" />
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Next fortune CTA */}
+            {state.fortunesRemaining > 0 ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7, duration: 0.3 }}
+              >
+                <button
+                  onClick={revealFortune}
+                  className="btn-lacquer w-full h-12 rounded-xl text-sm font-semibold cursor-pointer transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  <span>Next Fortune</span>
+                  <span className="text-xs opacity-60">
+                    ({state.fortunesRemaining} left)
+                  </span>
+                </button>
+              </motion.div>
+            ) : (
+              <button
+                onClick={() => {
+                  clearPack();
+                  setState({ step: "depleted" });
+                }}
+                className="w-full h-11 rounded-xl text-sm text-muted-foreground/30 hover:text-gold/40 transition-colors cursor-pointer"
+              >
+                Pack Complete
+              </button>
+            )}
+          </motion.div>
+        )}
+
+        {/* ────────────────── DEPLETED ────────────────── */}
+        {state.step === "depleted" && (
+          <motion.div key="depleted" {...fadeUp} className="space-y-6">
+            <div className="jade-surface rounded-2xl p-8 text-center space-y-4 ornamental-border">
+              <div className="text-4xl">✨</div>
+              <h3 className="text-lg font-medium text-foreground/80">
+                All 100 fortunes revealed
+              </h3>
+              <p className="text-sm text-muted-foreground/50 leading-relaxed">
+                You&apos;ve claimed every fortune in this pack.
+                <br />
+                May the wisdom serve you well.
+              </p>
+              <div className="dragon-line w-16 mx-auto" />
+              <p className="text-[10px] text-gold/25 italic">
+                Thank you for investing in wisdom.
+              </p>
+            </div>
+            <button
+              onClick={() => setState({ step: "idle" })}
+              className="btn-lacquer w-full h-12 rounded-xl text-sm font-semibold cursor-pointer active:scale-[0.98]"
+            >
+              Buy Another Pack
+            </button>
+          </motion.div>
+        )}
+
+        {/* ────────────────── ERROR ────────────────── */}
+        {state.step === "error" && (
+          <motion.div key="error" {...fadeUp} className="space-y-4">
+            <div className="rounded-xl border border-lacquer/20 bg-lacquer/[0.04] p-5">
+              <p className="text-sm text-lacquer/70">{state.message}</p>
+            </div>
+            <button
+              onClick={() => setState({ step: "idle" })}
+              className="btn-jade w-full h-10 rounded-xl text-sm cursor-pointer active:scale-[0.98]"
+            >
+              Try Again
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ─── Decorative components ──────────────────────────────── */
+
+function XIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
+
+function GoldDot() {
+  return <div className="h-0.5 w-0.5 rounded-full bg-gold/20" />;
+}
+
+function OracleSpinner() {
+  return (
+    <div className="relative h-10 w-10">
+      <div className="absolute inset-0 rounded-full border border-gold/10" />
+      <div className="absolute inset-0 rounded-full border border-transparent border-t-lacquer/50 animate-spin" />
+      <div className="absolute inset-2 rounded-full bg-lacquer/[0.06] animate-glow-pulse" />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="h-1.5 w-1.5 rounded-full bg-gold/40 shadow-[0_0_8px_rgba(212,162,87,0.3)]" />
+      </div>
+    </div>
+  );
+}
+
+function CopyIcon({ copied }: { copied: boolean }) {
+  return (
+    <span className="relative h-3 w-3">
+      <span
+        className={`absolute inset-0 transition-all duration-200 ${copied ? "scale-0 opacity-0" : "scale-100 opacity-100"}`}
+      >
+        <Copy className="h-3 w-3" />
+      </span>
+      <span
+        className={`absolute inset-0 transition-all duration-200 ${copied ? "scale-100 opacity-100" : "scale-0 opacity-0"}`}
+      >
+        <Check className="h-3 w-3 text-cyan" />
+      </span>
+    </span>
+  );
+}
+
+function LinkIcon({ copied }: { copied: boolean }) {
+  return (
+    <span className="relative h-3 w-3">
+      <span
+        className={`absolute inset-0 transition-all duration-200 ${copied ? "scale-0 opacity-0" : "scale-100 opacity-100"}`}
+      >
+        <Link2 className="h-3 w-3" />
+      </span>
+      <span
+        className={`absolute inset-0 transition-all duration-200 ${copied ? "scale-100 opacity-100" : "scale-0 opacity-0"}`}
+      >
+        <Check className="h-3 w-3 text-cyan" />
+      </span>
+    </span>
+  );
+}

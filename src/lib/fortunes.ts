@@ -134,3 +134,16 @@ export const fortunes = [
 export function getRandomFortune(): string {
   return fortunes[Math.floor(Math.random() * fortunes.length)];
 }
+
+/**
+ * Get a random fortune that hasn't been claimed yet.
+ * Falls back to any random fortune if all have been seen.
+ */
+export function getUniqueRandomFortune(claimed: string[]): string {
+  const available = fortunes.filter((f) => !claimed.includes(f));
+  if (available.length === 0) {
+    // All fortunes seen — wrap around
+    return fortunes[Math.floor(Math.random() * fortunes.length)];
+  }
+  return available[Math.floor(Math.random() * available.length)];
+}

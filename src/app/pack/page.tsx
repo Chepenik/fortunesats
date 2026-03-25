@@ -1,29 +1,25 @@
-import { FortuneMachine } from "@/components/fortune-machine";
-import { DragonLoader } from "@/components/dragon/DragonLoader";
+import { FortunePack } from "@/components/fortune-pack";
 import Link from "next/link";
 
-export default function Home() {
+export const metadata = {
+  title: "Fortune Pack — Fortune Sats",
+  description:
+    "100 fortunes for 10,000 sats. Pay on-chain, accepted instantly on mempool detection.",
+};
+
+export default function PackPage() {
   return (
     <main className="relative flex-1 flex flex-col items-center justify-center px-6 py-16 overflow-hidden">
-      {/* 3D Dragon — background layer, homepage only */}
-      <div
-        className="absolute inset-0 z-0 pointer-events-none opacity-80"
-        aria-hidden="true"
-      >
-        <DragonLoader />
-      </div>
-
       {/* Ambient radial glows */}
-      <div className="pointer-events-none absolute inset-0 z-[1]">
+      <div className="pointer-events-none absolute inset-0">
         <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-lacquer/[0.04] blur-[120px]" />
         <div className="absolute bottom-[-10%] left-1/2 -translate-x-1/2 w-[500px] h-[300px] rounded-full bg-gold/[0.03] blur-[100px]" />
         <div className="absolute top-[20%] right-[-10%] w-[200px] h-[200px] rounded-full bg-cyan/[0.02] blur-[80px]" />
       </div>
 
-      <div className="relative z-[2] w-full max-w-sm space-y-10">
+      <div className="relative w-full max-w-sm space-y-10">
         {/* Hero */}
         <header className="text-center space-y-5">
-          {/* Ornamental top line */}
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="h-px w-8 bg-gradient-to-r from-transparent to-gold/20" />
             <div className="h-1 w-1 rounded-full bg-lacquer/40" />
@@ -36,44 +32,44 @@ export default function Home() {
 
           <div className="space-y-3">
             <h1 className="text-3xl font-bold tracking-tight neon-text text-foreground">
-              Fortune Sats
+              Fortune Pack
             </h1>
             <p className="text-[15px] leading-relaxed">
-              <span className="text-gold/80">100 sats.</span>{" "}
-              <span className="text-foreground/60">One fortune.</span>
+              <span className="text-gold/80">10,000 sats.</span>{" "}
+              <span className="text-foreground/60">100 fortunes.</span>
               <br />
               <span className="text-muted-foreground/50 text-[13px]">
-                A ritual powered by Lightning.
+                On-chain Bitcoin. Instant mempool acceptance.
               </span>
             </p>
           </div>
         </header>
 
         {/* Machine */}
-        <FortuneMachine />
+        <FortunePack />
 
         {/* Footer */}
         <footer className="space-y-5 text-center">
           <div className="dragon-line w-16 mx-auto" />
           <div className="space-y-3">
             <Link
-              href="/pack"
+              href="/"
               className="inline-block text-[11px] text-gold/30 hover:text-gold/50 transition-colors"
             >
-              Fortune Pack &rarr; 100 fortunes for 10,000 sats (on-chain)
+              &larr; Single fortune (100 sats, Lightning)
             </Link>
-            <p className="text-[11px] tracking-[0.2em] uppercase text-gold/30 font-mono">
-              L402 &middot; Pay per request &middot; Lightning Network
+            <p className="text-[10px] tracking-[0.2em] uppercase text-gold/25 font-mono">
+              On-chain &middot; Mempool acceptance &middot; Bitcoin
             </p>
-            <p className="text-[11px] text-muted-foreground/40">
+            <p className="text-[11px] text-muted-foreground/30">
               Powered by{" "}
               <a
-                href="https://mpp.dev/overview"
+                href="https://mempool.space"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gold/30 hover:text-gold/50 transition-colors"
               >
-                MoneyDevKit
+                mempool.space
               </a>
             </p>
             <a
