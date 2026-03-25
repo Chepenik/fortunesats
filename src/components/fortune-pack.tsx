@@ -170,7 +170,7 @@ export function FortunePack() {
   const [hasNativeShare, setHasNativeShare] = useState(false);
   const [txidInput, setTxidInput] = useState("");
   const [txidError, setTxidError] = useState<string | null>(null);
-  const variantRef = useRef<ShareVariant>(pickVariant());
+  const variantRef = useRef<ShareVariant>(pickVariant(true));
   const mountedRef = useRef(false);
 
   useEffect(() => {
@@ -252,7 +252,7 @@ export function FortunePack() {
             }
             return;
           }
-          variantRef.current = pickVariant();
+          variantRef.current = pickVariant(true);
           setState({
             step: "fortune",
             orderId,

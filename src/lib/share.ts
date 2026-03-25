@@ -37,8 +37,36 @@ export const SHARE_VARIANTS: ShareVariant[] = [
   },
 ];
 
-export function pickVariant(): ShareVariant {
-  return SHARE_VARIANTS[Math.floor(Math.random() * SHARE_VARIANTS.length)];
+export const PACK_SHARE_VARIANTS: ShareVariant[] = [
+  {
+    id: 0,
+    label: "classic",
+    template: (f) =>
+      `🥠 I bought the Fortune Pack (100 fortunes for 10k sats) and got this gem:\n\n"${f}"\n\nGet yours → ${SITE_URL}`,
+  },
+  {
+    id: 1,
+    label: "punchy",
+    template: (f) =>
+      `10,000 sats. 100 fortunes. Worth every sat.\n\n"${f}"\n\nGet the Fortune Pack → ${SITE_URL}`,
+  },
+  {
+    id: 2,
+    label: "storyteller",
+    template: (f) =>
+      `I spent 10k sats on a Fortune Pack from FortuneSats and got this:\n\n"${f}"\n\nTry it → ${SITE_URL}`,
+  },
+  {
+    id: 3,
+    label: "direct",
+    template: (f) =>
+      `Paid 10k sats for 100 fortunes on FortuneSats:\n\n"${f}"\n\nGet the Fortune Pack → ${SITE_URL}`,
+  },
+];
+
+export function pickVariant(isPack = false): ShareVariant {
+  const variants = isPack ? PACK_SHARE_VARIANTS : SHARE_VARIANTS;
+  return variants[Math.floor(Math.random() * variants.length)];
 }
 
 /* ─── X (Twitter) sharing ──────────────────────────────── */
