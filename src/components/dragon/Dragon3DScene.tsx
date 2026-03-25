@@ -8,6 +8,19 @@ export function Dragon3DScene() {
   const [mounted, setMounted] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
 
+  // Suppress THREE.Clock deprecation warning from @react-three/fiber internals
+  // (R3F v9.x still uses Clock; fixed in v10 which is not yet stable)
+  useEffect(() => {
+    const origWarn = console.warn;
+    console.warn = (...args: unknown[]) => {
+      if (typeof args[0] === "string" && args[0].includes("Clock")) return;
+      origWarn.apply(console, args);
+    };
+    return () => {
+      console.warn = origWarn;
+    };
+  }, []);
+
   useEffect(() => {
     setMounted(true);
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -38,27 +51,34 @@ export function Dragon3DScene() {
       resize={{ debounce: 100 }}
     >
       <Suspense fallback={null}>
-        {/* Warm ambient — slightly higher for smooth geometry */}
-        <ambientLight intensity={0.5} color="#f0ece4" />
+        {/* Warm ambient — raised for body readability */}
+        <ambientLight intensity={0.65} color="#f0ece4" />
 
         {/* Key light — warm gold from upper-right */}
         <directionalLight
           position={[8, 14, 6]}
-          intensity={1.2}
+          intensity={1.4}
           color="#d4a257"
         />
 
         {/* Fill light — cooler from opposite side */}
         <directionalLight
           position={[-6, 5, -4]}
-          intensity={0.35}
+          intensity={0.4}
           color="#f0ece4"
+        />
+
+        {/* Warm rim from behind-right — defines body edge against dark bg */}
+        <directionalLight
+          position={[5, 3, -8]}
+          intensity={0.6}
+          color="#ff8844"
         />
 
         {/* Lacquer red ambient glow from below */}
         <pointLight
           position={[0, -4, 0]}
-          intensity={0.15}
+          intensity={0.2}
           color="#c41e3a"
           distance={14}
           decay={2}
@@ -67,7 +87,7 @@ export function Dragon3DScene() {
         {/* Cyan rim accent from behind-left */}
         <pointLight
           position={[-5, 6, -5]}
-          intensity={0.2}
+          intensity={0.25}
           color="#00c8d4"
           distance={12}
           decay={2}

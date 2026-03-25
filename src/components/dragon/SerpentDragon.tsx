@@ -9,7 +9,6 @@ import {
   BODY,
   FIRE,
   lerp,
-  getBodyRadius,
   getCrossRadii,
   curvePosition,
   curveTangent,
@@ -25,6 +24,8 @@ const _rotMat = new THREE.Matrix4();
 const _dummy = new THREE.Object3D();
 const _color = new THREE.Color();
 const _worldUp = new THREE.Vector3(0, 1, 0);
+const _fireVelTemp = new THREE.Vector3();
+const _lerpColor = new THREE.Color();
 
 // ─── Fire particle pool ──────────────────────────────────
 
@@ -35,6 +36,7 @@ interface FireParticle {
   life: number;
   maxLife: number;
   scale: number;
+  seed: number;
 }
 
 const FIRE_COLORS = [
@@ -45,13 +47,14 @@ const FIRE_COLORS = [
 ];
 
 function createFirePool(): FireParticle[] {
-  return Array.from({ length: FIRE.maxParticles }, () => ({
+  return Array.from({ length: FIRE.maxParticles }, (_, i) => ({
     active: false,
     pos: new THREE.Vector3(),
     vel: new THREE.Vector3(),
     life: 0,
     maxLife: 1,
     scale: 1,
+    seed: i * 1.618,
   }));
 }
 
@@ -76,6 +79,9 @@ export function SerpentDragon({
   const phaseRef = useRef(0);
   const headPos = useRef(new THREE.Vector3());
   const headDir = useRef(new THREE.Vector3(1, 0, 0));
+  const snoutPos = useRef(new THREE.Vector3());
+  const snoutDir = useRef(new THREE.Vector3(1, 0, 0));
+  const fireIntensityRef = useRef(0.8);
 
   // Pre-allocated per-segment frame data
   const S = BODY.tubeSegments;
@@ -111,6 +117,7 @@ export function SerpentDragon({
     const positions = new Float32Array(vCount * 3);
     const normals = new Float32Array(vCount * 3);
     const colors = new Float32Array(vCount * 3);
+    const uvs = new Float32Array(vCount * 2);
 
     const indices: number[] = [];
     for (let i = 0; i < S; i++) {
@@ -128,22 +135,105 @@ export function SerpentDragon({
     geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     geo.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
     geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    geo.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
     return geo;
   }, [S, R]);
 
   // ─── Materials ──────────────────────────────────────────
 
-  const bodyMat = useMemo(
-    () =>
-      new THREE.MeshPhysicalMaterial({
-        vertexColors: true,
-        roughness: 0.28,
-        metalness: 0.1,
-        clearcoat: 0.25,
-        clearcoatRoughness: 0.3,
-      }),
-    []
-  );
+  const bodyMat = useMemo(() => {
+    const mat = new THREE.MeshPhysicalMaterial({
+      vertexColors: true,
+      roughness: 0.22,
+      metalness: 0.1,
+      clearcoat: 0.5,
+      clearcoatRoughness: 0.15,
+      sheen: 0.3,
+      sheenRoughness: 0.4,
+      sheenColor: new THREE.Color("#ff4466"),
+      iridescence: 0.15,
+      iridescenceIOR: 1.3,
+      emissive: new THREE.Color("#c41e3a"),
+      emissiveIntensity: 0.06,
+    });
+
+    mat.onBeforeCompile = (shader) => {
+      // Inject UV varying into vertex shader (needed because we have no map)
+      shader.vertexShader = shader.vertexShader.replace(
+        "#include <common>",
+        /* glsl */ `
+        #include <common>
+        varying vec2 vScaleUv;
+        `
+      );
+      shader.vertexShader = shader.vertexShader.replace(
+        "#include <uv_vertex>",
+        /* glsl */ `
+        #include <uv_vertex>
+        vScaleUv = uv;
+        `
+      );
+
+      // Inject varying + shared variables in fragment shader
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <common>",
+        /* glsl */ `
+        #include <common>
+        varying vec2 vScaleUv;
+        float dragonBump = 0.0;
+        vec2 dragonCell = vec2(0.0);
+        `
+      );
+
+      // Scale bump pattern
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <normal_fragment_maps>",
+        /* glsl */ `
+        #include <normal_fragment_maps>
+
+        // ─── Procedural scale pattern ───
+        {
+          vec2 scaleUV = vScaleUv * vec2(28.0, 200.0);
+          dragonCell = floor(scaleUV);
+          vec2 local = fract(scaleUV);
+          // Offset every other row for hex-like pattern
+          if (mod(dragonCell.y, 2.0) > 0.5) local.x = fract(local.x + 0.5);
+          // Diamond distance for scale edge ridges
+          float d = abs(local.x - 0.5) + abs(local.y - 0.5);
+          dragonBump = smoothstep(0.35, 0.5, d) * 0.4;
+          // Perturb normal at scale edges
+          float dBdx = dFdx(dragonBump);
+          float dBdy = dFdy(dragonBump);
+          normal = normalize(normal + vec3(dBdx, dBdy, 0.0) * 2.5);
+        }
+        `
+      );
+
+      // Belly glow + view-dependent shimmer
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <emissivemap_fragment>",
+        /* glsl */ `
+        #include <emissivemap_fragment>
+
+        // Belly glow — where vertex color leans gold/warm
+        float bellyness = max(0.0, vColor.r * 0.5 + vColor.g * 0.8 - vColor.b * 1.5 - 0.4);
+        totalEmissiveRadiance += vec3(0.8, 0.55, 0.2) * bellyness * 0.12;
+
+        // View-dependent shimmer on scales
+        float viewDot = abs(dot(normalize(vViewPosition), normal));
+        float shimmerStrength = (1.0 - viewDot) * dragonBump * 0.15;
+        totalEmissiveRadiance += vec3(
+          sin(dragonCell.x * 1.3 + viewDot * 6.0) * 0.5 + 0.5,
+          sin(dragonCell.y * 1.7 + viewDot * 6.0 + 2.0) * 0.5 + 0.5,
+          sin(dragonCell.x * 0.9 + viewDot * 6.0 + 4.0) * 0.5 + 0.5
+        ) * shimmerStrength;
+        `
+      );
+    };
+
+    mat.customProgramCacheKey = () => "dragon-scales-v1";
+    return mat;
+  }, []);
 
   const eyeWhiteMat = useMemo(
     () =>
@@ -212,6 +302,18 @@ export function SerpentDragon({
     []
   );
 
+  const headMat = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: "#b01830",
+        roughness: 0.25,
+        metalness: 0.15,
+        emissive: "#b01830",
+        emissiveIntensity: 0.08,
+      }),
+    []
+  );
+
   const fireMat = useMemo(
     () =>
       new THREE.MeshBasicMaterial({
@@ -219,35 +321,51 @@ export function SerpentDragon({
         transparent: true,
         opacity: 1,
         toneMapped: false,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
       }),
     []
   );
 
   // ─── Detail geometries ─────────────────────────────────
 
-  const eyeGeo = useMemo(() => new THREE.SphereGeometry(0.052, 10, 8), []);
-  const pupilGeo = useMemo(() => new THREE.SphereGeometry(0.028, 8, 6), []);
-  const hornGeo = useMemo(() => new THREE.ConeGeometry(0.032, 0.28, 8), []);
+  const eyeGeo = useMemo(() => new THREE.SphereGeometry(0.055, 10, 8), []);
+  const pupilGeo = useMemo(() => new THREE.SphereGeometry(0.03, 8, 6), []);
+  const hornGeo = useMemo(() => new THREE.ConeGeometry(0.045, 0.5, 8), []);
   const whiskerGeo = useMemo(
-    () => new THREE.CylinderGeometry(0.007, 0.002, 0.22, 4),
+    () => new THREE.CylinderGeometry(0.008, 0.002, 0.28, 4),
     []
   );
   const upperLimbGeo = useMemo(
-    () => new THREE.CylinderGeometry(0.032, 0.018, 0.11, 6),
+    () => new THREE.CylinderGeometry(0.04, 0.022, 0.14, 6),
     []
   );
   const lowerLimbGeo = useMemo(
-    () => new THREE.CylinderGeometry(0.018, 0.012, 0.09, 5),
+    () => new THREE.CylinderGeometry(0.022, 0.015, 0.12, 5),
     []
   );
-  const clawGeo = useMemo(() => new THREE.ConeGeometry(0.01, 0.045, 4), []);
-  const fireGeo = useMemo(() => new THREE.IcosahedronGeometry(0.022, 0), []);
+  const clawGeo = useMemo(() => new THREE.ConeGeometry(0.013, 0.055, 4), []);
+  const fireGeo = useMemo(() => new THREE.IcosahedronGeometry(0.03, 1), []);
 
-  // Mane fin — elongated triangle
+  // Dragon head anatomy
+  const snoutGeo = useMemo(
+    () => new THREE.ConeGeometry(0.1, 0.35, 6),
+    []
+  );
+  const jawGeo = useMemo(
+    () => new THREE.ConeGeometry(0.07, 0.30, 5),
+    []
+  );
+  const crownSpikeGeo = useMemo(
+    () => new THREE.ConeGeometry(0.02, 0.15, 5),
+    []
+  );
+
+  // Mane fin — larger dorsal spine triangle
   const maneGeo = useMemo(() => {
     const geo = new THREE.BufferGeometry();
     const v = new Float32Array([
-      -0.012, 0, 0, 0.012, 0, 0, 0, 0.1, 0,
+      -0.018, 0, 0, 0.018, 0, 0, 0, 0.2, 0.01,
     ]);
     const n = new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1]);
     geo.setAttribute("position", new THREE.BufferAttribute(v, 3));
@@ -315,6 +433,7 @@ export function SerpentDragon({
     const positions = bodyGeo.attributes.position.array as Float32Array;
     const normals = bodyGeo.attributes.normal.array as Float32Array;
     const colors = bodyGeo.attributes.color.array as Float32Array;
+    const uvs = bodyGeo.attributes.uv.array as Float32Array;
 
     for (let i = 0; i <= S; i++) {
       const f = i / S;
@@ -346,8 +465,13 @@ export function SerpentDragon({
       segRgt.current[i].copy(_right);
       segUp.current[i].copy(_localUp);
 
-      // Track head
-      if (i === 4) {
+      // Track snout tip for fire emission
+      if (i === 2) {
+        snoutPos.current.copy(center);
+        snoutDir.current.copy(_forward);
+      }
+      // Track cranium for head group placement
+      if (i === 7) {
         headPos.current.copy(center);
         headDir.current.copy(_forward);
       }
@@ -416,18 +540,24 @@ export function SerpentDragon({
         colors[idx3] = cr * shade;
         colors[idx3 + 1] = cg * shade;
         colors[idx3 + 2] = cb * shade;
+
+        // UVs for scale pattern
+        const idx2 = (i * (R + 1) + j) * 2;
+        uvs[idx2] = j / R;
+        uvs[idx2 + 1] = f;
       }
     }
 
     bodyGeo.attributes.position.needsUpdate = true;
     bodyGeo.attributes.normal.needsUpdate = true;
     bodyGeo.attributes.color.needsUpdate = true;
+    bodyGeo.attributes.uv.needsUpdate = true;
     bodyGeo.computeBoundingSphere();
 
     // ─── Head group ──────────────────────────────────────
 
     if (headGroupRef.current) {
-      const hs = 4; // head center segment
+      const hs = 7; // cranium center segment
       headGroupRef.current.position.copy(segPos.current[hs]);
       _rotMat.makeBasis(
         segRgt.current[hs],
@@ -443,7 +573,7 @@ export function SerpentDragon({
     if (mane) {
       let mi = 0;
       const step = Math.max(1, Math.floor(S / BODY.maneCount));
-      for (let i = 2; i < S - 2 && mi < BODY.maneCount; i += step, mi++) {
+      for (let i = 5; i < S - 2 && mi < BODY.maneCount; i += step, mi++) {
         const f = i / S;
         const p = segPos.current[i];
         const fwd = segFwd.current[i];
@@ -455,12 +585,13 @@ export function SerpentDragon({
         // Position at top of body
         _pos.copy(p).addScaledVector(up, rV * 0.95);
 
-        // Height profile
+        // Height profile — dragon spine rhythm
         let hScale = 1.0;
-        if (f < 0.2) hScale = 1.6;
-        else if (f < 0.3) hScale = 1.2;
-        else if (f < 0.6) hScale = 0.85;
-        else hScale = lerp(0.7, 0.3, (f - 0.6) / 0.4);
+        if (f < 0.10) hScale = 2.0;       // Head crest — tallest
+        else if (f < 0.18) hScale = 1.8;  // Neck — still prominent
+        else if (f < 0.30) hScale = 1.2;  // Shoulders
+        else if (f < 0.55) hScale = 0.8;  // Body
+        else hScale = lerp(0.6, 0.2, (f - 0.55) / 0.45);
 
         const offsets = maneOffsets[mi];
         hScale *= offsets.heightScale;
@@ -514,8 +645,8 @@ export function SerpentDragon({
 
     // ─── Limbs ───────────────────────────────────────────
 
-    const armSeg = Math.floor(S * 0.30);
-    const legSeg = Math.floor(S * 0.56);
+    const armSeg = Math.floor(S * 0.24);
+    const legSeg = Math.floor(S * 0.50);
 
     function positionLimb(
       ref: React.RefObject<THREE.Group>,
@@ -551,7 +682,7 @@ export function SerpentDragon({
 
     // ─── Lights ──────────────────────────────────────────
 
-    if (headLightRef.current) headLightRef.current.position.copy(headPos.current);
+    if (headLightRef.current) headLightRef.current.position.copy(snoutPos.current);
     if (eyeLightRef.current) eyeLightRef.current.position.copy(headPos.current);
 
     // ─── Fire particles ──────────────────────────────────
@@ -563,6 +694,18 @@ export function SerpentDragon({
         nextFireTime.current =
           FIRE.intervalMin + Math.random() * (FIRE.intervalMax - FIRE.intervalMin);
       }
+    }
+
+    // Decay fire light intensity
+    fireIntensityRef.current += (0.8 - fireIntensityRef.current) * (1 - Math.exp(-5 * delta));
+    if (headLightRef.current) {
+      headLightRef.current.intensity = fireIntensityRef.current;
+      const t = Math.min(1, (fireIntensityRef.current - 0.8) / 1.7);
+      headLightRef.current.color.setRGB(
+        lerp(0.77, 1.0, t),
+        lerp(0.12, 0.4, t),
+        lerp(0.23, 0.13, t)
+      );
     }
 
     const fire = fireRef.current;
@@ -580,13 +723,26 @@ export function SerpentDragon({
             p.pos.addScaledVector(p.vel, delta);
             p.vel.y += delta * 0.35;
             const lifeFrac = p.life / p.maxLife;
+            const ageFrac = 1 - lifeFrac;
+
+            // Turbulence
+            const turb = Math.sin(p.seed + phase * 4) * 0.03 * lifeFrac;
             _dummy.position.copy(p.pos);
-            _dummy.scale.setScalar(lifeFrac * p.scale);
-            const ci = Math.min(
-              FIRE_COLORS.length - 1,
-              Math.floor((1 - lifeFrac) * FIRE_COLORS.length)
-            );
+            _dummy.position.x += turb;
+            _dummy.position.z += Math.cos(p.seed + phase * 3.5) * 0.02 * lifeFrac;
+
+            // Bell-curve scale: grow fast in first 20%, then shrink
+            const growPhase = Math.min(1, ageFrac / 0.2);
+            const shrinkPhase = lifeFrac;
+            _dummy.scale.setScalar(growPhase * shrinkPhase * p.scale * 2);
+
+            // Smooth color lerp between FIRE_COLORS
+            const colorPos = ageFrac * (FIRE_COLORS.length - 1);
+            const ci = Math.min(FIRE_COLORS.length - 2, Math.floor(colorPos));
+            const ct = colorPos - ci;
             _color.copy(FIRE_COLORS[ci]);
+            _lerpColor.copy(FIRE_COLORS[ci + 1]);
+            _color.lerp(_lerpColor, ct);
             fire.setColorAt(i, _color);
           }
         } else {
@@ -610,26 +766,37 @@ export function SerpentDragon({
       if (!pool[i].active) {
         const p = pool[i];
         p.active = true;
-        p.pos.copy(headPos.current).addScaledVector(headDir.current, 0.12);
-        p.pos.x += (Math.random() - 0.5) * 0.06;
-        p.pos.y += (Math.random() - 0.5) * 0.06;
-        p.pos.z += (Math.random() - 0.5) * 0.06;
+
+        // Distribute spawn along stream length (closer to mouth = more dense)
+        const streamT = Math.random() * Math.random() * FIRE.streamLength;
+        p.pos.copy(snoutPos.current).addScaledVector(snoutDir.current, 0.08 + streamT);
+
+        // Cone spread widens with distance from mouth
+        const spread = streamT * FIRE.coneAngle * 4;
+        p.pos.x += (Math.random() - 0.5) * spread;
+        p.pos.y += (Math.random() - 0.5) * spread;
+        p.pos.z += (Math.random() - 0.5) * spread;
+
+        // Velocity: fast along head direction with lateral spread
+        _fireVelTemp.set(
+          (Math.random() - 0.5) * 0.4,
+          (Math.random() - 0.3) * 0.3,
+          (Math.random() - 0.5) * 0.4
+        );
         p.vel
-          .copy(headDir.current)
-          .multiplyScalar(1.2 + Math.random() * 0.8)
-          .add(
-            new THREE.Vector3(
-              (Math.random() - 0.5) * 0.3,
-              (Math.random() - 0.3) * 0.3,
-              (Math.random() - 0.5) * 0.3
-            )
-          );
-        p.maxLife = 0.25 + Math.random() * 0.3;
+          .copy(snoutDir.current)
+          .multiplyScalar(1.5 + Math.random() * 1.0)
+          .add(_fireVelTemp);
+
+        p.maxLife = FIRE.lifetimeMin + Math.random() * (FIRE.lifetimeMax - FIRE.lifetimeMin);
         p.life = p.maxLife;
-        p.scale = 0.35 + Math.random() * 0.4;
+        p.scale = 0.5 + Math.random() * 0.7;
         emitted++;
       }
     }
+
+    // Spike fire light intensity
+    fireIntensityRef.current = 2.5;
   }
 
   // ─── Limb sub-component ─────────────────────────────────
@@ -637,29 +804,11 @@ export function SerpentDragon({
   function LimbGroup({ innerRef }: { innerRef: React.RefObject<THREE.Group> }) {
     return (
       <group ref={innerRef}>
-        <mesh geometry={upperLimbGeo} material={limbMat} position={[0, -0.05, 0]} />
-        <mesh
-          geometry={lowerLimbGeo}
-          material={limbMat}
-          position={[0, -0.13, 0]}
-        />
-        <mesh
-          geometry={clawGeo}
-          material={clawMat}
-          position={[-0.012, -0.19, 0]}
-          rotation={[0, 0, 0.2]}
-        />
-        <mesh
-          geometry={clawGeo}
-          material={clawMat}
-          position={[0.012, -0.19, 0]}
-          rotation={[0, 0, -0.2]}
-        />
-        <mesh
-          geometry={clawGeo}
-          material={clawMat}
-          position={[0, -0.195, -0.008]}
-        />
+        <mesh geometry={upperLimbGeo} material={limbMat} position={[0, -0.06, 0]} />
+        <mesh geometry={lowerLimbGeo} material={limbMat} position={[0, -0.16, 0]} />
+        <mesh geometry={clawGeo} material={clawMat} position={[-0.015, -0.24, 0]} rotation={[0, 0, 0.2]} />
+        <mesh geometry={clawGeo} material={clawMat} position={[0.015, -0.24, 0]} rotation={[0, 0, -0.2]} />
+        <mesh geometry={clawGeo} material={clawMat} position={[0, -0.245, -0.01]} />
       </group>
     );
   }
@@ -671,78 +820,136 @@ export function SerpentDragon({
       {/* Smooth body tube */}
       <mesh geometry={bodyGeo} material={bodyMat} />
 
-      {/* Head details */}
+      {/* Head details — dragon anatomy */}
       <group ref={headGroupRef}>
-        {/* Left eye: local X = body right, local -Z = forward */}
-        <group position={[-0.38, 0.06, -0.08]}>
+        {/* Upper snout — tapered forward, angular */}
+        <mesh
+          geometry={snoutGeo}
+          material={headMat}
+          position={[0, 0.04, -0.22]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          scale={[1, 1, 0.65]}
+        />
+
+        {/* Lower jaw — angled open */}
+        <mesh
+          geometry={jawGeo}
+          material={headMat}
+          position={[0, -0.1, -0.18]}
+          rotation={[-Math.PI / 2 + 0.18, 0, 0]}
+          scale={[0.85, 1, 0.45]}
+        />
+
+        {/* Nose bridge ridge */}
+        <mesh
+          geometry={crownSpikeGeo}
+          material={hornMat}
+          position={[0, 0.14, -0.2]}
+          rotation={[-0.3, 0, 0]}
+          scale={[0.6, 0.5, 0.6]}
+        />
+
+        {/* Eyes — set into cranium, predatory */}
+        <group position={[-0.35, 0.1, -0.12]}>
           <mesh geometry={eyeGeo} material={eyeWhiteMat} />
-          <mesh
-            geometry={pupilGeo}
-            material={pupilMat}
-            position={[-0.03, 0.005, -0.015]}
-          />
+          <mesh geometry={pupilGeo} material={pupilMat} position={[-0.025, 0.005, -0.02]} />
         </group>
-        {/* Right eye */}
-        <group position={[0.38, 0.06, -0.08]}>
+        <group position={[0.35, 0.1, -0.12]}>
           <mesh geometry={eyeGeo} material={eyeWhiteMat} />
-          <mesh
-            geometry={pupilGeo}
-            material={pupilMat}
-            position={[0.03, 0.005, -0.015]}
-          />
+          <mesh geometry={pupilGeo} material={pupilMat} position={[0.025, 0.005, -0.02]} />
         </group>
-        {/* Horns — sweep back and up */}
+
+        {/* Horns — large, sweeping back dramatically */}
         <mesh
           geometry={hornGeo}
           material={hornMat}
-          position={[-0.14, 0.35, 0.06]}
-          rotation={[0.5, 0, -0.3]}
+          position={[-0.2, 0.4, 0.06]}
+          rotation={[0.7, 0, -0.35]}
         />
         <mesh
           geometry={hornGeo}
           material={hornMat}
-          position={[0.14, 0.35, 0.06]}
-          rotation={[0.5, 0, 0.3]}
+          position={[0.2, 0.4, 0.06]}
+          rotation={[0.7, 0, 0.35]}
         />
-        {/* Whiskers — 2 per side, sweeping forward and out */}
+
+        {/* Crown spikes — between and behind horns */}
+        <mesh geometry={crownSpikeGeo} material={hornMat} position={[0, 0.34, 0.02]} />
         <mesh
-          geometry={whiskerGeo}
+          geometry={crownSpikeGeo}
           material={hornMat}
-          position={[-0.22, -0.02, -0.18]}
-          rotation={[0.1, 0, -0.6]}
-        />
-        <mesh
-          geometry={whiskerGeo}
-          material={hornMat}
-          position={[0.22, -0.02, -0.18]}
-          rotation={[0.1, 0, 0.6]}
+          position={[-0.09, 0.32, 0.08]}
+          rotation={[0.3, 0, -0.2]}
+          scale={[0.8, 0.8, 0.8]}
         />
         <mesh
-          geometry={whiskerGeo}
+          geometry={crownSpikeGeo}
           material={hornMat}
-          position={[-0.18, -0.06, -0.22]}
-          rotation={[-0.15, 0, -0.8]}
+          position={[0.09, 0.32, 0.08]}
+          rotation={[0.3, 0, 0.2]}
+          scale={[0.8, 0.8, 0.8]}
         />
-        <mesh
-          geometry={whiskerGeo}
-          material={hornMat}
-          position={[0.18, -0.06, -0.22]}
-          rotation={[-0.15, 0, 0.8]}
-        />
-        {/* Brow ridges — small cylinders */}
+
+        {/* Brow ridges — thick, angular, menacing */}
         <mesh
           geometry={whiskerGeo}
           material={limbMat}
-          position={[-0.28, 0.12, -0.06]}
-          rotation={[0, 0, -1.2]}
-          scale={[1.2, 0.35, 1.2]}
+          position={[-0.3, 0.16, -0.08]}
+          rotation={[0, 0, -1.0]}
+          scale={[1.8, 0.5, 1.8]}
         />
         <mesh
           geometry={whiskerGeo}
           material={limbMat}
-          position={[0.28, 0.12, -0.06]}
-          rotation={[0, 0, 1.2]}
-          scale={[1.2, 0.35, 1.2]}
+          position={[0.3, 0.16, -0.08]}
+          rotation={[0, 0, 1.0]}
+          scale={[1.8, 0.5, 1.8]}
+        />
+
+        {/* Cheekbone ridges */}
+        <mesh
+          geometry={whiskerGeo}
+          material={limbMat}
+          position={[-0.33, 0, -0.05]}
+          rotation={[0.3, 0, -0.6]}
+          scale={[1.5, 0.4, 1.5]}
+        />
+        <mesh
+          geometry={whiskerGeo}
+          material={limbMat}
+          position={[0.33, 0, -0.05]}
+          rotation={[0.3, 0, 0.6]}
+          scale={[1.5, 0.4, 1.5]}
+        />
+
+        {/* Whiskers — long, sweeping, eastern dragon language */}
+        <mesh
+          geometry={whiskerGeo}
+          material={hornMat}
+          position={[-0.2, -0.04, -0.25]}
+          rotation={[0.1, 0, -0.5]}
+          scale={[1, 1.5, 1]}
+        />
+        <mesh
+          geometry={whiskerGeo}
+          material={hornMat}
+          position={[0.2, -0.04, -0.25]}
+          rotation={[0.1, 0, 0.5]}
+          scale={[1, 1.5, 1]}
+        />
+        <mesh
+          geometry={whiskerGeo}
+          material={hornMat}
+          position={[-0.16, -0.08, -0.28]}
+          rotation={[-0.1, 0, -0.7]}
+          scale={[1, 1.3, 1]}
+        />
+        <mesh
+          geometry={whiskerGeo}
+          material={hornMat}
+          position={[0.16, -0.08, -0.28]}
+          rotation={[-0.1, 0, 0.7]}
+          scale={[1, 1.3, 1]}
         />
       </group>
 
@@ -766,19 +973,19 @@ export function SerpentDragon({
         frustumCulled={false}
       />
 
-      {/* Lighting */}
+      {/* Lighting — follows dragon head */}
       <pointLight
         ref={headLightRef}
-        intensity={0.5}
+        intensity={0.8}
         color="#c41e3a"
-        distance={4}
+        distance={6}
         decay={2}
       />
       <pointLight
         ref={eyeLightRef}
-        intensity={0.25}
+        intensity={0.4}
         color="#d4a257"
-        distance={3}
+        distance={4}
         decay={2}
       />
     </>

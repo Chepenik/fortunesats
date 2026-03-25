@@ -37,20 +37,24 @@ export const ORBIT = {
 
 export const BODY = {
   tubeSegments: 100,
-  radialSegments: 14,
-  scale: 0.19,
+  radialSegments: 16,
+  scale: 0.24,
   spacing: 0.026,
-  maneCount: 38,
+  maneCount: 48,
 } as const;
 
 // ─── Fire ─────────────────────────────────────────────────
 
 export const FIRE = {
-  maxParticles: 16,
-  intervalMin: 7,
-  intervalMax: 12,
-  burstMin: 4,
-  burstMax: 7,
+  maxParticles: 64,
+  intervalMin: 3,
+  intervalMax: 6,
+  burstMin: 12,
+  burstMax: 20,
+  streamLength: 0.4,
+  coneAngle: 0.15,
+  lifetimeMin: 0.4,
+  lifetimeMax: 0.9,
 } as const;
 
 // ─── Utilities ────────────────────────────────────────────
@@ -62,23 +66,34 @@ export function lerp(a: number, b: number, t: number) {
 // ─── Body Radius Profile ─────────────────────────────────
 
 export function getBodyRadius(f: number): number {
-  if (f < 0.03) return lerp(0.5, 1.2, f / 0.03);
-  if (f < 0.07) return lerp(1.2, 2.5, (f - 0.03) / 0.04);
-  if (f < 0.15) return lerp(2.5, 2.6, (f - 0.07) / 0.08);
-  if (f < 0.22) return lerp(2.6, 1.2, (f - 0.15) / 0.07);
-  if (f < 0.30) return lerp(1.2, 2.1, (f - 0.22) / 0.08);
-  if (f < 0.56) return lerp(2.1, 2.0, (f - 0.30) / 0.26);
-  if (f < 0.75) return lerp(2.0, 1.0, (f - 0.56) / 0.19);
-  if (f < 0.88) return lerp(1.0, 0.4, (f - 0.75) / 0.13);
-  return lerp(0.4, 0.08, (f - 0.88) / 0.12);
+  // Narrow snout tip
+  if (f < 0.02) return lerp(0.3, 0.8, f / 0.02);
+  // Snout builds up
+  if (f < 0.05) return lerp(0.8, 1.8, (f - 0.02) / 0.03);
+  // Cranium — widest part of head
+  if (f < 0.10) return lerp(1.8, 3.0, (f - 0.05) / 0.05);
+  // Dramatic neck taper — key dragon silhouette
+  if (f < 0.18) return lerp(3.0, 0.9, (f - 0.10) / 0.08);
+  // Chest / shoulders build up
+  if (f < 0.28) return lerp(0.9, 2.5, (f - 0.18) / 0.10);
+  // Main body — gradual taper
+  if (f < 0.55) return lerp(2.5, 2.2, (f - 0.28) / 0.27);
+  // Body → tail transition
+  if (f < 0.75) return lerp(2.2, 0.9, (f - 0.55) / 0.20);
+  // Tail narrows
+  if (f < 0.88) return lerp(0.9, 0.3, (f - 0.75) / 0.13);
+  // Tail whip
+  return lerp(0.3, 0.05, (f - 0.88) / 0.12);
 }
 
 /** Elliptical cross-section radii (h=horizontal, v=vertical). */
 export function getCrossRadii(f: number): { h: number; v: number } {
   const base = getBodyRadius(f);
-  if (f < 0.15) return { h: base * 1.35, v: base * 0.75 }; // head: wide, flat
-  if (f < 0.22) return { h: base * 1.05, v: base * 0.95 }; // neck: slightly oval
-  return { h: base * 0.92, v: base * 1.08 }; // body/tail: slightly tall
+  if (f < 0.05) return { h: base * 0.75, v: base * 1.3 };   // snout: tall, narrow
+  if (f < 0.10) return { h: base * 1.15, v: base * 1.0 };   // cranium: wide, round
+  if (f < 0.18) return { h: base * 0.95, v: base * 1.1 };   // neck: slightly tall
+  if (f < 0.30) return { h: base * 1.1, v: base * 0.95 };   // chest: broad shoulders
+  return { h: base * 0.92, v: base * 1.08 };                 // body/tail: sleek
 }
 
 // ─── Curve Evaluation ─────────────────────────────────────

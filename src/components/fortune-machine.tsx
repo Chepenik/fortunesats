@@ -56,7 +56,8 @@ export function FortuneMachine() {
   const [copied, setCopied] = useState<string | null>(null);
   const [hasNativeShare, setHasNativeShare] = useState(false);
   const [waitingSecs, setWaitingSecs] = useState(0);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [checkMsg, setCheckMsg] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const variantRef = useRef<ShareVariant>(pickVariant());
 
@@ -72,6 +73,8 @@ export function FortuneMachine() {
         timerRef.current = null;
       }
       setWaitingSecs(0);
+      setCheckMsg(null);
+      setChecking(false);
       return;
     }
     timerRef.current = setInterval(() => {
@@ -85,56 +88,29 @@ export function FortuneMachine() {
     };
   }, [state.step]);
 
-  /* ── Poll for external wallet payment (1s interval, 5 min timeout) ── */
-  useEffect(() => {
-    if (state.step !== "invoice") {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
-      return;
-    }
-
-    const { paymentHash } = state;
-    let pollCount = 0;
-    const MAX_POLLS = 300; // 300 × 1s = 5 minutes
-
-    const checkPayment = async () => {
-      pollCount++;
-      if (pollCount > MAX_POLLS) {
-        if (pollRef.current) clearInterval(pollRef.current);
-        pollRef.current = null;
-        setState({ step: "error", message: "Invoice expired. Please try again." });
-        return;
-      }
-      try {
-        const res = await fetch(
-          `/api/fortune/status?paymentHash=${encodeURIComponent(paymentHash)}`,
-        );
-        if (!res.ok) return;
+  /* ── Manual payment check (replaces polling) ── */
+  const checkPaymentStatus = useCallback(async () => {
+    if (state.step !== "invoice") return;
+    setChecking(true);
+    setCheckMsg(null);
+    try {
+      const res = await fetch(
+        `/api/fortune/status?paymentHash=${encodeURIComponent(state.paymentHash)}`,
+      );
+      if (res.ok) {
         const data = await res.json();
         if (data.paid) {
-          if (pollRef.current) clearInterval(pollRef.current);
-          pollRef.current = null;
           variantRef.current = pickVariant();
-          // Brief "revealing" state for smooth transition
           setState({ step: "revealing", fortune: data.fortune, timestamp: data.timestamp });
+          return;
         }
-      } catch {
-        /* silently retry */
       }
-    };
-
-    // Immediate first check, then every 1s
-    checkPayment();
-    pollRef.current = setInterval(checkPayment, 1000);
-
-    return () => {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
-    };
+      setCheckMsg("Payment not detected yet. Wait a moment and try again.");
+    } catch {
+      setCheckMsg("Could not reach server. Please try again.");
+    } finally {
+      setChecking(false);
+    }
   }, [state]);
 
   /* ── "Revealing" → fortune transition (brief suspense) ── */
@@ -322,11 +298,7 @@ export function FortuneMachine() {
                 <div className="flex items-center gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-lacquer animate-glow-pulse" />
                   <span className="text-xs text-gold/50 font-mono tracking-wide">
-                    {waitingSecs < 5
-                      ? "Awaiting payment"
-                      : waitingSecs < 20
-                        ? "Listening for payment\u2026"
-                        : "Still checking\u2026 this can take up to 30s"}
+                    Pay with your wallet, then confirm below
                   </span>
                 </div>
                 <span className="font-mono text-xs text-ember/60">
@@ -388,17 +360,33 @@ export function FortuneMachine() {
               </button>
             </div>
 
-            {/* Manual claim after waiting — webhook is unreliable */}
-            {waitingSecs > 15 && (
+            {/* Manual payment check — replaces auto-polling */}
+            <div className="space-y-2">
+              <button
+                onClick={checkPaymentStatus}
+                disabled={checking}
+                className="btn-jade w-full h-11 rounded-xl text-sm font-medium cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {checking ? "Checking\u2026" : "I\u2019ve Paid \u2014 Check Now"}
+              </button>
+              {checkMsg && (
+                <p className="text-[10px] text-center text-gold/30 leading-relaxed">
+                  {checkMsg}
+                </p>
+              )}
+            </div>
+
+            {/* Direct claim fallback after waiting — for unreliable webhook */}
+            {waitingSecs > 20 && (
               <div className="space-y-2">
                 <button
                   onClick={claimFortune}
-                  className="btn-lacquer w-full h-11 rounded-xl text-sm font-medium cursor-pointer active:scale-[0.98]"
+                  className="w-full h-9 rounded-lg text-xs text-gold/40 hover:text-gold/60 transition-colors cursor-pointer"
                 >
-                  I&apos;ve Paid — Reveal My Fortune
+                  Payment stuck? Reveal fortune directly
                 </button>
-                <p className="text-[10px] text-center text-gold/20 leading-relaxed">
-                  Payment confirmation can be slow. If you&apos;ve already paid, tap above.
+                <p className="text-[10px] text-center text-gold/15 leading-relaxed">
+                  If you&apos;ve paid but it&apos;s not detected, tap above.
                 </p>
               </div>
             )}
