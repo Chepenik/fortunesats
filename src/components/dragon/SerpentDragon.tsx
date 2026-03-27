@@ -40,10 +40,10 @@ interface FireParticle {
 }
 
 const FIRE_COLORS = [
-  new THREE.Color("#ffffff"),
-  new THREE.Color("#00ffff"),
-  new THREE.Color("#bf00ff"),
-  new THREE.Color("#ff00aa"),
+  new THREE.Color("#ffffcc"),
+  new THREE.Color("#ffd700"),
+  new THREE.Color("#ff6600"),
+  new THREE.Color("#cc0000"),
 ];
 
 function createFirePool(): FireParticle[] {
@@ -146,17 +146,17 @@ export function SerpentDragon({
   const bodyMat = useMemo(() => {
     const mat = new THREE.MeshPhysicalMaterial({
       vertexColors: true,
-      roughness: 0.15,
-      metalness: 0.25,
-      clearcoat: 0.7,
-      clearcoatRoughness: 0.1,
-      sheen: 0.5,
-      sheenRoughness: 0.3,
-      sheenColor: new THREE.Color("#00ffff"),
-      iridescence: 0.4,
-      iridescenceIOR: 1.5,
-      emissive: new THREE.Color("#1a0a3e"),
-      emissiveIntensity: 0.15,
+      roughness: 0.12,
+      metalness: 0.35,
+      clearcoat: 0.8,
+      clearcoatRoughness: 0.08,
+      sheen: 0.6,
+      sheenRoughness: 0.25,
+      sheenColor: new THREE.Color("#ffd700"),
+      iridescence: 0.3,
+      iridescenceIOR: 1.4,
+      emissive: new THREE.Color("#331100"),
+      emissiveIntensity: 0.12,
     });
 
     mat.onBeforeCompile = (shader) => {
@@ -187,26 +187,45 @@ export function SerpentDragon({
         `
       );
 
-      // Scale bump pattern
+      // Art Deco geometric pattern
       shader.fragmentShader = shader.fragmentShader.replace(
         "#include <normal_fragment_maps>",
         /* glsl */ `
         #include <normal_fragment_maps>
 
-        // ─── Procedural scale pattern ───
+        // ─── Art Deco procedural pattern ───
         {
-          vec2 scaleUV = vScaleUv * vec2(28.0, 200.0);
-          dragonCell = floor(scaleUV);
-          vec2 local = fract(scaleUV);
-          // Offset every other row for hex-like pattern
-          if (mod(dragonCell.y, 2.0) > 0.5) local.x = fract(local.x + 0.5);
-          // Diamond distance for scale edge ridges
-          float d = abs(local.x - 0.5) + abs(local.y - 0.5);
-          dragonBump = smoothstep(0.35, 0.5, d) * 0.4;
-          // Perturb normal at scale edges
+          // Primary chevron/zigzag grid
+          vec2 decoUV = vScaleUv * vec2(24.0, 160.0);
+          dragonCell = floor(decoUV);
+          vec2 local = fract(decoUV);
+
+          // Chevron: mirror the x-axis every other row for zigzag
+          float rowMod = mod(dragonCell.y, 2.0);
+          float chevronX = rowMod > 0.5 ? 1.0 - local.x : local.x;
+
+          // Diamond shape — Art Deco staple
+          float diamond = abs(chevronX - 0.5) + abs(local.y - 0.5);
+          float diamondEdge = smoothstep(0.32, 0.48, diamond) * 0.5;
+
+          // Sunburst fan rays radiating from diamond center
+          vec2 fromCenter = local - 0.5;
+          float angle = atan(fromCenter.y, fromCenter.x);
+          float rays = abs(sin(angle * 6.0));
+          float rayPattern = smoothstep(0.3, 0.7, rays) * (1.0 - smoothstep(0.0, 0.35, diamond)) * 0.3;
+
+          // Stepped concentric borders (Art Deco framing)
+          float concentricD = max(abs(local.x - 0.5), abs(local.y - 0.5));
+          float stepped = smoothstep(0.38, 0.42, concentricD) * 0.25
+                        + smoothstep(0.44, 0.48, concentricD) * 0.2;
+
+          // Combine all layers
+          dragonBump = diamondEdge + rayPattern + stepped;
+
+          // Perturb normal for 3D relief
           float dBdx = dFdx(dragonBump);
           float dBdy = dFdy(dragonBump);
-          normal = normalize(normal + vec3(dBdx, dBdy, 0.0) * 2.5);
+          normal = normalize(normal + vec3(dBdx, dBdy, 0.0) * 3.5);
         }
         `
       );
@@ -217,44 +236,44 @@ export function SerpentDragon({
         /* glsl */ `
         #include <emissivemap_fragment>
 
-        // Neon belly glow — cyan/green emission
-        float bellyness = max(0.0, vColor.g * 1.2 - vColor.r * 0.5 - 0.2);
-        totalEmissiveRadiance += vec3(0.0, 1.0, 0.8) * bellyness * 0.25;
+        // Gold belly glow — warm emission
+        float bellyness = max(0.0, vColor.g * 0.8 + vColor.r * 0.5 - vColor.b * 2.0 - 0.3);
+        totalEmissiveRadiance += vec3(1.0, 0.75, 0.1) * bellyness * 0.2;
 
-        // Neon diamond edge glow — scales light up at edges
-        float edgeGlow = dragonBump * 0.6;
+        // Art Deco edge glow — geometric lines light up in warm neons
+        float edgeGlow = dragonBump * 0.7;
         float cellPhase = mod(dragonCell.x + dragonCell.y, 3.0);
         vec3 neonColor = cellPhase < 1.0
-          ? vec3(0.0, 1.0, 1.0)       // Cyan
+          ? vec3(1.0, 0.4, 0.0)       // Neon orange
           : cellPhase < 2.0
-            ? vec3(1.0, 0.0, 1.0)     // Magenta
-            : vec3(0.22, 1.0, 0.08);  // Neon green
+            ? vec3(1.0, 0.84, 0.0)    // Gold
+            : vec3(1.0, 0.1, 0.0);    // Neon red
         totalEmissiveRadiance += neonColor * edgeGlow;
 
-        // View-dependent shimmer — neon rainbow on scales
+        // View-dependent shimmer — molten gold on Art Deco facets
         float viewDot = abs(dot(normalize(vViewPosition), normal));
-        float shimmerStrength = (1.0 - viewDot) * dragonBump * 0.35;
+        float shimmerStrength = (1.0 - viewDot) * dragonBump * 0.4;
         totalEmissiveRadiance += vec3(
-          sin(dragonCell.x * 1.3 + viewDot * 8.0) * 0.5 + 0.5,
-          sin(dragonCell.y * 1.7 + viewDot * 8.0 + 2.0) * 0.5 + 0.5,
-          sin(dragonCell.x * 0.9 + viewDot * 8.0 + 4.0) * 0.5 + 0.5
+          sin(dragonCell.x * 1.3 + viewDot * 8.0) * 0.3 + 0.7,
+          sin(dragonCell.y * 1.7 + viewDot * 8.0 + 1.5) * 0.3 + 0.4,
+          sin(dragonCell.x * 0.9 + viewDot * 8.0 + 3.0) * 0.15 + 0.05
         ) * shimmerStrength;
         `
       );
     };
 
-    mat.customProgramCacheKey = () => "dragon-scales-neon-v2";
+    mat.customProgramCacheKey = () => "dragon-artdeco-v3";
     return mat;
   }, []);
 
   const eyeWhiteMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#ccffff",
+        color: "#fff5e0",
         roughness: 0.1,
         metalness: 0.05,
-        emissive: "#ccffff",
-        emissiveIntensity: 0.4,
+        emissive: "#fff5e0",
+        emissiveIntensity: 0.3,
       }),
     []
   );
@@ -262,11 +281,11 @@ export function SerpentDragon({
   const pupilMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#39ff14",
+        color: "#ff6600",
         roughness: 0.1,
         metalness: 0.3,
-        emissive: "#39ff14",
-        emissiveIntensity: 0.8,
+        emissive: "#ff6600",
+        emissiveIntensity: 0.7,
       }),
     []
   );
@@ -274,11 +293,11 @@ export function SerpentDragon({
   const hornMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#00ffff",
-        roughness: 0.15,
-        metalness: 0.4,
-        emissive: "#00ffff",
-        emissiveIntensity: 0.3,
+        color: "#ffd700",
+        roughness: 0.1,
+        metalness: 0.5,
+        emissive: "#ffaa00",
+        emissiveIntensity: 0.25,
       }),
     []
   );
@@ -286,12 +305,12 @@ export function SerpentDragon({
   const maneMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#ff00ff",
-        roughness: 0.25,
-        metalness: 0.15,
+        color: "#ff4400",
+        roughness: 0.2,
+        metalness: 0.2,
         side: THREE.DoubleSide,
-        emissive: "#ff00ff",
-        emissiveIntensity: 0.3,
+        emissive: "#ff4400",
+        emissiveIntensity: 0.25,
       }),
     []
   );
@@ -299,11 +318,11 @@ export function SerpentDragon({
   const limbMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#1a0a3e",
-        roughness: 0.25,
-        metalness: 0.2,
-        emissive: "#0d0d3b",
-        emissiveIntensity: 0.1,
+        color: "#2a0800",
+        roughness: 0.2,
+        metalness: 0.25,
+        emissive: "#1a0500",
+        emissiveIntensity: 0.08,
       }),
     []
   );
@@ -311,11 +330,11 @@ export function SerpentDragon({
   const clawMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#ccffff",
-        roughness: 0.2,
-        metalness: 0.15,
-        emissive: "#00ffff",
-        emissiveIntensity: 0.2,
+        color: "#ffd700",
+        roughness: 0.15,
+        metalness: 0.4,
+        emissive: "#ffaa00",
+        emissiveIntensity: 0.15,
       }),
     []
   );
@@ -323,11 +342,11 @@ export function SerpentDragon({
   const headMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#0d0d3b",
-        roughness: 0.2,
-        metalness: 0.2,
-        emissive: "#1a0a3e",
-        emissiveIntensity: 0.15,
+        color: "#1a0800",
+        roughness: 0.18,
+        metalness: 0.25,
+        emissive: "#331100",
+        emissiveIntensity: 0.1,
       }),
     []
   );
@@ -499,9 +518,9 @@ export function SerpentDragon({
       const rH = h * BODY.scale;
       const rV = v * BODY.scale;
 
-      // Neon diamond stripe check — alternating cyan and pink bands
-      const diamondStripe = Math.floor(i / 3) % 4;
-      const isDiamondBand = diamondStripe === 0 || diamondStripe === 2;
+      // Art Deco stripe — alternating amber and red chevron bands
+      const decoStripe = Math.floor(i / 3) % 5;
+      const isDiamondBand = decoStripe === 0 || decoStripe === 2 || decoStripe === 4;
 
       for (let j = 0; j <= R; j++) {
         const angle = (j / R) * Math.PI * 2;
@@ -547,13 +566,15 @@ export function SerpentDragon({
           cb = COLORS.body.b;
         }
 
-        // Neon diamond stripes — alternating cyan and pink
-        if (isDiamondBand && Math.abs(sinA) < 0.5) {
-          const bandColor = diamondStripe === 0 ? COLORS.band : COLORS.bandAlt;
-          const bandT = 1 - Math.abs(sinA) / 0.5; // fade toward edges
-          cr = lerp(cr, bandColor.r, bandT * 0.7);
-          cg = lerp(cg, bandColor.g, bandT * 0.7);
-          cb = lerp(cb, bandColor.b, bandT * 0.7);
+        // Art Deco chevron stripes — amber, gold, red
+        if (isDiamondBand && Math.abs(sinA) < 0.55) {
+          const bandColor = decoStripe === 0 ? COLORS.band
+            : decoStripe === 2 ? COLORS.belly
+            : COLORS.bandAlt;
+          const bandT = 1 - Math.abs(sinA) / 0.55; // fade toward edges
+          cr = lerp(cr, bandColor.r, bandT * 0.8);
+          cg = lerp(cg, bandColor.g, bandT * 0.8);
+          cb = lerp(cb, bandColor.b, bandT * 0.8);
         }
 
         // Subtle side shading
@@ -723,9 +744,9 @@ export function SerpentDragon({
       headLightRef.current.intensity = fireIntensityRef.current;
       const t = Math.min(1, (fireIntensityRef.current - 0.8) / 1.7);
       headLightRef.current.color.setRGB(
-        lerp(0.0, 0.75, t),
-        lerp(1.0, 0.0, t),
-        lerp(1.0, 1.0, t)
+        lerp(1.0, 1.0, t),
+        lerp(0.3, 0.6, t),
+        lerp(0.0, 0.1, t)
       );
     }
 
@@ -999,15 +1020,15 @@ export function SerpentDragon({
       {/* Lighting — follows dragon head */}
       <pointLight
         ref={headLightRef}
-        intensity={0.8}
-        color="#00ffff"
+        intensity={1.0}
+        color="#ff6600"
         distance={6}
         decay={2}
       />
       <pointLight
         ref={eyeLightRef}
-        intensity={0.6}
-        color="#39ff14"
+        intensity={0.5}
+        color="#ffd700"
         distance={4}
         decay={2}
       />

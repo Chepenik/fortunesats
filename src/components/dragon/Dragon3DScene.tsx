@@ -69,44 +69,44 @@ export function Dragon3DScene() {
       resize={{ debounce: 100 }}
     >
       <Suspense fallback={null}>
-        {/* Cool ambient — dim for neon contrast */}
-        <ambientLight intensity={0.35} color="#1a1a3e" />
+        {/* Warm dim ambient — lets neon glow pop */}
+        <ambientLight intensity={0.3} color="#1a0a00" />
 
-        {/* Key light — cool blue-white from upper-right */}
+        {/* Key light — warm gold from upper-right */}
         <directionalLight
           position={[8, 14, 6]}
-          intensity={1.0}
-          color="#aaccff"
+          intensity={1.2}
+          color="#ffd700"
         />
 
-        {/* Fill light — purple tint from opposite side */}
+        {/* Fill light — deep orange from opposite side */}
         <directionalLight
           position={[-6, 5, -4]}
-          intensity={0.35}
-          color="#8800cc"
+          intensity={0.4}
+          color="#ff6600"
         />
 
-        {/* Neon magenta rim from behind-right */}
+        {/* Neon red rim from behind-right */}
         <directionalLight
           position={[5, 3, -8]}
           intensity={0.6}
-          color="#ff00ff"
+          color="#ff2200"
         />
 
-        {/* Deep purple ambient glow from below */}
+        {/* Deep ember glow from below */}
         <pointLight
           position={[0, -4, 0]}
           intensity={0.3}
-          color="#6600cc"
+          color="#cc3300"
           distance={14}
           decay={2}
         />
 
-        {/* Cyan rim accent from behind-left */}
+        {/* Amber accent from behind-left */}
         <pointLight
           position={[-5, 6, -5]}
-          intensity={0.4}
-          color="#00ffff"
+          intensity={0.35}
+          color="#ffaa00"
           distance={12}
           decay={2}
         />
