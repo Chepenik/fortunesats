@@ -25,6 +25,7 @@ interface StoredPack {
 
 type PackStep =
   | { step: "idle" }
+  | { step: "loading" }
   | { step: "creating" }
   | {
       step: "awaiting-payment";
@@ -40,6 +41,7 @@ type PackStep =
       secret: string;
       address: string;
       amountSats: number;
+      expiresAt: string;
     }
   | {
       step: "celebration";
@@ -185,6 +187,8 @@ export function FortunePack() {
     const stored = loadPack();
     if (!stored) return;
 
+    setState({ step: "loading" });
+
     fetch(
       `/api/pack/status?orderId=${encodeURIComponent(stored.orderId)}&secret=${encodeURIComponent(stored.secret)}`,
     )
@@ -192,6 +196,7 @@ export function FortunePack() {
       .then((data) => {
         if (data.error) {
           clearPack();
+          setState({ step: "idle" });
           return;
         }
         if (data.status === "mempool" || data.status === "confirmed") {
@@ -220,9 +225,13 @@ export function FortunePack() {
           });
         } else {
           clearPack();
+          setState({ step: "idle" });
         }
       })
-      .catch(() => clearPack());
+      .catch(() => {
+        clearPack();
+        setState({ step: "idle" });
+      });
   }, []);
 
   /* ── Fire confetti when celebration state begins ── */
@@ -312,13 +321,14 @@ export function FortunePack() {
     }
     setTxidError(null);
 
-    const { orderId, secret, address, amountSats } = state;
+    const { orderId, secret, address, amountSats, expiresAt } = state;
     setState({
       step: "verifying",
       orderId,
       secret,
       address,
       amountSats,
+      expiresAt,
     });
 
     try {
@@ -335,7 +345,7 @@ export function FortunePack() {
           secret,
           address,
           amountSats,
-          expiresAt: "",
+          expiresAt,
         });
         return;
       }
@@ -358,7 +368,7 @@ export function FortunePack() {
           secret,
           address,
           amountSats,
-          expiresAt: "",
+          expiresAt,
         });
       }
     } catch {
@@ -369,7 +379,7 @@ export function FortunePack() {
         secret,
         address,
         amountSats,
-        expiresAt: "",
+        expiresAt,
       });
     }
   }, [state, txidInput]);
@@ -502,6 +512,18 @@ export function FortunePack() {
               <span className="text-gold/30">Paste txid</span>
               <GoldDot />
               <span className="text-gold/30">Fortunes</span>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ────────────────── LOADING (restoring from localStorage) ── */}
+        {state.step === "loading" && (
+          <motion.div key="loading" {...fadeUp} className="space-y-5">
+            <div className="flex flex-col items-center gap-5 py-10">
+              <OracleSpinner />
+              <p className="text-sm text-gold/50 tracking-wide">
+                Restoring your pack&hellip;
+              </p>
             </div>
           </motion.div>
         )}

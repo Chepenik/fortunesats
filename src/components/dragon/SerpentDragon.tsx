@@ -62,8 +62,10 @@ function createFirePool(): FireParticle[] {
 
 export function SerpentDragon({
   reducedMotion = false,
+  lowPower = false,
 }: {
   reducedMotion?: boolean;
+  lowPower?: boolean;
 }) {
   // Refs
   const headGroupRef = useRef<THREE.Group>(null!);
@@ -759,8 +761,10 @@ export function SerpentDragon({
 
   function emitFire() {
     const pool = firePool.current;
-    const count =
+    const rawCount =
       FIRE.burstMin + Math.floor(Math.random() * (FIRE.burstMax - FIRE.burstMin));
+    // On low-power devices, emit half as many particles
+    const count = lowPower ? Math.ceil(rawCount / 2) : rawCount;
     let emitted = 0;
     for (let i = 0; i < pool.length && emitted < count; i++) {
       if (!pool[i].active) {

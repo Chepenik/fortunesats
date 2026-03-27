@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { Check, Copy, Link2 } from "lucide-react";
+import confetti from "canvas-confetti";
+import { getStreak, recordFortune, type StreakData } from "@/lib/streak";
 import {
   pickVariant,
   buildXShareUrl,
@@ -58,11 +60,14 @@ export function FortuneMachine() {
   const [waitingSecs, setWaitingSecs] = useState(0);
   const [checking, setChecking] = useState(false);
   const [checkMsg, setCheckMsg] = useState<string | null>(null);
+  const [streak, setStreak] = useState<StreakData | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const variantRef = useRef<ShareVariant>(pickVariant());
+  const paymentHashRef = useRef<string | null>(null);
 
   useEffect(() => {
     setHasNativeShare(canNativeShare());
+    setStreak(getStreak());
   }, []);
 
   /* ── Elapsed timer for invoice state ── */
@@ -105,7 +110,7 @@ export function FortuneMachine() {
           return;
         }
       }
-      setCheckMsg("Payment not detected yet. Wait a moment and try again.");
+      setCheckMsg("Not confirmed yet \u2014 Lightning takes a moment. Try again in a few seconds.");
     } catch {
       setCheckMsg("Could not reach server. Please try again.");
     } finally {
@@ -123,6 +128,23 @@ export function FortuneMachine() {
     return () => clearTimeout(timer);
   }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /* ── Confetti + streak on fortune reveal ── */
+  useEffect(() => {
+    if (state.step !== "fortune") return;
+    // Record streak
+    const updated = recordFortune();
+    setStreak(updated);
+    // Fire confetti
+    const gold = "#d4a257";
+    const red = "#c41e3a";
+    const cyan = "#00c8d4";
+    confetti({ particleCount: 60, spread: 65, origin: { y: 0.6 }, colors: [gold, red, cyan, "#fff"], scalar: 1.1 });
+    setTimeout(() => {
+      confetti({ particleCount: 30, angle: 60, spread: 50, origin: { x: 0, y: 0.65 }, colors: [gold, red] });
+      confetti({ particleCount: 30, angle: 120, spread: 50, origin: { x: 1, y: 0.65 }, colors: [gold, cyan] });
+    }, 200);
+  }, [state.step]);
+
   /* ── Request fortune ── */
   const requestFortune = useCallback(async () => {
     setState({ step: "requesting" });
@@ -130,6 +152,7 @@ export function FortuneMachine() {
       const res = await fetch("/api/fortune");
       if (res.status === 402) {
         const data = await res.json();
+        paymentHashRef.current = data.paymentHash;
         setState({
           step: "invoice",
           invoice: data.invoice,
@@ -205,8 +228,12 @@ export function FortuneMachine() {
   /* ── Manual claim (fallback for broken webhook) ── */
   const claimFortune = useCallback(async () => {
     // Fetch a fortune directly — the user has already paid MDK
+    const hash = paymentHashRef.current;
     try {
-      const res = await fetch("/api/fortune/claim");
+      const url = hash
+        ? `/api/fortune/claim?paymentHash=${encodeURIComponent(hash)}`
+        : "/api/fortune/claim";
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         variantRef.current = pickVariant();
@@ -274,6 +301,30 @@ export function FortuneMachine() {
               <GoldDot />
               <span className="text-gold/30">Fortune</span>
             </div>
+
+            {/* Streak display */}
+            {streak && streak.current > 0 && (
+              <div className="space-y-2.5 pt-1">
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/8 to-transparent" />
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm">🔥</span>
+                    <span className="font-mono text-xs text-ember/70 font-medium">
+                      {streak.current}-day streak
+                    </span>
+                    {streak.best > streak.current && (
+                      <span className="font-mono text-[10px] text-gold/25">
+                        (best: {streak.best})
+                      </span>
+                    )}
+                  </div>
+                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/8 to-transparent" />
+                </div>
+                <p className="text-[10px] text-center text-gold/20 leading-relaxed">
+                  Your streak lives on this device &mdash; a personal ritual, just for you.
+                </p>
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -298,7 +349,7 @@ export function FortuneMachine() {
                 <div className="flex items-center gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-lacquer animate-glow-pulse" />
                   <span className="text-xs text-gold/50 font-mono tracking-wide">
-                    Pay with your wallet, then confirm below
+                    Scan QR &middot; Pay &middot; Tap confirm
                   </span>
                 </div>
                 <span className="font-mono text-xs text-ember/60">
@@ -376,17 +427,19 @@ export function FortuneMachine() {
               )}
             </div>
 
-            {/* Direct claim fallback after waiting — for unreliable webhook */}
-            {waitingSecs > 20 && (
+            {/* Direct claim fallback — covers webhook propagation delays */}
+            {waitingSecs > 15 && (
               <div className="space-y-2">
                 <button
                   onClick={claimFortune}
-                  className="w-full h-9 rounded-lg text-xs text-gold/40 hover:text-gold/60 transition-colors cursor-pointer"
+                  className="btn-jade w-full h-10 rounded-xl text-xs font-medium cursor-pointer active:scale-[0.98]"
                 >
-                  Payment stuck? Reveal fortune directly
+                  Already paid? Claim your fortune
                 </button>
-                <p className="text-[10px] text-center text-gold/15 leading-relaxed">
-                  If you&apos;ve paid but it&apos;s not detected, tap above.
+                <p className="text-[10px] text-center text-gold/20 leading-relaxed">
+                  Lightning confirmations can take a moment to propagate.
+                  <br />
+                  If you&apos;ve paid, tap above to reveal your fortune now.
                 </p>
               </div>
             )}
@@ -505,11 +558,33 @@ export function FortuneMachine() {
                   </span>
                 </motion.div>
 
+                {/* Streak badge */}
+                {streak && streak.current > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7, duration: 0.5, ease }}
+                    className="flex items-center justify-center gap-2"
+                  >
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ember/[0.08] border border-ember/15">
+                      <span className="text-sm">🔥</span>
+                      <span className="font-mono text-xs text-ember/80 font-medium">
+                        {streak.current}-day streak
+                      </span>
+                    </div>
+                    {streak.total > 1 && (
+                      <span className="font-mono text-[10px] text-gold/25">
+                        {streak.total} total
+                      </span>
+                    )}
+                  </motion.div>
+                )}
+
                 {/* Bottom ornamental line */}
                 <motion.div
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
-                  transition={{ delay: 0.7, duration: 0.8, ease }}
+                  transition={{ delay: 0.85, duration: 0.8, ease }}
                   className="dragon-line w-full origin-center"
                 />
               </div>

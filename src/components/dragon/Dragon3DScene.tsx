@@ -1,12 +1,43 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useSyncExternalStore } from "react";
 import { Canvas } from "@react-three/fiber";
 import { SerpentDragon } from "./SerpentDragon";
 
+/* ─── Reduced-motion subscription (lint-safe, no setState in effect) ── */
+
+function subscribeReducedMotion(cb: () => void) {
+  const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+}
+
+function getReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function getReducedMotionServer() {
+  return false;
+}
+
+/* ─── Low-power detection (module-scope, safe because ssr: false) ── */
+
+const IS_LOW_POWER = (() => {
+  if (typeof window === "undefined") return false;
+  const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+  const cores = navigator.hardwareConcurrency ?? 8;
+  const mem = (navigator as unknown as { deviceMemory?: number }).deviceMemory ?? 8;
+  return isTouch && (cores <= 4 || mem <= 4);
+})();
+
+/* ─── Component ──────────────────────────────────────────── */
+
 export function Dragon3DScene() {
-  const [mounted, setMounted] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
+  const reducedMotion = useSyncExternalStore(
+    subscribeReducedMotion,
+    getReducedMotion,
+    getReducedMotionServer,
+  );
 
   // Suppress THREE.Clock deprecation warning from @react-three/fiber internals
   // (R3F v9.x still uses Clock; fixed in v10 which is not yet stable)
@@ -16,21 +47,8 @@ export function Dragon3DScene() {
       if (typeof args[0] === "string" && args[0].includes("Clock")) return;
       origWarn.apply(console, args);
     };
-    return () => {
-      console.warn = origWarn;
-    };
+    return () => { console.warn = origWarn; };
   }, []);
-
-  useEffect(() => {
-    setMounted(true);
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReducedMotion(mq.matches);
-    const onChange = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-
-  if (!mounted) return null;
 
   return (
     <Canvas
@@ -40,11 +58,11 @@ export function Dragon3DScene() {
         near: 0.1,
         far: 60,
       }}
-      dpr={[1, 1.5]}
+      dpr={IS_LOW_POWER ? [1, 1] : [1, 1.5]}
       gl={{
         alpha: true,
-        antialias: true,
-        powerPreference: "high-performance",
+        antialias: !IS_LOW_POWER,
+        powerPreference: IS_LOW_POWER ? "default" : "high-performance",
         preserveDrawingBuffer: false,
       }}
       style={{ background: "transparent" }}
@@ -93,7 +111,7 @@ export function Dragon3DScene() {
           decay={2}
         />
 
-        <SerpentDragon reducedMotion={reducedMotion} />
+        <SerpentDragon reducedMotion={reducedMotion} lowPower={IS_LOW_POWER} />
       </Suspense>
     </Canvas>
   );
