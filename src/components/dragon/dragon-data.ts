@@ -10,17 +10,18 @@ import * as THREE from "three";
 // ─── Brand Palette ────────────────────────────────────────
 
 export const COLORS = {
-  body: new THREE.Color("#c41e3a"),
-  bodyDark: new THREE.Color("#7a1225"),
-  belly: new THREE.Color("#d4a257"),
-  mane: new THREE.Color("#e8a838"),
-  band: new THREE.Color("#d4a257"),
-  eyeWhite: new THREE.Color("#f0ece8"),
-  pupil: new THREE.Color("#d4a257"),
-  horn: new THREE.Color("#d4a257"),
-  whisker: new THREE.Color("#d4a257"),
-  claw: new THREE.Color("#f0ece4"),
-  tailTuft: new THREE.Color("#c41e3a"),
+  body: new THREE.Color("#0d0d3b"),       // Deep midnight blue base
+  bodyDark: new THREE.Color("#06061f"),    // Darker shade
+  belly: new THREE.Color("#00ffcc"),       // Neon cyan-green belly
+  mane: new THREE.Color("#ff00ff"),        // Hot magenta mane
+  band: new THREE.Color("#00ffff"),        // Neon cyan diamond bands
+  bandAlt: new THREE.Color("#ff00aa"),     // Neon pink alternate bands
+  eyeWhite: new THREE.Color("#ccffff"),    // Icy white glow
+  pupil: new THREE.Color("#39ff14"),       // Neon green pupils
+  horn: new THREE.Color("#00ffff"),        // Cyan horns
+  whisker: new THREE.Color("#bf00ff"),     // Electric purple whiskers
+  claw: new THREE.Color("#ccffff"),        // Icy neon claws
+  tailTuft: new THREE.Color("#ff00ff"),    // Magenta tail
 } as const;
 
 // ─── Orbit ────────────────────────────────────────────────

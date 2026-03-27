@@ -40,10 +40,10 @@ interface FireParticle {
 }
 
 const FIRE_COLORS = [
-  new THREE.Color("#ffffdd"),
-  new THREE.Color("#ffcc44"),
-  new THREE.Color("#ff6622"),
-  new THREE.Color("#c41e3a"),
+  new THREE.Color("#ffffff"),
+  new THREE.Color("#00ffff"),
+  new THREE.Color("#bf00ff"),
+  new THREE.Color("#ff00aa"),
 ];
 
 function createFirePool(): FireParticle[] {
@@ -146,17 +146,17 @@ export function SerpentDragon({
   const bodyMat = useMemo(() => {
     const mat = new THREE.MeshPhysicalMaterial({
       vertexColors: true,
-      roughness: 0.22,
-      metalness: 0.1,
-      clearcoat: 0.5,
-      clearcoatRoughness: 0.15,
-      sheen: 0.3,
-      sheenRoughness: 0.4,
-      sheenColor: new THREE.Color("#ff4466"),
-      iridescence: 0.15,
-      iridescenceIOR: 1.3,
-      emissive: new THREE.Color("#c41e3a"),
-      emissiveIntensity: 0.06,
+      roughness: 0.15,
+      metalness: 0.25,
+      clearcoat: 0.7,
+      clearcoatRoughness: 0.1,
+      sheen: 0.5,
+      sheenRoughness: 0.3,
+      sheenColor: new THREE.Color("#00ffff"),
+      iridescence: 0.4,
+      iridescenceIOR: 1.5,
+      emissive: new THREE.Color("#1a0a3e"),
+      emissiveIntensity: 0.15,
     });
 
     mat.onBeforeCompile = (shader) => {
@@ -217,34 +217,44 @@ export function SerpentDragon({
         /* glsl */ `
         #include <emissivemap_fragment>
 
-        // Belly glow — where vertex color leans gold/warm
-        float bellyness = max(0.0, vColor.r * 0.5 + vColor.g * 0.8 - vColor.b * 1.5 - 0.4);
-        totalEmissiveRadiance += vec3(0.8, 0.55, 0.2) * bellyness * 0.12;
+        // Neon belly glow — cyan/green emission
+        float bellyness = max(0.0, vColor.g * 1.2 - vColor.r * 0.5 - 0.2);
+        totalEmissiveRadiance += vec3(0.0, 1.0, 0.8) * bellyness * 0.25;
 
-        // View-dependent shimmer on scales
+        // Neon diamond edge glow — scales light up at edges
+        float edgeGlow = dragonBump * 0.6;
+        float cellPhase = mod(dragonCell.x + dragonCell.y, 3.0);
+        vec3 neonColor = cellPhase < 1.0
+          ? vec3(0.0, 1.0, 1.0)       // Cyan
+          : cellPhase < 2.0
+            ? vec3(1.0, 0.0, 1.0)     // Magenta
+            : vec3(0.22, 1.0, 0.08);  // Neon green
+        totalEmissiveRadiance += neonColor * edgeGlow;
+
+        // View-dependent shimmer — neon rainbow on scales
         float viewDot = abs(dot(normalize(vViewPosition), normal));
-        float shimmerStrength = (1.0 - viewDot) * dragonBump * 0.15;
+        float shimmerStrength = (1.0 - viewDot) * dragonBump * 0.35;
         totalEmissiveRadiance += vec3(
-          sin(dragonCell.x * 1.3 + viewDot * 6.0) * 0.5 + 0.5,
-          sin(dragonCell.y * 1.7 + viewDot * 6.0 + 2.0) * 0.5 + 0.5,
-          sin(dragonCell.x * 0.9 + viewDot * 6.0 + 4.0) * 0.5 + 0.5
+          sin(dragonCell.x * 1.3 + viewDot * 8.0) * 0.5 + 0.5,
+          sin(dragonCell.y * 1.7 + viewDot * 8.0 + 2.0) * 0.5 + 0.5,
+          sin(dragonCell.x * 0.9 + viewDot * 8.0 + 4.0) * 0.5 + 0.5
         ) * shimmerStrength;
         `
       );
     };
 
-    mat.customProgramCacheKey = () => "dragon-scales-v1";
+    mat.customProgramCacheKey = () => "dragon-scales-neon-v2";
     return mat;
   }, []);
 
   const eyeWhiteMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#f0ece8",
-        roughness: 0.2,
+        color: "#ccffff",
+        roughness: 0.1,
         metalness: 0.05,
-        emissive: "#f0ece8",
-        emissiveIntensity: 0.2,
+        emissive: "#ccffff",
+        emissiveIntensity: 0.4,
       }),
     []
   );
@@ -252,11 +262,11 @@ export function SerpentDragon({
   const pupilMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#d4a257",
-        roughness: 0.15,
+        color: "#39ff14",
+        roughness: 0.1,
         metalness: 0.3,
-        emissive: "#d4a257",
-        emissiveIntensity: 0.5,
+        emissive: "#39ff14",
+        emissiveIntensity: 0.8,
       }),
     []
   );
@@ -264,9 +274,11 @@ export function SerpentDragon({
   const hornMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#d4a257",
-        roughness: 0.2,
-        metalness: 0.35,
+        color: "#00ffff",
+        roughness: 0.15,
+        metalness: 0.4,
+        emissive: "#00ffff",
+        emissiveIntensity: 0.3,
       }),
     []
   );
@@ -274,12 +286,12 @@ export function SerpentDragon({
   const maneMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#e8a838",
-        roughness: 0.35,
-        metalness: 0.1,
+        color: "#ff00ff",
+        roughness: 0.25,
+        metalness: 0.15,
         side: THREE.DoubleSide,
-        emissive: "#e8a838",
-        emissiveIntensity: 0.08,
+        emissive: "#ff00ff",
+        emissiveIntensity: 0.3,
       }),
     []
   );
@@ -287,9 +299,11 @@ export function SerpentDragon({
   const limbMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#c41e3a",
-        roughness: 0.3,
-        metalness: 0.15,
+        color: "#1a0a3e",
+        roughness: 0.25,
+        metalness: 0.2,
+        emissive: "#0d0d3b",
+        emissiveIntensity: 0.1,
       }),
     []
   );
@@ -297,9 +311,11 @@ export function SerpentDragon({
   const clawMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#f0ece4",
-        roughness: 0.3,
-        metalness: 0.1,
+        color: "#ccffff",
+        roughness: 0.2,
+        metalness: 0.15,
+        emissive: "#00ffff",
+        emissiveIntensity: 0.2,
       }),
     []
   );
@@ -307,11 +323,11 @@ export function SerpentDragon({
   const headMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
-        color: "#b01830",
-        roughness: 0.25,
-        metalness: 0.15,
-        emissive: "#b01830",
-        emissiveIntensity: 0.08,
+        color: "#0d0d3b",
+        roughness: 0.2,
+        metalness: 0.2,
+        emissive: "#1a0a3e",
+        emissiveIntensity: 0.15,
       }),
     []
   );
@@ -483,8 +499,9 @@ export function SerpentDragon({
       const rH = h * BODY.scale;
       const rV = v * BODY.scale;
 
-      // Gold band check
-      const isGold = f > 0.30 && f < 0.55 && Math.floor(i / 3) % 6 === 0;
+      // Neon diamond stripe check — alternating cyan and pink bands
+      const diamondStripe = Math.floor(i / 3) % 4;
+      const isDiamondBand = diamondStripe === 0 || diamondStripe === 2;
 
       for (let j = 0; j <= R; j++) {
         const angle = (j / R) * Math.PI * 2;
@@ -530,11 +547,13 @@ export function SerpentDragon({
           cb = COLORS.body.b;
         }
 
-        // Gold band
-        if (isGold && Math.abs(sinA) < 0.45) {
-          cr = COLORS.band.r;
-          cg = COLORS.band.g;
-          cb = COLORS.band.b;
+        // Neon diamond stripes — alternating cyan and pink
+        if (isDiamondBand && Math.abs(sinA) < 0.5) {
+          const bandColor = diamondStripe === 0 ? COLORS.band : COLORS.bandAlt;
+          const bandT = 1 - Math.abs(sinA) / 0.5; // fade toward edges
+          cr = lerp(cr, bandColor.r, bandT * 0.7);
+          cg = lerp(cg, bandColor.g, bandT * 0.7);
+          cb = lerp(cb, bandColor.b, bandT * 0.7);
         }
 
         // Subtle side shading
@@ -704,9 +723,9 @@ export function SerpentDragon({
       headLightRef.current.intensity = fireIntensityRef.current;
       const t = Math.min(1, (fireIntensityRef.current - 0.8) / 1.7);
       headLightRef.current.color.setRGB(
-        lerp(0.77, 1.0, t),
-        lerp(0.12, 0.4, t),
-        lerp(0.23, 0.13, t)
+        lerp(0.0, 0.75, t),
+        lerp(1.0, 0.0, t),
+        lerp(1.0, 1.0, t)
       );
     }
 
@@ -981,14 +1000,14 @@ export function SerpentDragon({
       <pointLight
         ref={headLightRef}
         intensity={0.8}
-        color="#c41e3a"
+        color="#00ffff"
         distance={6}
         decay={2}
       />
       <pointLight
         ref={eyeLightRef}
-        intensity={0.4}
-        color="#d4a257"
+        intensity={0.6}
+        color="#39ff14"
         distance={4}
         decay={2}
       />
