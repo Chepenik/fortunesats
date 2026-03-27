@@ -1,11 +1,13 @@
 import { isPaid } from "@/lib/payment-store";
+import { getRedis } from "@/lib/redis";
 import { getRandomFortune } from "@/lib/fortunes";
 
+const FORTUNE_TTL = 86_400; // 24 hours
+
 /**
- * Cache generated fortunes per payment hash so repeated "I've Paid"
- * clicks return the same fortune instead of generating a new one.
+ * In-memory fortune cache (fast path). Redis is authoritative.
  */
-const fortuneCache = new Map<string, { fortune: string; timestamp: string }>();
+const localFortuneCache = new Map<string, { fortune: string; timestamp: string }>();
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -18,14 +20,42 @@ export async function GET(req: Request) {
     );
   }
 
-  const paid = isPaid(paymentHash);
+  const paid = await isPaid(paymentHash);
 
   if (paid) {
-    // Return cached fortune if we already generated one for this hash
-    let cached = fortuneCache.get(paymentHash);
+    // Check local cache first, then Redis, then generate
+    let cached = localFortuneCache.get(paymentHash);
+
     if (!cached) {
+      // Try Redis
+      try {
+        const redis = getRedis();
+        if (redis) {
+          const stored = await redis.get<{ fortune: string; timestamp: string }>(
+            `fortune:${paymentHash}`,
+          );
+          if (stored) {
+            cached = stored;
+            localFortuneCache.set(paymentHash, cached);
+          }
+        }
+      } catch {
+        // Redis read failed — fall through to generate
+      }
+    }
+
+    if (!cached) {
+      // Generate and persist to both caches
       cached = { fortune: getRandomFortune(), timestamp: new Date().toISOString() };
-      fortuneCache.set(paymentHash, cached);
+      localFortuneCache.set(paymentHash, cached);
+      try {
+        const redis = getRedis();
+        if (redis) {
+          await redis.set(`fortune:${paymentHash}`, cached, { ex: FORTUNE_TTL });
+        }
+      } catch {
+        // Best effort
+      }
     }
 
     return Response.json({

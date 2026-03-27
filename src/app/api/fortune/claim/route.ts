@@ -1,5 +1,8 @@
 import { getRandomFortune } from "@/lib/fortunes";
 import { isPaid } from "@/lib/payment-store";
+import { getRedis } from "@/lib/redis";
+
+const CLAIM_TTL = 86_400; // 24 hours
 
 /**
  * Fallback fortune endpoint for when the MDK webhook flow is broken
@@ -22,57 +25,45 @@ export async function GET(req: Request) {
   }
 
   // Check if already claimed via Redis (cross-instance safe)
-  const alreadyClaimed = await checkClaimed(paymentHash);
-  if (alreadyClaimed) {
-    return Response.json(
-      { error: { code: "already_claimed", message: "This payment has already been claimed" } },
-      { status: 409 },
-    );
+  try {
+    const redis = getRedis();
+    if (redis) {
+      const val = await redis.get(`claim:${paymentHash}`);
+      if (val !== null) {
+        return Response.json(
+          { error: { code: "already_claimed", message: "This payment has already been claimed" } },
+          { status: 409 },
+        );
+      }
+    }
+  } catch {
+    // Redis error = allow claim (fail open for demo)
   }
 
-  // Mark as claimed in Redis before returning fortune
-  await markClaimed(paymentHash);
+  // Atomically claim via SET NX — only one request wins
+  try {
+    const redis = getRedis();
+    if (redis) {
+      const acquired = await redis.set(`claim:${paymentHash}`, Date.now(), {
+        nx: true,
+        ex: CLAIM_TTL,
+      });
+      if (!acquired) {
+        return Response.json(
+          { error: { code: "already_claimed", message: "This payment has already been claimed" } },
+          { status: 409 },
+        );
+      }
+    }
+  } catch {
+    // Best effort
+  }
 
-  // If the payment was detected in-memory on this instance, great.
-  // If not, we still deliver — the user already paid MDK and the
-  // webhook may have landed on a different serverless instance.
-  const paidOnThisInstance = isPaid(paymentHash);
+  const paidInRedis = await isPaid(paymentHash);
 
   return Response.json({
     fortune: getRandomFortune(),
     timestamp: new Date().toISOString(),
-    verified: paidOnThisInstance,
+    verified: paidInRedis,
   });
-}
-
-/* ─── Redis claim tracking ──────────────────────────────── */
-
-async function getRedis() {
-  if (!process.env.UPSTASH_REDIS_REST_URL) return null;
-  const { Redis } = await import("@upstash/redis");
-  return new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-  });
-}
-
-async function checkClaimed(paymentHash: string): Promise<boolean> {
-  try {
-    const redis = await getRedis();
-    if (!redis) return false; // No Redis = dev mode, skip check
-    const val = await redis.get(`claim:${paymentHash}`);
-    return val !== null;
-  } catch {
-    return false; // Redis error = allow claim (fail open for demo)
-  }
-}
-
-async function markClaimed(paymentHash: string): Promise<void> {
-  try {
-    const redis = await getRedis();
-    if (!redis) return;
-    await redis.set(`claim:${paymentHash}`, 1, { ex: 86400 }); // 24h TTL
-  } catch {
-    // Best-effort — don't block fortune delivery
-  }
 }
