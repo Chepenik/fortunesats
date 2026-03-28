@@ -60,9 +60,11 @@ export async function GET(req: Request) {
   }
 
   const paidInRedis = await isPaid(paymentHash);
+  const fortune = getRandomFortune();
 
   return Response.json({
-    fortune: getRandomFortune(),
+    fortune: fortune.text,
+    rarity: fortune.rarity,
     timestamp: new Date().toISOString(),
     verified: paidInRedis,
   });

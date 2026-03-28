@@ -2,8 +2,10 @@ import { withPayment } from "@moneydevkit/nextjs/server";
 import { getRandomFortune } from "@/lib/fortunes";
 
 const handler = async () => {
+  const fortune = getRandomFortune();
   return Response.json({
-    fortune: getRandomFortune(),
+    fortune: fortune.text,
+    rarity: fortune.rarity,
     timestamp: new Date().toISOString(),
   });
 };

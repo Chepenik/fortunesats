@@ -16,6 +16,7 @@ import {
   SITE_URL,
   type ShareVariant,
 } from "@/lib/share";
+import { RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
 
 /* ─── Types ──────────────────────────────────────────────── */
 
@@ -29,8 +30,9 @@ type FlowState =
       paymentHash: string;
       amountSats: number;
     }
-  | { step: "revealing"; fortune: string; timestamp: string }
-  | { step: "fortune"; fortune: string; timestamp: string }
+  | { step: "revealing"; fortune: string; rarity: Rarity; timestamp: string }
+  | { step: "rarity-reveal"; fortune: string; rarity: Rarity; timestamp: string }
+  | { step: "fortune"; fortune: string; rarity: Rarity; timestamp: string }
   | { step: "error"; message: string };
 
 /* ─── Animation config ───────────────────────────────────── */
@@ -50,6 +52,45 @@ const scaleFade = {
   exit: { opacity: 0, scale: 0.97 },
   transition: { duration: 0.55, ease },
 };
+
+/* ─── Rarity confetti helpers ────────────────────────────── */
+
+function fireRarityConfetti(rarity: Rarity) {
+  if (rarity === "legendary") {
+    // Gold confetti burst
+    const gold = "#d4a257";
+    const brightGold = "#ffd700";
+    const warmGold = "#e8a838";
+    confetti({ particleCount: 100, spread: 80, origin: { y: 0.55 }, colors: [gold, brightGold, warmGold, "#fff8e1"], scalar: 1.3 });
+    setTimeout(() => {
+      confetti({ particleCount: 50, angle: 60, spread: 60, origin: { x: 0, y: 0.6 }, colors: [gold, brightGold] });
+      confetti({ particleCount: 50, angle: 120, spread: 60, origin: { x: 1, y: 0.6 }, colors: [warmGold, brightGold] });
+    }, 200);
+    setTimeout(() => {
+      confetti({ particleCount: 40, spread: 100, origin: { y: 0.5 }, colors: [gold, brightGold, "#fff"], scalar: 0.9 });
+    }, 450);
+  } else if (rarity === "epic") {
+    // Purple confetti burst (smaller)
+    const purple = "#a855f7";
+    const violet = "#8b5cf6";
+    const lilac = "#c084fc";
+    confetti({ particleCount: 50, spread: 65, origin: { y: 0.6 }, colors: [purple, violet, lilac, "#fff"], scalar: 1.1 });
+    setTimeout(() => {
+      confetti({ particleCount: 25, angle: 70, spread: 45, origin: { x: 0.1, y: 0.6 }, colors: [purple, violet] });
+      confetti({ particleCount: 25, angle: 110, spread: 45, origin: { x: 0.9, y: 0.6 }, colors: [lilac, purple] });
+    }, 200);
+  } else {
+    // Rare + Common: standard confetti
+    const gold = "#d4a257";
+    const red = "#c41e3a";
+    const cyan = "#00c8d4";
+    confetti({ particleCount: 60, spread: 65, origin: { y: 0.6 }, colors: [gold, red, cyan, "#fff"], scalar: 1.1 });
+    setTimeout(() => {
+      confetti({ particleCount: 30, angle: 60, spread: 50, origin: { x: 0, y: 0.65 }, colors: [gold, red] });
+      confetti({ particleCount: 30, angle: 120, spread: 50, origin: { x: 1, y: 0.65 }, colors: [gold, cyan] });
+    }, 200);
+  }
+}
 
 /* ─── Component ──────────────────────────────────────────── */
 
@@ -106,7 +147,12 @@ export function FortuneMachine() {
         const data = await res.json();
         if (data.paid) {
           variantRef.current = pickVariant();
-          setState({ step: "revealing", fortune: data.fortune, timestamp: data.timestamp });
+          setState({
+            step: "revealing",
+            fortune: data.fortune,
+            rarity: data.rarity ?? "common",
+            timestamp: data.timestamp,
+          });
           return;
         }
       }
@@ -118,32 +164,33 @@ export function FortuneMachine() {
     }
   }, [state]);
 
-  /* ── "Revealing" → fortune transition (brief suspense) ── */
+  /* ── "Revealing" → rarity-reveal transition ── */
   useEffect(() => {
     if (state.step !== "revealing") return;
-    const { fortune, timestamp } = state;
+    const { fortune, rarity, timestamp } = state;
     const timer = setTimeout(() => {
-      setState({ step: "fortune", fortune, timestamp });
+      setState({ step: "rarity-reveal", fortune, rarity, timestamp });
     }, 800);
+    return () => clearTimeout(timer);
+  }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── "Rarity-reveal" → fortune transition (1.5s dramatic pause) ── */
+  useEffect(() => {
+    if (state.step !== "rarity-reveal") return;
+    const { fortune, rarity, timestamp } = state;
+    const timer = setTimeout(() => {
+      setState({ step: "fortune", fortune, rarity, timestamp });
+    }, 1500);
     return () => clearTimeout(timer);
   }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Confetti + streak on fortune reveal ── */
   useEffect(() => {
     if (state.step !== "fortune") return;
-    // Record streak
     const updated = recordFortune();
     setStreak(updated);
-    // Fire confetti
-    const gold = "#d4a257";
-    const red = "#c41e3a";
-    const cyan = "#00c8d4";
-    confetti({ particleCount: 60, spread: 65, origin: { y: 0.6 }, colors: [gold, red, cyan, "#fff"], scalar: 1.1 });
-    setTimeout(() => {
-      confetti({ particleCount: 30, angle: 60, spread: 50, origin: { x: 0, y: 0.65 }, colors: [gold, red] });
-      confetti({ particleCount: 30, angle: 120, spread: 50, origin: { x: 1, y: 0.65 }, colors: [gold, cyan] });
-    }, 200);
-  }, [state.step]);
+    fireRarityConfetti(state.rarity);
+  }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Request fortune ── */
   const requestFortune = useCallback(async () => {
@@ -165,7 +212,12 @@ export function FortuneMachine() {
       if (res.ok) {
         const data = await res.json();
         variantRef.current = pickVariant();
-        setState({ step: "revealing", fortune: data.fortune, timestamp: data.timestamp });
+        setState({
+          step: "revealing",
+          fortune: data.fortune,
+          rarity: data.rarity ?? "common",
+          timestamp: data.timestamp,
+        });
         return;
       }
       setState({ step: "error", message: "Something went wrong. Please try again." });
@@ -200,7 +252,12 @@ export function FortuneMachine() {
           if (res.ok) {
             const data = await res.json();
             variantRef.current = pickVariant();
-            setState({ step: "revealing", fortune: data.fortune, timestamp: data.timestamp });
+            setState({
+              step: "revealing",
+              fortune: data.fortune,
+              rarity: data.rarity ?? "common",
+              timestamp: data.timestamp,
+            });
             return;
           }
           setState({
@@ -227,7 +284,6 @@ export function FortuneMachine() {
 
   /* ── Manual claim (fallback for broken webhook) ── */
   const claimFortune = useCallback(async () => {
-    // Fetch a fortune directly — the user has already paid MDK
     const hash = paymentHashRef.current;
     try {
       const url = hash
@@ -237,31 +293,36 @@ export function FortuneMachine() {
       if (res.ok) {
         const data = await res.json();
         variantRef.current = pickVariant();
-        setState({ step: "revealing", fortune: data.fortune, timestamp: data.timestamp });
+        setState({
+          step: "revealing",
+          fortune: data.fortune,
+          rarity: data.rarity ?? "common",
+          timestamp: data.timestamp,
+        });
         return;
       }
     } catch { /* fall through */ }
-    // If endpoint fails, generate locally as last resort
     variantRef.current = pickVariant();
     setState({
       step: "revealing",
       fortune: "The path forward is revealed to those who take the first step.",
+      rarity: "common",
       timestamp: new Date().toISOString(),
     });
   }, []);
 
   /* ── Share handlers ── */
-  const shareOnX = useCallback((fortune: string) => {
+  const shareOnX = useCallback((fortune: string, rarity: Rarity) => {
     const v = variantRef.current;
     trackShare("x_share", v.id);
-    window.open(buildXShareUrl(fortune, v), "_blank", "noopener,noreferrer");
+    window.open(buildXShareUrl(fortune, v, rarity), "_blank", "noopener,noreferrer");
   }, []);
 
   const copyShareText = useCallback(
-    (fortune: string) => {
+    (fortune: string, rarity: Rarity) => {
       const v = variantRef.current;
       trackShare("copy_text", v.id);
-      copyToClipboard(buildShareText(fortune, v), "text");
+      copyToClipboard(buildShareText(fortune, v, rarity), "text");
     },
     [copyToClipboard],
   );
@@ -271,11 +332,16 @@ export function FortuneMachine() {
     copyToClipboard(SITE_URL, "link");
   }, [copyToClipboard]);
 
-  const handleNativeShare = useCallback(async (fortune: string) => {
+  const handleNativeShare = useCallback(async (fortune: string, rarity: Rarity) => {
     const v = variantRef.current;
     trackShare("native_share", v.id);
-    await nativeShare(fortune, v);
+    await nativeShare(fortune, v, rarity);
   }, []);
+
+  /* ── Rarity-dependent styles ── */
+  const rarityConfig = (state.step === "fortune" || state.step === "rarity-reveal")
+    ? RARITY_CONFIG[state.rarity]
+    : null;
 
   return (
     <div className="w-full">
@@ -456,7 +522,7 @@ export function FortuneMachine() {
           </motion.div>
         )}
 
-        {/* ────────────────── REVEALING (payment success → fortune) ────────────────── */}
+        {/* ────────────────── REVEALING (payment success → rarity reveal) ────────────────── */}
         {state.step === "revealing" && (
           <motion.div
             key="revealing"
@@ -493,6 +559,68 @@ export function FortuneMachine() {
           </motion.div>
         )}
 
+        {/* ────────────────── RARITY REVEAL (dramatic badge moment) ────────────────── */}
+        {state.step === "rarity-reveal" && (
+          <motion.div
+            key="rarity-reveal"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.1 }}
+            transition={{ duration: 0.5, ease }}
+            className="flex flex-col items-center justify-center gap-6 py-14"
+          >
+            {/* Rarity glow ring */}
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 200, damping: 15 }}
+              className="relative"
+            >
+              {/* Outer glow */}
+              <div
+                className="absolute inset-0 rounded-full blur-xl"
+                style={{
+                  background: rarityConfig?.glowColor,
+                  transform: "scale(2.5)",
+                }}
+              />
+              {/* Badge */}
+              <motion.div
+                initial={{ rotateY: 90 }}
+                animate={{ rotateY: 0 }}
+                transition={{ delay: 0.2, duration: 0.4, ease }}
+                className={`rarity-badge relative ${rarityConfig?.badgeClass} text-sm px-6 py-2.5`}
+              >
+                <div
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: rarityConfig?.color }}
+                />
+                <span className="tracking-[0.15em]">{rarityConfig?.label}</span>
+              </motion.div>
+            </motion.div>
+
+            {/* Pulse line */}
+            <motion.div
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ delay: 0.4, duration: 0.6, ease }}
+              className="w-24 h-px origin-center"
+              style={{
+                background: `linear-gradient(90deg, transparent, ${rarityConfig?.color}40, transparent)`,
+              }}
+            />
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.4 }}
+              className="text-xs text-gold/30 font-mono"
+            >
+              Cracking open&hellip;
+            </motion.p>
+          </motion.div>
+        )}
+
         {/* ────────────────── FORTUNE REVEALED ────────────────── */}
         {state.step === "fortune" && (
           <motion.div
@@ -504,18 +632,38 @@ export function FortuneMachine() {
             className="space-y-6"
           >
             {/* ── Fortune card ── */}
-            <div className="relative rounded-2xl overflow-hidden fortune-reveal-glow scanlines">
+            <div
+              className={`relative rounded-2xl overflow-hidden scanlines ${
+                RARITY_CONFIG[state.rarity].borderClass
+              } ${
+                state.rarity === "legendary" ? "rarity-legendary-border" :
+                state.rarity === "epic" ? "rarity-epic-border" : ""
+              }`}
+            >
               {/* Lacquer gradient background */}
               <div className="absolute inset-0 bg-gradient-to-b from-lacquer/[0.06] via-[#0c0a0e] to-[#0c0a0e]" />
               <div className="absolute inset-0 bg-gradient-to-br from-gold/[0.02] via-transparent to-lacquer/[0.02]" />
-
-              {/* Gold border */}
-              <div className="absolute inset-0 rounded-2xl border border-gold/10" />
 
               {/* Top ornamental line */}
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 dragon-line" />
 
               <div className="relative p-8 space-y-6 ornamental-border">
+                {/* Rarity badge */}
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.4, ease }}
+                  className="flex items-center justify-center"
+                >
+                  <div className={`rarity-badge ${RARITY_CONFIG[state.rarity].badgeClass}`}>
+                    <div
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ backgroundColor: RARITY_CONFIG[state.rarity].color }}
+                    />
+                    {RARITY_CONFIG[state.rarity].label}
+                  </div>
+                </motion.div>
+
                 {/* Cookie with glow */}
                 <motion.div
                   initial={{ opacity: 0, scale: 0, rotate: -10 }}
@@ -531,11 +679,15 @@ export function FortuneMachine() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4, duration: 0.6, ease }}
-                  className="text-lg leading-relaxed tracking-tight font-light text-foreground/90"
+                  className={`text-lg leading-relaxed tracking-tight font-light ${
+                    state.rarity === "legendary"
+                      ? "text-shimmer-gold"
+                      : "text-foreground/90"
+                  }`}
                 >
-                  <span className="text-gold/60">&ldquo;</span>
-                  {state.fortune}
-                  <span className="text-gold/60">&rdquo;</span>
+                  {state.rarity !== "legendary" && <span className="text-gold/60">&ldquo;</span>}
+                  {state.rarity === "legendary" ? `\u201C${state.fortune}\u201D` : state.fortune}
+                  {state.rarity !== "legendary" && <span className="text-gold/60">&rdquo;</span>}
                 </motion.blockquote>
 
                 {/* Meta line */}
@@ -613,7 +765,7 @@ export function FortuneMachine() {
                 transition={{ delay: 0.9, duration: 0.4, ease }}
               >
                 <button
-                  onClick={() => shareOnX(state.fortune)}
+                  onClick={() => shareOnX(state.fortune, state.rarity)}
                   className="btn-lacquer w-full h-11 rounded-xl text-sm font-medium cursor-pointer active:scale-[0.98] flex items-center justify-center gap-2.5"
                 >
                   <XIcon className="h-3.5 w-3.5" />
@@ -630,7 +782,7 @@ export function FortuneMachine() {
               >
                 <button
                   className="btn-jade flex-1 h-9 rounded-lg text-xs font-medium cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
-                  onClick={() => copyShareText(state.fortune)}
+                  onClick={() => copyShareText(state.fortune, state.rarity)}
                 >
                   <span className="relative h-3 w-3">
                     <span
@@ -683,7 +835,7 @@ export function FortuneMachine() {
                 >
                   <button
                     className="w-full h-9 rounded-lg text-xs text-gold/25 hover:text-gold/40 transition-colors cursor-pointer"
-                    onClick={() => handleNativeShare(state.fortune)}
+                    onClick={() => handleNativeShare(state.fortune, state.rarity)}
                   >
                     More sharing options&hellip;
                   </button>

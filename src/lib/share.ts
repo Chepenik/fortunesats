@@ -1,39 +1,55 @@
+import type { Rarity } from "@/lib/fortunes";
+
 export const SITE_URL = "https://fortunesats.vercel.app";
 
 const X_TCO_LENGTH = 23; // X shortens all URLs to 23 chars
+
+/* ─── Rarity labels for share text ───────────────────────── */
+
+const RARITY_LABELS: Record<Rarity, string> = {
+  legendary: "LEGENDARY",
+  epic: "EPIC",
+  rare: "RARE",
+  common: "",
+};
+
+function rarityPrefix(rarity: Rarity): string {
+  const label = RARITY_LABELS[rarity];
+  return label ? `[${label}] ` : "";
+}
 
 /* ─── Share copy variants (A/B testable) ───────────────── */
 
 export interface ShareVariant {
   id: number;
   label: string;
-  template: (fortune: string) => string;
+  template: (fortune: string, rarity?: Rarity) => string;
 }
 
 export const SHARE_VARIANTS: ShareVariant[] = [
   {
     id: 0,
     label: "classic",
-    template: (f) =>
-      `🥠 I paid 100 sats for a fortune:\n\n"${f}"\n\nGet yours → ${SITE_URL}`,
+    template: (f, r) =>
+      `🥠 ${rarityPrefix(r ?? "common")}I paid 100 sats for a fortune:\n\n"${f}"\n\nGet yours → ${SITE_URL}`,
   },
   {
     id: 1,
     label: "punchy",
-    template: (f) =>
-      `100 sats. One fortune. Worth it.\n\n"${f}"\n\nGet your own → ${SITE_URL}`,
+    template: (f, r) =>
+      `100 sats. One fortune.${r && r !== "common" ? ` ${RARITY_LABELS[r]}.` : ""} Worth it.\n\n"${f}"\n\nGet your own → ${SITE_URL}`,
   },
   {
     id: 2,
     label: "storyteller",
-    template: (f) =>
-      `I spent 100 sats on FortuneSats and got this:\n\n"${f}"\n\nTry it → ${SITE_URL}`,
+    template: (f, r) =>
+      `I spent 100 sats on FortuneSats and got this${r && r !== "common" ? ` ${RARITY_LABELS[r]}` : ""}:\n\n"${f}"\n\nTry it → ${SITE_URL}`,
   },
   {
     id: 3,
     label: "direct",
-    template: (f) =>
-      `Paid 100 sats for a fortune:\n\n"${f}"\n\nGet yours → ${SITE_URL}`,
+    template: (f, r) =>
+      `Paid 100 sats for a fortune:${r && r !== "common" ? ` [${RARITY_LABELS[r]}]` : ""}\n\n"${f}"\n\nGet yours → ${SITE_URL}`,
   },
 ];
 
@@ -41,26 +57,26 @@ export const PACK_SHARE_VARIANTS: ShareVariant[] = [
   {
     id: 0,
     label: "classic",
-    template: (f) =>
-      `🥠 I bought the Fortune Pack (100 fortunes for 10k sats) and got this gem:\n\n"${f}"\n\nGet yours → ${SITE_URL}`,
+    template: (f, r) =>
+      `🥠 ${rarityPrefix(r ?? "common")}I bought the Fortune Pack (100 fortunes for 10k sats) and got this gem:\n\n"${f}"\n\nGet yours → ${SITE_URL}`,
   },
   {
     id: 1,
     label: "punchy",
-    template: (f) =>
-      `10,000 sats. 100 fortunes. Worth every sat.\n\n"${f}"\n\nGet the Fortune Pack → ${SITE_URL}`,
+    template: (f, r) =>
+      `10,000 sats. 100 fortunes.${r && r !== "common" ? ` Got a ${RARITY_LABELS[r]}.` : ""} Worth every sat.\n\n"${f}"\n\nGet the Fortune Pack → ${SITE_URL}`,
   },
   {
     id: 2,
     label: "storyteller",
-    template: (f) =>
-      `I spent 10k sats on a Fortune Pack from FortuneSats and got this:\n\n"${f}"\n\nTry it → ${SITE_URL}`,
+    template: (f, r) =>
+      `I spent 10k sats on a Fortune Pack from FortuneSats and got this${r && r !== "common" ? ` ${RARITY_LABELS[r]}` : ""}:\n\n"${f}"\n\nTry it → ${SITE_URL}`,
   },
   {
     id: 3,
     label: "direct",
-    template: (f) =>
-      `Paid 10k sats for 100 fortunes on FortuneSats:\n\n"${f}"\n\nGet the Fortune Pack → ${SITE_URL}`,
+    template: (f, r) =>
+      `Paid 10k sats for 100 fortunes on FortuneSats:${r && r !== "common" ? ` [${RARITY_LABELS[r]}]` : ""}\n\n"${f}"\n\nGet the Fortune Pack → ${SITE_URL}`,
   },
 ];
 
@@ -77,10 +93,11 @@ export function pickVariant(isPack = false): ShareVariant {
  */
 export function truncateForX(
   fortune: string,
-  template: (f: string) => string,
+  template: (f: string, r?: Rarity) => string,
+  rarity?: Rarity,
 ): string {
   const LIMIT = 275; // conservative for emoji weighting
-  const full = template(fortune);
+  const full = template(fortune, rarity);
   const effective = full.replace(SITE_URL, "x".repeat(X_TCO_LENGTH)).length;
 
   if (effective <= LIMIT) return fortune;
@@ -99,9 +116,10 @@ export function truncateForX(
 export function buildXShareUrl(
   fortune: string,
   variant: ShareVariant,
+  rarity?: Rarity,
 ): string {
-  const truncated = truncateForX(fortune, variant.template);
-  const text = variant.template(truncated);
+  const truncated = truncateForX(fortune, variant.template, rarity);
+  const text = variant.template(truncated, rarity);
   return `https://x.com/intent/post?text=${encodeURIComponent(text)}`;
 }
 
@@ -110,8 +128,9 @@ export function buildXShareUrl(
 export function buildShareText(
   fortune: string,
   variant: ShareVariant,
+  rarity?: Rarity,
 ): string {
-  return variant.template(fortune);
+  return variant.template(fortune, rarity);
 }
 
 export function canNativeShare(): boolean {
@@ -121,10 +140,11 @@ export function canNativeShare(): boolean {
 export async function nativeShare(
   fortune: string,
   variant: ShareVariant,
+  rarity?: Rarity,
 ): Promise<boolean> {
   if (!canNativeShare()) return false;
   try {
-    await navigator.share({ text: variant.template(fortune) });
+    await navigator.share({ text: variant.template(fortune, rarity) });
     return true;
   } catch {
     return false; // user cancelled
@@ -142,11 +162,6 @@ export type ShareAction =
 /**
  * Track a share event. Dispatches a custom DOM event that analytics
  * integrations (Vercel Analytics, PostHog, etc.) can listen for.
- *
- * Usage:
- *   window.addEventListener("fortunesats:share", (e) => {
- *     track(e.detail.action, { variant: e.detail.variantId });
- *   });
  */
 export function trackShare(action: ShareAction, variantId: number): void {
   if (typeof window === "undefined") return;

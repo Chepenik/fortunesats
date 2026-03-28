@@ -50,7 +50,7 @@ export async function POST(req: Request) {
 
     // Pick a fortune the buyer hasn't seen yet
     const fortune = getUniqueRandomFortune(order.claimedFortunes);
-    const result = await claimFortune(orderId, secret, fortune);
+    const result = await claimFortune(orderId, secret, fortune.text);
 
     if (!result.success) {
       return Response.json(
@@ -60,7 +60,8 @@ export async function POST(req: Request) {
     }
 
     return Response.json({
-      fortune,
+      fortune: fortune.text,
+      rarity: fortune.rarity,
       timestamp: new Date().toISOString(),
       fortunesRemaining: result.fortunesRemaining,
       fortunesTotal: order.fortunesTotal,

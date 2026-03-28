@@ -15,6 +15,7 @@ import {
   SITE_URL,
   type ShareVariant,
 } from "@/lib/share";
+import { RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
 
 /* ─── Types ──────────────────────────────────────────────── */
 
@@ -73,6 +74,7 @@ type PackStep =
       orderId: string;
       secret: string;
       fortune: string;
+      rarity: Rarity;
       timestamp: string;
       fortunesRemaining: number;
       fortunesTotal: number;
@@ -144,6 +146,29 @@ function fireConfetti() {
       scalar: 0.8,
     });
   }, 500);
+}
+
+function fireRarityConfetti(rarity: Rarity) {
+  if (rarity === "legendary") {
+    const gold = "#d4a257";
+    const brightGold = "#ffd700";
+    const warmGold = "#e8a838";
+    confetti({ particleCount: 80, spread: 75, origin: { y: 0.55 }, colors: [gold, brightGold, warmGold, "#fff8e1"], scalar: 1.2 });
+    setTimeout(() => {
+      confetti({ particleCount: 40, angle: 60, spread: 55, origin: { x: 0, y: 0.6 }, colors: [gold, brightGold] });
+      confetti({ particleCount: 40, angle: 120, spread: 55, origin: { x: 1, y: 0.6 }, colors: [warmGold, brightGold] });
+    }, 200);
+  } else if (rarity === "epic") {
+    const purple = "#a855f7";
+    const violet = "#8b5cf6";
+    const lilac = "#c084fc";
+    confetti({ particleCount: 45, spread: 60, origin: { y: 0.6 }, colors: [purple, violet, lilac, "#fff"], scalar: 1.1 });
+    setTimeout(() => {
+      confetti({ particleCount: 20, angle: 70, spread: 40, origin: { x: 0.1, y: 0.6 }, colors: [purple, violet] });
+      confetti({ particleCount: 20, angle: 110, spread: 40, origin: { x: 0.9, y: 0.6 }, colors: [lilac, purple] });
+    }, 200);
+  }
+  // Rare + Common: no confetti on individual fortune reveals in pack
 }
 
 /* ─── Animation config ───────────────────────────────────── */
@@ -240,6 +265,14 @@ export function FortunePack() {
     fireConfetti();
   }, [state.step]);
 
+  /* ── Fire rarity confetti on legendary/epic fortune reveal ── */
+  useEffect(() => {
+    if (state.step !== "fortune") return;
+    if (state.rarity === "legendary" || state.rarity === "epic") {
+      fireRarityConfetti(state.rarity);
+    }
+  }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
+
   /* ── "Revealing" → fortune transition ── */
   useEffect(() => {
     if (state.step !== "revealing") return;
@@ -267,6 +300,7 @@ export function FortunePack() {
             orderId,
             secret,
             fortune: data.fortune,
+            rarity: data.rarity ?? "common",
             timestamp: data.timestamp,
             fortunesRemaining: data.fortunesRemaining,
             fortunesTotal: data.fortunesTotal ?? fortunesTotal,
@@ -421,17 +455,17 @@ export function FortunePack() {
   }, []);
 
   /* ── Share handlers ── */
-  const shareOnX = useCallback((fortune: string) => {
+  const shareOnX = useCallback((fortune: string, rarity: Rarity) => {
     const v = variantRef.current;
     trackShare("x_share", v.id);
-    window.open(buildXShareUrl(fortune, v), "_blank", "noopener,noreferrer");
+    window.open(buildXShareUrl(fortune, v, rarity), "_blank", "noopener,noreferrer");
   }, []);
 
-  const copyShareText = useCallback(
-    (fortune: string) => {
+  const copyShareTextFn = useCallback(
+    (fortune: string, rarity: Rarity) => {
       const v = variantRef.current;
       trackShare("copy_text", v.id);
-      copyToClipboard(buildShareText(fortune, v), "text");
+      copyToClipboard(buildShareText(fortune, v, rarity), "text");
     },
     [copyToClipboard],
   );
@@ -441,10 +475,10 @@ export function FortunePack() {
     copyToClipboard(SITE_URL, "link");
   }, [copyToClipboard]);
 
-  const handleNativeShare = useCallback(async (fortune: string) => {
+  const handleNativeShare = useCallback(async (fortune: string, rarity: Rarity) => {
     const v = variantRef.current;
     trackShare("native_share", v.id);
-    await nativeShare(fortune, v);
+    await nativeShare(fortune, v, rarity);
   }, []);
 
   return (
@@ -897,13 +931,35 @@ export function FortunePack() {
             className="space-y-5"
           >
             {/* Fortune card */}
-            <div className="relative rounded-2xl overflow-hidden fortune-reveal-glow scanlines">
+            <div
+              className={`relative rounded-2xl overflow-hidden scanlines ${
+                RARITY_CONFIG[state.rarity].borderClass
+              } ${
+                state.rarity === "legendary" ? "rarity-legendary-border" :
+                state.rarity === "epic" ? "rarity-epic-border" : ""
+              }`}
+            >
               <div className="absolute inset-0 bg-gradient-to-b from-lacquer/[0.06] via-[#0c0a0e] to-[#0c0a0e]" />
               <div className="absolute inset-0 bg-gradient-to-br from-gold/[0.02] via-transparent to-lacquer/[0.02]" />
-              <div className="absolute inset-0 rounded-2xl border border-gold/10" />
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 dragon-line" />
 
               <div className="relative p-7 space-y-5 ornamental-border">
+                {/* Rarity badge */}
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.3, ease }}
+                  className="flex items-center justify-center"
+                >
+                  <div className={`rarity-badge ${RARITY_CONFIG[state.rarity].badgeClass}`}>
+                    <div
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ backgroundColor: RARITY_CONFIG[state.rarity].color }}
+                    />
+                    {RARITY_CONFIG[state.rarity].label}
+                  </div>
+                </motion.div>
+
                 <motion.div
                   initial={{ opacity: 0, scale: 0, rotate: -10 }}
                   animate={{ opacity: 1, scale: 1, rotate: 0 }}
@@ -917,11 +973,15 @@ export function FortunePack() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3, duration: 0.5, ease }}
-                  className="text-[17px] leading-relaxed tracking-tight font-light text-foreground/90"
+                  className={`text-[17px] leading-relaxed tracking-tight font-light ${
+                    state.rarity === "legendary"
+                      ? "text-shimmer-gold"
+                      : "text-foreground/90"
+                  }`}
                 >
-                  <span className="text-gold/60">&ldquo;</span>
-                  {state.fortune}
-                  <span className="text-gold/60">&rdquo;</span>
+                  {state.rarity !== "legendary" && <span className="text-gold/60">&ldquo;</span>}
+                  {state.rarity === "legendary" ? `\u201C${state.fortune}\u201D` : state.fortune}
+                  {state.rarity !== "legendary" && <span className="text-gold/60">&rdquo;</span>}
                 </motion.blockquote>
 
                 <motion.div
@@ -982,7 +1042,7 @@ export function FortunePack() {
 
               <div className="flex gap-2">
                 <button
-                  onClick={() => shareOnX(state.fortune)}
+                  onClick={() => shareOnX(state.fortune, state.rarity)}
                   className="btn-lacquer flex-1 h-9 rounded-lg text-xs font-medium cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
                 >
                   <XIcon className="h-3 w-3" />
@@ -990,7 +1050,7 @@ export function FortunePack() {
                 </button>
                 <button
                   className="btn-jade h-9 w-9 rounded-lg cursor-pointer active:scale-[0.98] flex items-center justify-center"
-                  onClick={() => copyShareText(state.fortune)}
+                  onClick={() => copyShareTextFn(state.fortune, state.rarity)}
                   title="Copy fortune text"
                 >
                   <CopyIcon copied={copied === "text"} />
@@ -1005,7 +1065,7 @@ export function FortunePack() {
                 {hasNativeShare && (
                   <button
                     className="btn-jade h-9 w-9 rounded-lg cursor-pointer active:scale-[0.98] flex items-center justify-center text-gold/40"
-                    onClick={() => handleNativeShare(state.fortune)}
+                    onClick={() => handleNativeShare(state.fortune, state.rarity)}
                     title="More sharing options"
                   >
                     <svg

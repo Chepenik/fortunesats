@@ -1,13 +1,13 @@
 import { isPaid } from "@/lib/payment-store";
 import { getRedis } from "@/lib/redis";
-import { getRandomFortune } from "@/lib/fortunes";
+import { getRandomFortune, type Rarity } from "@/lib/fortunes";
 
 const FORTUNE_TTL = 86_400; // 24 hours
 
 /**
  * In-memory fortune cache (fast path). Redis is authoritative.
  */
-const localFortuneCache = new Map<string, { fortune: string; timestamp: string }>();
+const localFortuneCache = new Map<string, { fortune: string; rarity: Rarity; timestamp: string }>();
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -31,11 +31,15 @@ export async function GET(req: Request) {
       try {
         const redis = getRedis();
         if (redis) {
-          const stored = await redis.get<{ fortune: string; timestamp: string }>(
+          const stored = await redis.get<{ fortune: string; rarity?: Rarity; timestamp: string }>(
             `fortune:${paymentHash}`,
           );
           if (stored) {
-            cached = stored;
+            cached = {
+              fortune: stored.fortune,
+              rarity: stored.rarity ?? "common",
+              timestamp: stored.timestamp,
+            };
             localFortuneCache.set(paymentHash, cached);
           }
         }
@@ -46,7 +50,8 @@ export async function GET(req: Request) {
 
     if (!cached) {
       // Generate and persist to both caches
-      cached = { fortune: getRandomFortune(), timestamp: new Date().toISOString() };
+      const fortune = getRandomFortune();
+      cached = { fortune: fortune.text, rarity: fortune.rarity, timestamp: new Date().toISOString() };
       localFortuneCache.set(paymentHash, cached);
       try {
         const redis = getRedis();
@@ -62,6 +67,7 @@ export async function GET(req: Request) {
       paid: true,
       paymentHash,
       fortune: cached.fortune,
+      rarity: cached.rarity,
       timestamp: cached.timestamp,
     });
   }
