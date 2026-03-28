@@ -10,10 +10,10 @@ import {
   pickVariant,
   buildXShareUrl,
   buildShareText,
+  buildFortuneUrl,
   canNativeShare,
   nativeShare,
   trackShare,
-  SITE_URL,
   type ShareVariant,
 } from "@/lib/share";
 import { RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
@@ -327,9 +327,9 @@ export function FortuneMachine() {
     [copyToClipboard],
   );
 
-  const copyLink = useCallback(() => {
+  const copyLink = useCallback((fortune: string, rarity: Rarity) => {
     trackShare("copy_link", variantRef.current.id);
-    copyToClipboard(SITE_URL, "link");
+    copyToClipboard(buildFortuneUrl(fortune, rarity), "link");
   }, [copyToClipboard]);
 
   const handleNativeShare = useCallback(async (fortune: string, rarity: Rarity) => {
@@ -804,7 +804,7 @@ export function FortuneMachine() {
                 </button>
                 <button
                   className="btn-jade flex-1 h-9 rounded-lg text-xs font-medium cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
-                  onClick={copyLink}
+                  onClick={() => copyLink(state.fortune, state.rarity)}
                 >
                   <span className="relative h-3 w-3">
                     <span
