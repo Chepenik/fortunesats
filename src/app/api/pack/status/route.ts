@@ -2,21 +2,33 @@ import {
   getOrder,
   markOrderPaid,
   markOrderConfirmed,
-  PACK_PRICE_SATS,
 } from "@/lib/orders";
 import { verifyTxPayment, isTxConfirmed } from "@/lib/mempool";
+import { checkRateLimit } from "@/lib/ratelimit";
 
 /**
- * GET /api/pack/status?orderId=X&secret=Y&txid=Z
+ * POST /api/pack/status
+ *
+ * Body: { orderId, secret, txid? }
  *
  * If txid is provided: verifies that specific tx pays the correct address/amount.
  * If txid is omitted and order is already paid: checks for confirmation upgrade.
  */
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const orderId = url.searchParams.get("orderId");
-  const secret = url.searchParams.get("secret");
-  const txid = url.searchParams.get("txid");
+export async function POST(req: Request) {
+  const limited = await checkRateLimit(req, { prefix: "pack-status", limit: 20, window: "1 m" });
+  if (limited) return limited;
+
+  let body: { orderId?: string; secret?: string; txid?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json(
+      { error: { code: "invalid_body", message: "Invalid JSON body" } },
+      { status: 400 },
+    );
+  }
+
+  const { orderId, secret, txid } = body;
 
   if (!orderId || !secret) {
     return Response.json(
@@ -83,7 +95,7 @@ export async function GET(req: Request) {
         );
       }
 
-      const result = await verifyTxPayment(txid, order.address, PACK_PRICE_SATS);
+      const result = await verifyTxPayment(txid, order.address, order.amountSats);
 
       if (result.error) {
         return Response.json(

@@ -1,7 +1,11 @@
 import { withPayment } from "@moneydevkit/nextjs/server";
 import { getRandomFortune } from "@/lib/fortunes";
+import { checkRateLimit } from "@/lib/ratelimit";
 
-const handler = async () => {
+const handler = async (req: Request) => {
+  const limited = await checkRateLimit(req, { prefix: "fortune", limit: 10, window: "1 m" });
+  if (limited) return limited;
+
   const fortune = getRandomFortune();
   return Response.json({
     fortune: fortune.text,

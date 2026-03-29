@@ -15,9 +15,10 @@ export const contentType = "image/png";
 export default async function OGImage({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
-  const decoded = decodeFortuneSlug(params.slug);
+  const { slug } = await params;
+  const decoded = decodeFortuneSlug(slug);
 
   if (!decoded) {
     return fallbackImage();

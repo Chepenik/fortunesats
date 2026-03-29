@@ -46,8 +46,10 @@ export interface Order {
 
 /* ─── Constants ──────────────────────────────────────────── */
 
-export const PACK_PRICE_SATS = 10_000;
+export const PACK_BASE_PRICE_SATS = 10_000;
 export const PACK_SIZE = 100;
+/** Random offset range added to base price to disambiguate concurrent orders */
+const PRICE_OFFSET_MAX = 999;
 /** How long an order stays "pending" before the UI shows it as expired */
 const ORDER_TTL_MS = 60 * 60 * 1000; // 1 hour
 /** Redis key TTL — orders persist for 90 days */
@@ -158,11 +160,12 @@ export async function createOrder(): Promise<Order> {
   const store = await getStore();
   const now = new Date();
 
+  const offset = Math.floor(Math.random() * PRICE_OFFSET_MAX) + 1;
   const order: Order = {
     id: randomUUID(),
     secret: randomBytes(24).toString("base64url"),
     address: BTC_ADDRESS,
-    amountSats: PACK_PRICE_SATS,
+    amountSats: PACK_BASE_PRICE_SATS + offset,
     fortunesTotal: PACK_SIZE,
     fortunesRemaining: PACK_SIZE,
     claimedFortunes: [],

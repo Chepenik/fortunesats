@@ -1,6 +1,7 @@
 import { isPaid } from "@/lib/payment-store";
 import { getRedis } from "@/lib/redis";
 import { getRandomFortune, type Rarity } from "@/lib/fortunes";
+import { checkRateLimit } from "@/lib/ratelimit";
 
 const FORTUNE_TTL = 86_400; // 24 hours
 
@@ -10,6 +11,9 @@ const FORTUNE_TTL = 86_400; // 24 hours
 const localFortuneCache = new Map<string, { fortune: string; rarity: Rarity; timestamp: string }>();
 
 export async function GET(req: Request) {
+  const limited = await checkRateLimit(req, { prefix: "fortune-status", limit: 20, window: "1 m" });
+  if (limited) return limited;
+
   const url = new URL(req.url);
   const paymentHash = url.searchParams.get("paymentHash");
 
@@ -20,17 +24,24 @@ export async function GET(req: Request) {
     );
   }
 
-  const paid = await isPaid(paymentHash);
+  let paid: boolean;
+  try {
+    paid = await isPaid(paymentHash);
+  } catch {
+    return Response.json(
+      { error: { code: "service_unavailable", message: "Payment verification temporarily unavailable. Please retry." } },
+      { status: 503 },
+    );
+  }
 
   if (paid) {
     // Check local cache first, then Redis, then generate
     let cached = localFortuneCache.get(paymentHash);
 
     if (!cached) {
-      // Try Redis
-      try {
-        const redis = getRedis();
-        if (redis) {
+      const redis = getRedis();
+      if (redis) {
+        try {
           const stored = await redis.get<{ fortune: string; rarity?: Rarity; timestamp: string }>(
             `fortune:${paymentHash}`,
           );
@@ -42,14 +53,13 @@ export async function GET(req: Request) {
             };
             localFortuneCache.set(paymentHash, cached);
           }
+        } catch {
+          // Fortune cache read failed — safe to generate a new one since payment is verified
         }
-      } catch {
-        // Redis read failed — fall through to generate
       }
     }
 
     if (!cached) {
-      // Generate and persist to both caches
       const fortune = getRandomFortune();
       cached = { fortune: fortune.text, rarity: fortune.rarity, timestamp: new Date().toISOString() };
       localFortuneCache.set(paymentHash, cached);
@@ -59,7 +69,7 @@ export async function GET(req: Request) {
           await redis.set(`fortune:${paymentHash}`, cached, { ex: FORTUNE_TTL });
         }
       } catch {
-        // Best effort
+        // Fortune cache write failed — fortune is already in local cache, acceptable
       }
     }
 

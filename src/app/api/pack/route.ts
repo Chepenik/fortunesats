@@ -1,11 +1,14 @@
 import { createOrder } from "@/lib/orders";
+import { checkRateLimit } from "@/lib/ratelimit";
 
 /**
  * POST /api/pack — Create a new fortune-pack order.
  *
  * Returns the order details including the BTC address to pay.
  */
-export async function POST() {
+export async function POST(req: Request) {
+  const limited = await checkRateLimit(req, { prefix: "pack-create", limit: 3, window: "1 m" });
+  if (limited) return limited;
   try {
     const order = await createOrder();
 

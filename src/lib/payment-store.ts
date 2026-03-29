@@ -54,20 +54,21 @@ export async function markPaidInRedis(paymentHash: string): Promise<void> {
  * Check if a payment hash has been settled.
  * Fast path: in-memory (globalThis + local cache).
  * Authoritative: Redis paid:{hash} key.
+ *
+ * Throws if Redis is unreachable and the hash isn't in local cache,
+ * so callers can decide how to handle the outage.
  */
 export async function isPaid(paymentHash: string): Promise<boolean> {
   if (isLocallyPaid(paymentHash)) return true;
-  try {
-    const redis = getRedis();
-    if (redis) {
-      const val = await redis.get(`paid:${paymentHash}`);
-      if (val !== null) {
-        localPaidCache.add(paymentHash); // warm local cache
-        return true;
-      }
-    }
-  } catch {
-    // Redis unavailable — fall back to in-memory only
+  const redis = getRedis();
+  if (!redis) {
+    // No Redis configured — can only check local state
+    return false;
+  }
+  const val = await redis.get(`paid:${paymentHash}`);
+  if (val !== null) {
+    localPaidCache.add(paymentHash); // warm local cache
+    return true;
   }
   return false;
 }
@@ -75,23 +76,21 @@ export async function isPaid(paymentHash: string): Promise<boolean> {
 /**
  * Atomically consume a payment hash (replay protection).
  * Uses Redis SET NX so only one instance/request wins.
+ *
+ * Throws if Redis is unreachable — callers must handle the outage
+ * rather than silently allowing replay.
  */
 export async function consumePayment(paymentHash: string): Promise<boolean> {
   if (!(await isPaid(paymentHash))) return false;
   if (localConsumedCache.has(paymentHash)) return false;
 
-  try {
-    const redis = getRedis();
-    if (redis) {
-      // SET NX returns true only if the key didn't exist → first consumer wins
-      const acquired = await redis.set(`consumed:${paymentHash}`, Date.now(), {
-        nx: true,
-        ex: PAYMENT_TTL,
-      });
-      if (!acquired) return false; // another instance already consumed it
-    }
-  } catch {
-    // Redis down — allow it (fail open for demo)
+  const redis = getRedis();
+  if (redis) {
+    const acquired = await redis.set(`consumed:${paymentHash}`, Date.now(), {
+      nx: true,
+      ex: PAYMENT_TTL,
+    });
+    if (!acquired) return false; // another instance already consumed it
   }
 
   localConsumedCache.add(paymentHash);

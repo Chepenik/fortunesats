@@ -1,5 +1,6 @@
 import { getOrder, claimFortune } from "@/lib/orders";
 import { getUniqueRandomFortune } from "@/lib/fortunes";
+import { checkRateLimit } from "@/lib/ratelimit";
 
 /**
  * POST /api/pack/fortune — Claim one fortune from a paid pack.
@@ -7,6 +8,9 @@ import { getUniqueRandomFortune } from "@/lib/fortunes";
  * Body: { orderId: string, secret: string }
  */
 export async function POST(req: Request) {
+  const limited = await checkRateLimit(req, { prefix: "pack-fortune", limit: 10, window: "1 m" });
+  if (limited) return limited;
+
   let body: { orderId?: string; secret?: string };
   try {
     body = await req.json();

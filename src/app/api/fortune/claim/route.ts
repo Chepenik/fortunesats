@@ -1,6 +1,7 @@
 import { getRandomFortune } from "@/lib/fortunes";
 import { isPaid } from "@/lib/payment-store";
 import { getRedis } from "@/lib/redis";
+import { checkRateLimit } from "@/lib/ratelimit";
 
 const CLAIM_TTL = 86_400; // 24 hours
 
@@ -13,6 +14,9 @@ const CLAIM_TTL = 86_400; // 24 hours
  * the L402 flow. Claims are tracked in Redis to prevent replay.
  */
 export async function GET(req: Request) {
+  const limited = await checkRateLimit(req, { prefix: "claim", limit: 5, window: "1 m" });
+  if (limited) return limited;
+
   const url = new URL(req.url);
   const paymentHash = url.searchParams.get("paymentHash");
 
@@ -24,48 +28,73 @@ export async function GET(req: Request) {
     );
   }
 
-  // Check if already claimed via Redis (cross-instance safe)
+  // Verify payment was actually made — fail closed
+  let paid: boolean;
   try {
-    const redis = getRedis();
-    if (redis) {
-      const val = await redis.get(`claim:${paymentHash}`);
-      if (val !== null) {
-        return Response.json(
-          { error: { code: "already_claimed", message: "This payment has already been claimed" } },
-          { status: 409 },
-        );
-      }
+    paid = await isPaid(paymentHash);
+  } catch {
+    return Response.json(
+      { error: { code: "service_unavailable", message: "Payment verification temporarily unavailable. Please retry." } },
+      { status: 503 },
+    );
+  }
+
+  if (!paid) {
+    return Response.json(
+      { error: { code: "payment_required", message: "No payment found for this hash" } },
+      { status: 402 },
+    );
+  }
+
+  // Check if already claimed via Redis (cross-instance safe)
+  const redis = getRedis();
+  if (!redis) {
+    return Response.json(
+      { error: { code: "service_unavailable", message: "Claim service temporarily unavailable. Please retry." } },
+      { status: 503 },
+    );
+  }
+
+  try {
+    const val = await redis.get(`claim:${paymentHash}`);
+    if (val !== null) {
+      return Response.json(
+        { error: { code: "already_claimed", message: "This payment has already been claimed" } },
+        { status: 409 },
+      );
     }
   } catch {
-    // Redis error = allow claim (fail open for demo)
+    return Response.json(
+      { error: { code: "service_unavailable", message: "Claim service temporarily unavailable. Please retry." } },
+      { status: 503 },
+    );
   }
 
   // Atomically claim via SET NX — only one request wins
   try {
-    const redis = getRedis();
-    if (redis) {
-      const acquired = await redis.set(`claim:${paymentHash}`, Date.now(), {
-        nx: true,
-        ex: CLAIM_TTL,
-      });
-      if (!acquired) {
-        return Response.json(
-          { error: { code: "already_claimed", message: "This payment has already been claimed" } },
-          { status: 409 },
-        );
-      }
+    const acquired = await redis.set(`claim:${paymentHash}`, Date.now(), {
+      nx: true,
+      ex: CLAIM_TTL,
+    });
+    if (!acquired) {
+      return Response.json(
+        { error: { code: "already_claimed", message: "This payment has already been claimed" } },
+        { status: 409 },
+      );
     }
   } catch {
-    // Best effort
+    return Response.json(
+      { error: { code: "service_unavailable", message: "Claim service temporarily unavailable. Please retry." } },
+      { status: 503 },
+    );
   }
 
-  const paidInRedis = await isPaid(paymentHash);
   const fortune = getRandomFortune();
 
   return Response.json({
     fortune: fortune.text,
     rarity: fortune.rarity,
     timestamp: new Date().toISOString(),
-    verified: paidInRedis,
+    verified: true,
   });
 }

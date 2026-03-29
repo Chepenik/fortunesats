@@ -3,8 +3,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
-import { Check, Copy, Link2 } from "lucide-react";
-import confetti from "canvas-confetti";
 import {
   pickVariant,
   buildXShareUrl,
@@ -16,6 +14,9 @@ import {
   type ShareVariant,
 } from "@/lib/share";
 import { RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
+import { ease, fadeUp, scaleFade } from "@/components/shared/animations";
+import { fireConfetti, firePackRarityConfetti } from "@/components/shared/confetti";
+import { XIcon, GoldDot, OracleSpinner, CopyIcon, LinkIcon } from "@/components/shared/icons";
 
 /* ─── Types ──────────────────────────────────────────────── */
 
@@ -105,90 +106,6 @@ function clearPack() {
   localStorage.removeItem(STORAGE_KEY);
 }
 
-/* ─── Confetti ───────────────────────────────────────────── */
-
-function fireConfetti() {
-  const gold = "#d4a257";
-  const red = "#c41e3a";
-  const cyan = "#00c8d4";
-
-  confetti({
-    particleCount: 80,
-    spread: 70,
-    origin: { y: 0.6 },
-    colors: [gold, red, cyan, "#fff"],
-    scalar: 1.2,
-  });
-
-  setTimeout(() => {
-    confetti({
-      particleCount: 40,
-      angle: 60,
-      spread: 55,
-      origin: { x: 0, y: 0.65 },
-      colors: [gold, red],
-    });
-    confetti({
-      particleCount: 40,
-      angle: 120,
-      spread: 55,
-      origin: { x: 1, y: 0.65 },
-      colors: [gold, cyan],
-    });
-  }, 250);
-
-  setTimeout(() => {
-    confetti({
-      particleCount: 30,
-      spread: 100,
-      origin: { y: 0.5 },
-      colors: [gold, "#fff"],
-      scalar: 0.8,
-    });
-  }, 500);
-}
-
-function fireRarityConfetti(rarity: Rarity) {
-  if (rarity === "legendary") {
-    const gold = "#d4a257";
-    const brightGold = "#ffd700";
-    const warmGold = "#e8a838";
-    confetti({ particleCount: 80, spread: 75, origin: { y: 0.55 }, colors: [gold, brightGold, warmGold, "#fff8e1"], scalar: 1.2 });
-    setTimeout(() => {
-      confetti({ particleCount: 40, angle: 60, spread: 55, origin: { x: 0, y: 0.6 }, colors: [gold, brightGold] });
-      confetti({ particleCount: 40, angle: 120, spread: 55, origin: { x: 1, y: 0.6 }, colors: [warmGold, brightGold] });
-    }, 200);
-  } else if (rarity === "epic") {
-    const purple = "#a855f7";
-    const violet = "#8b5cf6";
-    const lilac = "#c084fc";
-    confetti({ particleCount: 45, spread: 60, origin: { y: 0.6 }, colors: [purple, violet, lilac, "#fff"], scalar: 1.1 });
-    setTimeout(() => {
-      confetti({ particleCount: 20, angle: 70, spread: 40, origin: { x: 0.1, y: 0.6 }, colors: [purple, violet] });
-      confetti({ particleCount: 20, angle: 110, spread: 40, origin: { x: 0.9, y: 0.6 }, colors: [lilac, purple] });
-    }, 200);
-  }
-  // Rare + Common: no confetti on individual fortune reveals in pack
-}
-
-/* ─── Animation config ───────────────────────────────────── */
-
-const ease = [0.23, 1, 0.32, 1] as const;
-
-const fadeUp = {
-  initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -10 },
-  transition: { duration: 0.5, ease },
-};
-
-const scaleFade = {
-  initial: { opacity: 0, scale: 0.95 },
-  animate: { opacity: 1, scale: 1 },
-  exit: { opacity: 0, scale: 0.97 },
-  transition: { duration: 0.55, ease },
-};
-
 /* ─── Component ──────────────────────────────────────────── */
 
 export function FortunePack() {
@@ -214,9 +131,11 @@ export function FortunePack() {
 
     setState({ step: "loading" });
 
-    fetch(
-      `/api/pack/status?orderId=${encodeURIComponent(stored.orderId)}&secret=${encodeURIComponent(stored.secret)}`,
-    )
+    fetch("/api/pack/status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId: stored.orderId, secret: stored.secret }),
+    })
       .then((res) => res.json())
       .then((data) => {
         if (data.error) {
@@ -269,7 +188,7 @@ export function FortunePack() {
   useEffect(() => {
     if (state.step !== "fortune") return;
     if (state.rarity === "legendary" || state.rarity === "epic") {
-      fireRarityConfetti(state.rarity);
+      firePackRarityConfetti(state.rarity);
     }
   }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -366,9 +285,11 @@ export function FortunePack() {
     });
 
     try {
-      const res = await fetch(
-        `/api/pack/status?orderId=${encodeURIComponent(orderId)}&secret=${encodeURIComponent(secret)}&txid=${encodeURIComponent(trimmed)}`,
-      );
+      const res = await fetch("/api/pack/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, secret, txid: trimmed }),
+      });
       const data = await res.json();
 
       if (data.error) {
@@ -1165,68 +1086,3 @@ export function FortunePack() {
   );
 }
 
-/* ─── Decorative components ──────────────────────────────── */
-
-function XIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-    </svg>
-  );
-}
-
-function GoldDot() {
-  return <div className="h-0.5 w-0.5 rounded-full bg-gold/20" />;
-}
-
-function OracleSpinner() {
-  return (
-    <div className="relative h-10 w-10">
-      <div className="absolute inset-0 rounded-full border border-gold/10" />
-      <div className="absolute inset-0 rounded-full border border-transparent border-t-lacquer/50 animate-spin" />
-      <div className="absolute inset-2 rounded-full bg-lacquer/[0.06] animate-glow-pulse" />
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="h-1.5 w-1.5 rounded-full bg-gold/40 shadow-[0_0_8px_rgba(212,162,87,0.3)]" />
-      </div>
-    </div>
-  );
-}
-
-function CopyIcon({ copied }: { copied: boolean }) {
-  return (
-    <span className="relative h-3 w-3">
-      <span
-        className={`absolute inset-0 transition-all duration-200 ${copied ? "scale-0 opacity-0" : "scale-100 opacity-100"}`}
-      >
-        <Copy className="h-3 w-3" />
-      </span>
-      <span
-        className={`absolute inset-0 transition-all duration-200 ${copied ? "scale-100 opacity-100" : "scale-0 opacity-0"}`}
-      >
-        <Check className="h-3 w-3 text-cyan" />
-      </span>
-    </span>
-  );
-}
-
-function LinkIcon({ copied }: { copied: boolean }) {
-  return (
-    <span className="relative h-3 w-3">
-      <span
-        className={`absolute inset-0 transition-all duration-200 ${copied ? "scale-0 opacity-0" : "scale-100 opacity-100"}`}
-      >
-        <Link2 className="h-3 w-3" />
-      </span>
-      <span
-        className={`absolute inset-0 transition-all duration-200 ${copied ? "scale-100 opacity-100" : "scale-0 opacity-0"}`}
-      >
-        <Check className="h-3 w-3 text-cyan" />
-      </span>
-    </span>
-  );
-}
