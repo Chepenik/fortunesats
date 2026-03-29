@@ -1,6 +1,8 @@
 import { getOrder, claimFortune } from "@/lib/orders";
 import { getUniqueRandomFortune } from "@/lib/fortunes";
 import { checkRateLimit } from "@/lib/ratelimit";
+import { getOrCreateDeviceId, attachDeviceCookie } from "@/lib/device-id";
+import { recordFortuneReveal } from "@/lib/leaderboard";
 
 /**
  * POST /api/pack/fortune — Claim one fortune from a paid pack.
@@ -63,13 +65,19 @@ export async function POST(req: Request) {
       );
     }
 
-    return Response.json({
+    // Leaderboard: record fortune reveal (sats=0, already tracked at pack payment)
+    const { deviceId, isNew } = getOrCreateDeviceId(req);
+    recordFortuneReveal(deviceId, fortune.rarity, 0).catch(() => {});
+
+    const res = Response.json({
       fortune: fortune.text,
       rarity: fortune.rarity,
       timestamp: new Date().toISOString(),
       fortunesRemaining: result.fortunesRemaining,
       fortunesTotal: order.fortunesTotal,
     });
+    if (isNew) attachDeviceCookie(res, deviceId);
+    return res;
   } catch (e) {
     console.error("[pack/fortune] Error:", e);
     return Response.json(

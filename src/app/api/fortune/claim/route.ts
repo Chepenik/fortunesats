@@ -2,6 +2,8 @@ import { getRandomFortune } from "@/lib/fortunes";
 import { isPaid } from "@/lib/payment-store";
 import { getRedis } from "@/lib/redis";
 import { checkRateLimit } from "@/lib/ratelimit";
+import { getOrCreateDeviceId, attachDeviceCookie } from "@/lib/device-id";
+import { recordFortuneReveal } from "@/lib/leaderboard";
 
 const CLAIM_TTL = 86_400; // 24 hours
 
@@ -89,12 +91,18 @@ export async function GET(req: Request) {
     );
   }
 
+  const { deviceId, isNew } = getOrCreateDeviceId(req);
   const fortune = getRandomFortune();
 
-  return Response.json({
+  // Leaderboard: record fortune + 100 sats (non-blocking, non-critical)
+  recordFortuneReveal(deviceId, fortune.rarity, 100).catch(() => {});
+
+  const res = Response.json({
     fortune: fortune.text,
     rarity: fortune.rarity,
     timestamp: new Date().toISOString(),
     verified: true,
   });
+  if (isNew) attachDeviceCookie(res, deviceId);
+  return res;
 }

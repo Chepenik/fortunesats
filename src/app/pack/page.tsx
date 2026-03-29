@@ -58,6 +58,12 @@ export default function PackPage() {
             >
               &larr; Single fortune (100 sats, Lightning)
             </Link>
+            <Link
+              href="/leaderboard"
+              className="inline-block text-[11px] text-gold/20 hover:text-gold/40 transition-colors"
+            >
+              🏆 Hall of Fortunes
+            </Link>
             <p className="text-[10px] tracking-[0.2em] uppercase text-gold/25 font-mono">
               On-chain &middot; Mempool acceptance &middot; Bitcoin
             </p>

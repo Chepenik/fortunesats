@@ -64,6 +64,12 @@ export default function Home() {
             >
               Fortune Pack &rarr; 100 fortunes for 10,000 sats (on-chain)
             </Link>
+            <Link
+              href="/leaderboard"
+              className="inline-block text-[11px] text-gold/30 hover:text-gold/50 transition-colors"
+            >
+              🏆 Hall of Fortunes
+            </Link>
             <p className="text-[11px] tracking-[0.15em] uppercase text-gold/40 font-mono">
               L402 &middot; Pay per request &middot; Lightning Network
             </p>

@@ -5,6 +5,8 @@ import {
 } from "@/lib/orders";
 import { verifyTxPayment, isTxConfirmed } from "@/lib/mempool";
 import { checkRateLimit } from "@/lib/ratelimit";
+import { getOrCreateDeviceId, attachDeviceCookie } from "@/lib/device-id";
+import { recordSatsSpent } from "@/lib/leaderboard";
 
 /**
  * POST /api/pack/status
@@ -106,7 +108,12 @@ export async function POST(req: Request) {
 
       if (result.valid) {
         const updated = await markOrderPaid(orderId, txid, result.amountSats!);
-        return Response.json({
+
+        // Leaderboard: record sats spent at payment confirmation
+        const { deviceId, isNew } = getOrCreateDeviceId(req);
+        recordSatsSpent(deviceId, result.amountSats!).catch(() => {});
+
+        const res = Response.json({
           status: result.confirmed ? "confirmed" : "mempool",
           txid,
           txAmountSats: result.amountSats,
@@ -114,6 +121,8 @@ export async function POST(req: Request) {
           fortunesTotal: order.fortunesTotal,
           paidAt: new Date().toISOString(),
         });
+        if (isNew) attachDeviceCookie(res, deviceId);
+        return res;
       }
     }
 
