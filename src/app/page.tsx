@@ -65,6 +65,12 @@ export default function Home() {
               Fortune Pack &rarr; 100 fortunes for 10,000 sats (on-chain)
             </Link>
             <Link
+              href="/collection"
+              className="inline-block text-[11px] text-gold/35 hover:text-gold/55 transition-colors"
+            >
+              🗂️ My Collection
+            </Link>
+            <Link
               href="/leaderboard"
               className="inline-block text-[11px] text-gold/30 hover:text-gold/50 transition-colors"
             >

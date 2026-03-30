@@ -14,6 +14,7 @@ import {
   type ShareVariant,
 } from "@/lib/share";
 import { RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
+import { saveToCollection } from "@/lib/collection";
 import { ease, fadeUp, scaleFade } from "@/components/shared/animations";
 import { fireConfetti, firePackRarityConfetti } from "@/components/shared/confetti";
 import { XIcon, GoldDot, OracleSpinner, CopyIcon, LinkIcon } from "@/components/shared/icons";
@@ -184,12 +185,13 @@ export function FortunePack() {
     fireConfetti();
   }, [state.step]);
 
-  /* ── Fire rarity confetti on legendary/epic fortune reveal ── */
+  /* ── Confetti + collection on pack fortune reveal ── */
   useEffect(() => {
     if (state.step !== "fortune") return;
     if (state.rarity === "legendary" || state.rarity === "epic") {
       firePackRarityConfetti(state.rarity);
     }
+    saveToCollection(state.fortune, state.rarity);
   }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── "Revealing" → fortune transition ── */

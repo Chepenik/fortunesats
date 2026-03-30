@@ -1,12 +1,12 @@
-import { LeaderboardView } from "@/components/leaderboard-view";
+import { CollectionView } from "@/components/collection-view";
 import Link from "next/link";
 
 export const metadata = {
-  title: "Hall of Fortunes — Fortune Sats",
-  description: "Global leaderboard for Fortune Sats — see who has revealed the most fortunes.",
+  title: "My Collection — Fortune Sats",
+  description: "Browse every fortune you have revealed. Track your rarity progress across 170 fortunes.",
 };
 
-export default function LeaderboardPage() {
+export default function CollectionPage() {
   return (
     <main className="relative flex-1 flex flex-col items-center px-6 py-16 overflow-hidden">
       {/* Ambient glows */}
@@ -24,38 +24,30 @@ export default function LeaderboardPage() {
             <div className="h-px w-8 bg-gradient-to-l from-transparent to-gold/20" />
           </div>
 
-          <div className="text-4xl">🏆</div>
+          <div className="text-4xl">🗂️</div>
 
           <div className="space-y-2">
             <h1 className="text-2xl font-bold tracking-tight neon-text text-foreground">
-              Hall of Fortunes
+              My Collection
             </h1>
             <p className="text-sm text-muted-foreground/60">
-              The seekers who returned most often.
+              Every fortune you have revealed, preserved.
             </p>
           </div>
         </header>
 
-        {/* Leaderboard */}
-        <LeaderboardView />
+        {/* Collection */}
+        <CollectionView />
 
         {/* Footer */}
         <footer className="text-center space-y-4">
           <div className="dragon-line w-16 mx-auto" />
-          <div className="space-y-1.5">
-            <Link
-              href="/collection"
-              className="inline-block text-[11px] text-gold/35 hover:text-gold/55 transition-colors"
-            >
-              🗂️ My Collection
-            </Link>
-            <Link
-              href="/"
-              className="inline-block text-xs text-gold/40 hover:text-gold/60 transition-colors"
-            >
-              &larr; Back to Fortune Sats
-            </Link>
-          </div>
+          <Link
+            href="/"
+            className="inline-block text-xs text-gold/40 hover:text-gold/60 transition-colors"
+          >
+            &larr; Back to Fortune Sats
+          </Link>
         </footer>
       </div>
     </main>

@@ -59,6 +59,12 @@ export default function PackPage() {
               &larr; Single fortune (100 sats, Lightning)
             </Link>
             <Link
+              href="/collection"
+              className="inline-block text-[11px] text-gold/25 hover:text-gold/45 transition-colors"
+            >
+              🗂️ My Collection
+            </Link>
+            <Link
               href="/leaderboard"
               className="inline-block text-[11px] text-gold/20 hover:text-gold/40 transition-colors"
             >

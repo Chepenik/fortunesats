@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { Check, Copy, Link2 } from "lucide-react";
 import { getStreak, recordFortune, type StreakData } from "@/lib/streak";
+import { saveToCollection } from "@/lib/collection";
 import {
   pickVariant,
   buildXShareUrl,
@@ -129,12 +130,13 @@ export function FortuneMachine() {
     return () => clearTimeout(timer);
   }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* ── Confetti + streak on fortune reveal ── */
+  /* ── Confetti + streak + collection on fortune reveal ── */
   useEffect(() => {
     if (state.step !== "fortune") return;
     const updated = recordFortune();
     setStreak(updated);
     fireRarityConfetti(state.rarity);
+    saveToCollection(state.fortune, state.rarity);
   }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Request fortune ── */
