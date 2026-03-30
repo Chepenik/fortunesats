@@ -2,6 +2,8 @@ import { isPaid } from "@/lib/payment-store";
 import { getRedis } from "@/lib/redis";
 import { getRandomFortune, type Rarity } from "@/lib/fortunes";
 import { checkRateLimit } from "@/lib/ratelimit";
+import { getOrCreateDeviceId, attachDeviceCookie } from "@/lib/device-id";
+import { recordFortuneReveal } from "@/lib/leaderboard";
 
 const FORTUNE_TTL = 86_400; // 24 hours
 
@@ -9,6 +11,9 @@ const FORTUNE_TTL = 86_400; // 24 hours
  * In-memory fortune cache (fast path). Redis is authoritative.
  */
 const localFortuneCache = new Map<string, { fortune: string; rarity: Rarity; timestamp: string }>();
+
+/** Track which payment hashes we've already recorded to the leaderboard (avoid double-counting) */
+const recordedHashes = new Set<string>();
 
 export async function GET(req: Request) {
   const limited = await checkRateLimit(req, { prefix: "fortune-status", limit: 20, window: "1 m" });
@@ -73,13 +78,22 @@ export async function GET(req: Request) {
       }
     }
 
-    return Response.json({
+    // Record to leaderboard once per payment hash (avoid double-counting on re-checks)
+    const { deviceId, isNew } = getOrCreateDeviceId(req);
+    if (!recordedHashes.has(paymentHash)) {
+      recordedHashes.add(paymentHash);
+      await recordFortuneReveal(deviceId, cached.rarity, 100);
+    }
+
+    const res = Response.json({
       paid: true,
       paymentHash,
       fortune: cached.fortune,
       rarity: cached.rarity,
       timestamp: cached.timestamp,
     });
+    if (isNew) attachDeviceCookie(res, deviceId);
+    return res;
   }
 
   return Response.json({ paid: false, paymentHash });

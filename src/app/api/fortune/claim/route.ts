@@ -94,8 +94,8 @@ export async function GET(req: Request) {
   const { deviceId, isNew } = getOrCreateDeviceId(req);
   const fortune = getRandomFortune();
 
-  // Leaderboard: record fortune + 100 sats (non-blocking, non-critical)
-  recordFortuneReveal(deviceId, fortune.rarity, 100).catch(() => {});
+  // Leaderboard: record fortune + 100 sats (must await — serverless freezes after return)
+  await recordFortuneReveal(deviceId, fortune.rarity, 100);
 
   const res = Response.json({
     fortune: fortune.text,
