@@ -110,8 +110,9 @@ export async function POST(req: Request) {
         const updated = await markOrderPaid(orderId, txid, result.amountSats!);
 
         // Leaderboard: record sats spent at payment confirmation
+        // Must await — serverless freezes after return
         const { deviceId, isNew } = getOrCreateDeviceId(req);
-        recordSatsSpent(deviceId, result.amountSats!).catch(() => {});
+        await recordSatsSpent(deviceId, result.amountSats!);
 
         const res = Response.json({
           status: result.confirmed ? "confirmed" : "mempool",
