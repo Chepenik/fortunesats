@@ -3,6 +3,7 @@ import { getRandomFortune } from "@/lib/fortunes";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { getOrCreateDeviceId, attachDeviceCookie } from "@/lib/device-id";
 import { recordFortuneReveal } from "@/lib/leaderboard";
+import { recordActivity } from "@/lib/activity";
 
 const handler = async (req: Request) => {
   const limited = await checkRateLimit(req, { prefix: "fortune", limit: 10, window: "1 m" });
@@ -11,8 +12,11 @@ const handler = async (req: Request) => {
   const { deviceId, isNew } = getOrCreateDeviceId(req);
   const fortune = getRandomFortune();
 
-  // Leaderboard: record fortune + 100 sats (must await — serverless freezes after return)
-  await recordFortuneReveal(deviceId, fortune.rarity, 100);
+  // Leaderboard + activity feed: record fortune + 100 sats (must await — serverless freezes after return)
+  await Promise.all([
+    recordFortuneReveal(deviceId, fortune.rarity, 100),
+    recordActivity(deviceId, fortune.rarity),
+  ]);
 
   const res = Response.json({
     fortune: fortune.text,

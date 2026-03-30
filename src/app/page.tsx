@@ -1,4 +1,5 @@
 import { FortuneMachine } from "@/components/fortune-machine";
+import { ActivityFeed } from "@/components/activity-feed";
 import { DragonLoader } from "@/components/dragon/DragonLoader";
 import Link from "next/link";
 
@@ -51,6 +52,9 @@ export default function Home() {
 
         {/* Machine */}
         <FortuneMachine />
+
+        {/* Live activity feed */}
+        <ActivityFeed />
 
         {/* Footer */}
         <footer className="space-y-4 text-center">

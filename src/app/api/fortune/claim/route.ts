@@ -4,6 +4,7 @@ import { getRedis } from "@/lib/redis";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { getOrCreateDeviceId, attachDeviceCookie } from "@/lib/device-id";
 import { recordFortuneReveal } from "@/lib/leaderboard";
+import { recordActivity } from "@/lib/activity";
 
 const CLAIM_TTL = 86_400; // 24 hours
 
@@ -94,8 +95,11 @@ export async function GET(req: Request) {
   const { deviceId, isNew } = getOrCreateDeviceId(req);
   const fortune = getRandomFortune();
 
-  // Leaderboard: record fortune + 100 sats (must await — serverless freezes after return)
-  await recordFortuneReveal(deviceId, fortune.rarity, 100);
+  // Leaderboard + activity feed: record fortune + 100 sats (must await — serverless freezes after return)
+  await Promise.all([
+    recordFortuneReveal(deviceId, fortune.rarity, 100),
+    recordActivity(deviceId, fortune.rarity),
+  ]);
 
   const res = Response.json({
     fortune: fortune.text,

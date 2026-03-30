@@ -3,6 +3,7 @@ import { getUniqueRandomFortune } from "@/lib/fortunes";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { getOrCreateDeviceId, attachDeviceCookie } from "@/lib/device-id";
 import { recordFortuneReveal } from "@/lib/leaderboard";
+import { recordActivity } from "@/lib/activity";
 
 /**
  * POST /api/pack/fortune — Claim one fortune from a paid pack.
@@ -68,7 +69,10 @@ export async function POST(req: Request) {
     // Leaderboard: record fortune reveal (sats=0, already tracked at pack payment)
     // Must await — serverless freezes after return
     const { deviceId, isNew } = getOrCreateDeviceId(req);
-    await recordFortuneReveal(deviceId, fortune.rarity, 0);
+    await Promise.all([
+      recordFortuneReveal(deviceId, fortune.rarity, 0),
+      recordActivity(deviceId, fortune.rarity),
+    ]);
 
     const res = Response.json({
       fortune: fortune.text,
