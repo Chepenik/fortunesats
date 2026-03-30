@@ -15,11 +15,11 @@ import { RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
 
 const POOL_TOTALS: Record<Rarity, number> = {
   legendary: 8,
-  epic: 17,
+  epic: 18,
   rare: 38,
-  common: 107,
+  common: 55,
 };
-const POOL_TOTAL = 170;
+const POOL_TOTAL = 119;
 
 type Filter = "all" | Rarity;
 

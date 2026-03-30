@@ -2,7 +2,7 @@ import { CollectionView } from "@/components/collection-view";
 
 export const metadata = {
   title: "My Collection — Fortune Sats",
-  description: "Browse every fortune you have revealed. Track your rarity progress across 170 fortunes.",
+  description: "Browse every fortune you have revealed. Track your rarity progress across 119 fortunes.",
 };
 
 export default function CollectionPage() {
