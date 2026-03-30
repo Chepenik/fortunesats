@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="relative flex-1 flex flex-col items-center justify-center px-6 py-16 overflow-hidden">
+    <main className="relative flex-1 flex flex-col items-center justify-center px-6 py-12 overflow-hidden">
       {/* 3D Dragon — background layer, homepage only */}
       <div
         className="absolute inset-0 z-0 pointer-events-none opacity-80"
@@ -56,25 +56,12 @@ export default function Home() {
         <footer className="space-y-4 text-center">
           <div className="dragon-line w-16 mx-auto" />
 
-          {/* Info group */}
           <div className="space-y-1.5">
             <Link
               href="/pack"
               className="inline-block text-xs text-gold/50 hover:text-gold/70 transition-colors"
             >
               Fortune Pack &rarr; 100 fortunes for 10,000 sats (on-chain)
-            </Link>
-            <Link
-              href="/collection"
-              className="inline-block text-[11px] text-gold/35 hover:text-gold/55 transition-colors"
-            >
-              🗂️ My Collection
-            </Link>
-            <Link
-              href="/leaderboard"
-              className="inline-block text-[11px] text-gold/30 hover:text-gold/50 transition-colors"
-            >
-              🏆 Hall of Fortunes
             </Link>
             <p className="text-[11px] tracking-[0.15em] uppercase text-gold/40 font-mono">
               L402 &middot; Pay per request &middot; Lightning Network

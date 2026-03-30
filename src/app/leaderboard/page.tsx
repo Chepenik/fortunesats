@@ -1,5 +1,4 @@
 import { LeaderboardView } from "@/components/leaderboard-view";
-import Link from "next/link";
 
 export const metadata = {
   title: "Hall of Fortunes — Fortune Sats",
@@ -8,7 +7,7 @@ export const metadata = {
 
 export default function LeaderboardPage() {
   return (
-    <main className="relative flex-1 flex flex-col items-center px-6 py-16 overflow-hidden">
+    <main className="relative flex-1 flex flex-col items-center px-6 py-12 overflow-hidden">
       {/* Ambient glows */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-lacquer/[0.04] blur-[120px]" />
@@ -38,25 +37,6 @@ export default function LeaderboardPage() {
 
         {/* Leaderboard */}
         <LeaderboardView />
-
-        {/* Footer */}
-        <footer className="text-center space-y-4">
-          <div className="dragon-line w-16 mx-auto" />
-          <div className="space-y-1.5">
-            <Link
-              href="/collection"
-              className="inline-block text-[11px] text-gold/35 hover:text-gold/55 transition-colors"
-            >
-              🗂️ My Collection
-            </Link>
-            <Link
-              href="/"
-              className="inline-block text-xs text-gold/40 hover:text-gold/60 transition-colors"
-            >
-              &larr; Back to Fortune Sats
-            </Link>
-          </div>
-        </footer>
       </div>
     </main>
   );

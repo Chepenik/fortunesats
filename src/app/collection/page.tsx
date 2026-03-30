@@ -1,5 +1,4 @@
 import { CollectionView } from "@/components/collection-view";
-import Link from "next/link";
 
 export const metadata = {
   title: "My Collection — Fortune Sats",
@@ -8,7 +7,7 @@ export const metadata = {
 
 export default function CollectionPage() {
   return (
-    <main className="relative flex-1 flex flex-col items-center px-6 py-16 overflow-hidden">
+    <main className="relative flex-1 flex flex-col items-center px-6 py-12 overflow-hidden">
       {/* Ambient glows */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-lacquer/[0.04] blur-[120px]" />
@@ -38,17 +37,6 @@ export default function CollectionPage() {
 
         {/* Collection */}
         <CollectionView />
-
-        {/* Footer */}
-        <footer className="text-center space-y-4">
-          <div className="dragon-line w-16 mx-auto" />
-          <Link
-            href="/"
-            className="inline-block text-xs text-gold/40 hover:text-gold/60 transition-colors"
-          >
-            &larr; Back to Fortune Sats
-          </Link>
-        </footer>
       </div>
     </main>
   );

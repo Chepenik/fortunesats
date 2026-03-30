@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import {
   getCollection,
   getCollectionStats,
@@ -12,7 +13,6 @@ import { RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
 
 /* ─── Constants ─────────────────────────────────────────── */
 
-/** Total fortunes in the pool per rarity */
 const POOL_TOTALS: Record<Rarity, number> = {
   legendary: 8,
   epic: 17,
@@ -58,6 +58,7 @@ export function CollectionView() {
       : collection.filter((f) => f.rarity === filter);
 
   const pct = POOL_TOTAL > 0 ? Math.round((stats.total / POOL_TOTAL) * 100) : 0;
+  const totalPulls = collection.reduce((sum, f) => sum + f.pullCount, 0);
 
   if (!mounted) {
     return (
@@ -69,69 +70,115 @@ export function CollectionView() {
 
   return (
     <div className="space-y-6">
-      {/* ── Stats bar ──────────────────────────────────────── */}
-      <div className="space-y-3">
-        {/* Progress bar */}
-        <div className="space-y-2">
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm font-mono text-gold/70">
-              {stats.total}
-              <span className="text-muted-foreground/30">/{POOL_TOTAL}</span>
-            </span>
-            <span className="text-[11px] text-muted-foreground/40">
-              {pct}% collected
-            </span>
-          </div>
-          <div className="h-1.5 rounded-full bg-foreground/[0.04] overflow-hidden">
-            <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-gold/40 to-gold/70"
-              initial={{ width: 0 }}
-              animate={{ width: `${pct}%` }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-            />
-          </div>
+      {/* ── Hero stats card ────────────────────────────────── */}
+      <div className="relative rounded-2xl border border-gold/[0.08] bg-background/40 p-5 space-y-4 overflow-hidden">
+        {/* Subtle glow */}
+        <div className="absolute inset-0 rounded-2xl pointer-events-none">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[300px] h-[150px] bg-gold/[0.03] blur-[60px]" />
         </div>
 
-        {/* Rarity breakdown pills */}
-        <div className="flex gap-2 flex-wrap">
-          {(["legendary", "epic", "rare", "common"] as Rarity[]).map((r) => {
-            const cfg = RARITY_CONFIG[r];
-            const count = stats[r];
-            const total = POOL_TOTALS[r];
-            return (
-              <span
-                key={r}
-                className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-medium border ${cfg.badgeClass}`}
-              >
-                <span
-                  className="h-1.5 w-1.5 rounded-full"
-                  style={{ backgroundColor: cfg.color }}
-                />
-                {count}/{total} {cfg.label}
-              </span>
-            );
-          })}
+        <div className="relative space-y-4">
+          {/* Big number + progress */}
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-3xl font-bold font-mono text-gold tracking-tight">
+                {stats.total}
+                <span className="text-lg text-muted-foreground/30">/{POOL_TOTAL}</span>
+              </p>
+              <p className="text-[11px] text-muted-foreground/40 mt-0.5">
+                unique fortunes collected
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold font-mono text-foreground/70">
+                {pct}
+                <span className="text-sm text-muted-foreground/30">%</span>
+              </p>
+              {totalPulls > stats.total && (
+                <p className="text-[10px] text-muted-foreground/30 font-mono">
+                  {totalPulls} total pulls
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="h-2 rounded-full bg-foreground/[0.04] overflow-hidden">
+            <motion.div
+              className="h-full rounded-full bg-gradient-to-r from-gold/50 via-gold/70 to-gold/50"
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.max(pct, 1)}%` }}
+              transition={{ duration: 1, ease: "easeOut" }}
+            />
+          </div>
+
+          {/* Rarity breakdown — mini progress bars */}
+          <div className="grid grid-cols-2 gap-2">
+            {(["legendary", "epic", "rare", "common"] as Rarity[]).map((r) => {
+              const cfg = RARITY_CONFIG[r];
+              const count = stats[r];
+              const total = POOL_TOTALS[r];
+              const rarityPct = total > 0 ? Math.round((count / total) * 100) : 0;
+              return (
+                <div
+                  key={r}
+                  className="flex items-center gap-2 px-2.5 py-2 rounded-lg border border-gold/[0.04] bg-background/30"
+                >
+                  <span
+                    className="h-2 w-2 rounded-full shrink-0"
+                    style={{ backgroundColor: cfg.color }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between mb-1">
+                      <span className="text-[10px] font-medium" style={{ color: cfg.color }}>
+                        {cfg.label}
+                      </span>
+                      <span className="text-[10px] font-mono text-muted-foreground/30">
+                        {count}/{total}
+                      </span>
+                    </div>
+                    <div className="h-1 rounded-full bg-foreground/[0.04] overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          width: `${Math.max(rarityPct, count > 0 ? 4 : 0)}%`,
+                          backgroundColor: cfg.color,
+                          opacity: 0.6,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       {/* ── Filter tabs ────────────────────────────────────── */}
       <div className="flex gap-1 p-1 rounded-xl bg-background/40 border border-gold/[0.06]">
-        {FILTERS.map((f) => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={`flex-1 px-2 py-2 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
-              filter === f.key
-                ? "bg-gold/[0.08] text-gold border border-gold/15"
-                : "text-muted-foreground/40 hover:text-muted-foreground/60 border border-transparent"
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
+        {FILTERS.map((f) => {
+          const count = f.key === "all" ? collection.length : stats[f.key];
+          return (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`flex-1 px-2 py-2 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+                filter === f.key
+                  ? "bg-gold/[0.08] text-gold border border-gold/15"
+                  : "text-muted-foreground/40 hover:text-muted-foreground/60 border border-transparent"
+              }`}
+            >
+              {f.label}
+              {count > 0 && (
+                <span className="ml-1 text-[9px] opacity-50">{count}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {/* ── Fortune grid ───────────────────────────────────── */}
+      {/* ── Fortune list ───────────────────────────────────── */}
       <AnimatePresence mode="wait">
         <motion.div
           key={filter}
@@ -141,18 +188,28 @@ export function CollectionView() {
           transition={{ duration: 0.25 }}
         >
           {filtered.length === 0 ? (
-            <div className="text-center py-16 space-y-3">
+            <div className="text-center py-14 space-y-4">
               <p className="text-3xl">🥠</p>
-              <p className="text-sm text-muted-foreground/40">
-                {filter === "all"
-                  ? "No fortunes collected yet"
-                  : `No ${RARITY_CONFIG[filter].label.toLowerCase()} fortunes yet`}
-              </p>
-              <p className="text-xs text-muted-foreground/25">
-                {filter === "all"
-                  ? "Pull your first fortune to start your collection."
-                  : "Keep pulling — fortune favors the persistent."}
-              </p>
+              <div className="space-y-1.5">
+                <p className="text-sm text-muted-foreground/40">
+                  {filter === "all"
+                    ? "No fortunes collected yet"
+                    : `No ${RARITY_CONFIG[filter].label.toLowerCase()} fortunes yet`}
+                </p>
+                <p className="text-xs text-muted-foreground/25">
+                  {filter === "all"
+                    ? "Pull your first fortune to start your collection."
+                    : "Keep pulling — fortune favors the persistent."}
+                </p>
+              </div>
+              {filter === "all" && (
+                <Link
+                  href="/"
+                  className="inline-block mt-2 px-4 py-2 rounded-lg text-xs font-medium text-gold/70 border border-gold/15 hover:bg-gold/[0.06] transition-colors"
+                >
+                  Pull a fortune
+                </Link>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
