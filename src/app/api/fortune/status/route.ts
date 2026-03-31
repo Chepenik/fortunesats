@@ -16,7 +16,7 @@ const localFortuneCache = new Map<string, { fortune: string; rarity: Rarity; tim
 const recordedHashes = new Set<string>();
 
 export async function GET(req: Request) {
-  const limited = await checkRateLimit(req, { prefix: "fortune-status", limit: 20, window: "1 m" });
+  const limited = await checkRateLimit(req, { prefix: "fortune-status", limit: 10, window: "1 m" });
   if (limited) return limited;
 
   const url = new URL(req.url);

@@ -32,7 +32,7 @@ function relativeTime(ts: number): string {
 
 /* ─── Component ──────────────────────────────────────────── */
 
-const POLL_INTERVAL = 30_000; // 30 seconds
+const POLL_INTERVAL = 60_000; // 60 seconds
 
 export function ActivityFeed() {
   const [events, setEvents] = useState<ActivityEvent[]>([]);
