@@ -1,7 +1,7 @@
 import { withPayment } from "@moneydevkit/nextjs/server";
 import { getRandomFortune } from "@/lib/fortunes";
 import { checkRateLimit } from "@/lib/ratelimit";
-import { getOrCreateDeviceId, attachDeviceCookie } from "@/lib/device-id";
+import { getOrCreateDeviceId, attachDeviceCookie, resolveDisplayNameFromReq } from "@/lib/device-id";
 import { recordFortuneReveal } from "@/lib/leaderboard";
 import { recordActivity } from "@/lib/activity";
 
@@ -10,12 +10,13 @@ const handler = async (req: Request) => {
   if (limited) return limited;
 
   const { deviceId, isNew } = getOrCreateDeviceId(req);
+  const displayName = resolveDisplayNameFromReq(req, deviceId);
   const fortune = getRandomFortune();
 
   // Leaderboard + activity feed: record fortune + 100 sats (must await — serverless freezes after return)
   await Promise.all([
-    recordFortuneReveal(deviceId, fortune.rarity, 100),
-    recordActivity(deviceId, fortune.rarity),
+    recordFortuneReveal(deviceId, displayName, fortune.rarity, 100),
+    recordActivity(displayName, fortune.rarity),
   ]);
 
   const res = Response.json({

@@ -5,7 +5,7 @@ import {
 } from "@/lib/orders";
 import { verifyTxPayment, isTxConfirmed } from "@/lib/mempool";
 import { checkRateLimit } from "@/lib/ratelimit";
-import { getOrCreateDeviceId, attachDeviceCookie } from "@/lib/device-id";
+import { getOrCreateDeviceId, attachDeviceCookie, resolveDisplayNameFromReq } from "@/lib/device-id";
 import { recordSatsSpent } from "@/lib/leaderboard";
 
 /**
@@ -112,7 +112,8 @@ export async function POST(req: Request) {
         // Leaderboard: record sats spent at payment confirmation
         // Must await — serverless freezes after return
         const { deviceId, isNew } = getOrCreateDeviceId(req);
-        await recordSatsSpent(deviceId, result.amountSats!);
+        const displayName = resolveDisplayNameFromReq(req, deviceId);
+        await recordSatsSpent(deviceId, displayName, result.amountSats!);
 
         const res = Response.json({
           status: result.confirmed ? "confirmed" : "mempool",

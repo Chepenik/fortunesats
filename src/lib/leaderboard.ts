@@ -30,10 +30,12 @@ const STREAK_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
  * Record a fortune reveal for leaderboard tracking.
  * Called ONLY after verified paid fortune delivery.
  *
+ * @param displayName — caller resolves this once via resolveDisplayNameFromReq()
  * @param sats — pass 0 for pack reveals (sats already tracked at payment time)
  */
 export async function recordFortuneReveal(
   deviceId: string,
+  displayName: string,
   rarity: Rarity,
   sats: number,
 ): Promise<void> {
@@ -44,12 +46,11 @@ export async function recordFortuneReveal(
     const deviceKey = `${DEVICE_PREFIX}${deviceId}`;
     const now = new Date();
 
-    // Read current streak metadata
+    // Read current streak metadata (2 fields instead of 3 — displayName comes from caller)
     const meta = await redis.hmget<{
       lastFortuneAt: string | null;
       currentStreak: string | null;
-      displayName: string | null;
-    }>(deviceKey, "lastFortuneAt", "currentStreak", "displayName");
+    }>(deviceKey, "lastFortuneAt", "currentStreak");
 
     let newStreak = 1;
     if (meta?.lastFortuneAt) {
@@ -58,8 +59,6 @@ export async function recordFortuneReveal(
         newStreak = (parseInt(meta?.currentStreak || "0", 10) || 0) + 1;
       }
     }
-
-    const displayName = meta?.displayName || getDisplayName(deviceId);
 
     const pipe = redis.pipeline();
     pipe.zincrby(LB_FORTUNES, 1, deviceId);
@@ -80,9 +79,12 @@ export async function recordFortuneReveal(
 /**
  * Record sats spent at pack payment confirmation time.
  * Fortune count is tracked separately at reveal time.
+ *
+ * @param displayName — caller resolves this once via resolveDisplayNameFromReq()
  */
 export async function recordSatsSpent(
   deviceId: string,
+  displayName: string,
   sats: number,
 ): Promise<void> {
   const redis = getRedis();
@@ -92,9 +94,26 @@ export async function recordSatsSpent(
     const deviceKey = `${DEVICE_PREFIX}${deviceId}`;
     const pipe = redis.pipeline();
     pipe.zincrby(LB_SATS, sats, deviceId);
-    // Ensure display name exists
-    pipe.hsetnx(deviceKey, "displayName", getDisplayName(deviceId));
+    pipe.hset(deviceKey, { displayName });
     await pipe.exec();
+  } catch {
+    // Non-critical
+  }
+}
+
+/**
+ * Update display name in the device hash (called when user sets initials).
+ * Single HSET — 1 Redis command.
+ */
+export async function updateLeaderboardDisplayName(
+  deviceId: string,
+  displayName: string,
+): Promise<void> {
+  const redis = getRedis();
+  if (!redis) return;
+
+  try {
+    await redis.hset(`${DEVICE_PREFIX}${deviceId}`, { displayName });
   } catch {
     // Non-critical
   }
@@ -140,20 +159,37 @@ export async function getLeaderboard(
   if (!redis) return empty;
 
   try {
-    // Fetch top entries for each dimension
-    const [fortuneIds, satIds, legendaryIds, streakIds] = await Promise.all([
-      redis.zrange(LB_FORTUNES, 0, limit - 1, { rev: true }) as Promise<string[]>,
-      redis.zrange(LB_SATS, 0, limit - 1, { rev: true }) as Promise<string[]>,
-      redis.zrange(LB_LEGENDARY, 0, limit - 1, { rev: true }) as Promise<string[]>,
-      redis.zrange(LB_STREAK, 0, limit - 1, { rev: true }) as Promise<string[]>,
+    // Fetch top entries WITH scores in one call each (eliminates 4 separate score-fetching pipelines)
+    const [fortuneRaw, satRaw, legendaryRaw, streakRaw] = await Promise.all([
+      redis.zrange(LB_FORTUNES, 0, limit - 1, { rev: true, withScores: true }),
+      redis.zrange(LB_SATS, 0, limit - 1, { rev: true, withScores: true }),
+      redis.zrange(LB_LEGENDARY, 0, limit - 1, { rev: true, withScores: true }),
+      redis.zrange(LB_STREAK, 0, limit - 1, { rev: true, withScores: true }),
     ]);
 
-    // Collect unique device IDs to batch-fetch display names and scores
-    const allIds = new Set<string>([
-      ...fortuneIds, ...satIds, ...legendaryIds, ...streakIds,
-    ]);
+    // Parse withScores results: [member, score, member, score, ...]
+    type ScoredEntry = { member: string; score: number };
+    function parseScoredResults(raw: unknown): ScoredEntry[] {
+      const arr = raw as (string | number)[];
+      const entries: ScoredEntry[] = [];
+      for (let i = 0; i < arr.length; i += 2) {
+        entries.push({ member: String(arr[i]), score: Number(arr[i + 1]) || 0 });
+      }
+      return entries;
+    }
 
-    // Batch fetch display names
+    const fortuneEntries = parseScoredResults(fortuneRaw);
+    const satEntries = parseScoredResults(satRaw);
+    const legendaryEntries = parseScoredResults(legendaryRaw);
+    const streakEntries = parseScoredResults(streakRaw);
+
+    // Collect unique device IDs to batch-fetch display names
+    const allIds = new Set<string>();
+    for (const e of [...fortuneEntries, ...satEntries, ...legendaryEntries, ...streakEntries]) {
+      allIds.add(e.member);
+    }
+
+    // Batch fetch display names (single pipeline)
     const nameMap = new Map<string, string>();
     if (allIds.size > 0) {
       const pipe = redis.pipeline();
@@ -167,28 +203,22 @@ export async function getLeaderboard(
       }
     }
 
-    // Fetch scores for each leaderboard's top entries
-    async function buildEntries(key: string, ids: string[]): Promise<LeaderboardEntry[]> {
-      if (ids.length === 0) return [];
-      const pipe = redis!.pipeline();
-      for (const id of ids) pipe.zscore(key, id);
-      const scores = await pipe.exec();
-      return ids.map((id, i) => ({
+    // Build LeaderboardEntry arrays (scores already fetched — no extra Redis calls)
+    function toEntries(scored: ScoredEntry[]): LeaderboardEntry[] {
+      return scored.map((e, i) => ({
         rank: i + 1,
-        displayName: nameMap.get(id) || getDisplayName(id),
-        score: Number(scores[i]) || 0,
-        isYou: id === deviceId,
+        displayName: nameMap.get(e.member) || getDisplayName(e.member),
+        score: e.score,
+        isYou: e.member === deviceId,
       }));
     }
 
-    const [fortunes, sats, legendary, streak] = await Promise.all([
-      buildEntries(LB_FORTUNES, fortuneIds),
-      buildEntries(LB_SATS, satIds),
-      buildEntries(LB_LEGENDARY, legendaryIds),
-      buildEntries(LB_STREAK, streakIds),
-    ]);
+    const fortunes = toEntries(fortuneEntries);
+    const sats = toEntries(satEntries);
+    const legendary = toEntries(legendaryEntries);
+    const streak = toEntries(streakEntries);
 
-    // Fetch caller's rank in each dimension
+    // Fetch caller's rank in each dimension (single pipeline, 9 commands)
     let you: YouData | null = null;
     if (deviceId) {
       const pipe = redis.pipeline();

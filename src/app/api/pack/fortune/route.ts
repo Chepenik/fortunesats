@@ -1,7 +1,7 @@
 import { getOrder, claimFortune } from "@/lib/orders";
 import { getUniqueRandomFortune } from "@/lib/fortunes";
 import { checkRateLimit } from "@/lib/ratelimit";
-import { getOrCreateDeviceId, attachDeviceCookie } from "@/lib/device-id";
+import { getOrCreateDeviceId, attachDeviceCookie, resolveDisplayNameFromReq } from "@/lib/device-id";
 import { recordFortuneReveal } from "@/lib/leaderboard";
 import { recordActivity } from "@/lib/activity";
 
@@ -69,9 +69,10 @@ export async function POST(req: Request) {
     // Leaderboard: record fortune reveal (sats=0, already tracked at pack payment)
     // Must await — serverless freezes after return
     const { deviceId, isNew } = getOrCreateDeviceId(req);
+    const displayName = resolveDisplayNameFromReq(req, deviceId);
     await Promise.all([
-      recordFortuneReveal(deviceId, fortune.rarity, 0),
-      recordActivity(deviceId, fortune.rarity),
+      recordFortuneReveal(deviceId, displayName, fortune.rarity, 0),
+      recordActivity(displayName, fortune.rarity),
     ]);
 
     const res = Response.json({

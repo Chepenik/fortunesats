@@ -9,7 +9,6 @@
  */
 
 import { getRedis } from "@/lib/redis";
-import { getDisplayName } from "@/lib/device-id";
 import type { Rarity } from "@/lib/fortunes";
 
 const ACTIVITY_KEY = "activity:recent";
@@ -37,9 +36,11 @@ export interface ActivityEvent {
 /**
  * Record a fortune reveal in the activity feed.
  * Called after verified fortune delivery — same call sites as recordFortuneReveal.
+ *
+ * @param displayName — caller resolves this once via resolveDisplayNameFromReq()
  */
 export async function recordActivity(
-  deviceId: string,
+  displayName: string,
   rarity: Rarity,
 ): Promise<void> {
   const redis = getRedis();
@@ -47,7 +48,7 @@ export async function recordActivity(
 
   try {
     const event: StoredEvent = {
-      d: getDisplayName(deviceId),
+      d: displayName,
       r: rarity,
       t: Date.now(),
     };

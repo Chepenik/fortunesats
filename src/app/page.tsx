@@ -1,5 +1,6 @@
 import { FortuneMachine } from "@/components/fortune-machine";
 import { ActivityFeed } from "@/components/activity-feed";
+import { InitialsEditor } from "@/components/initials-editor";
 import { DragonLoader } from "@/components/dragon/DragonLoader";
 import Link from "next/link";
 
@@ -55,6 +56,9 @@ export default function Home() {
 
         {/* Live activity feed */}
         <ActivityFeed />
+
+        {/* Initials editor */}
+        <InitialsEditor />
 
         {/* Footer */}
         <footer className="space-y-4 text-center">
