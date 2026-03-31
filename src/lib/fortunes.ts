@@ -200,6 +200,139 @@ export function getRandomFortune(): Fortune {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+/* ─── Enriched fortune model (agent layer) ─────────────────── */
+
+export type Category =
+  | "stoicism"
+  | "philosophy"
+  | "eastern"
+  | "sovereignty"
+  | "growth"
+  | "fortune"
+  | "wit";
+
+export interface AgentFortune {
+  id: string;
+  text: string;
+  author: string | null;
+  rarity: Rarity;
+  category: Category;
+  tags: string[];
+}
+
+/** Stable content-derived ID (7-char base36 hash). */
+function fortuneId(text: string): string {
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+  }
+  return (hash >>> 0).toString(36).padStart(7, "0");
+}
+
+/** Extract author from "text — Author" format. */
+function extractAuthor(text: string): string | null {
+  const sep = text.lastIndexOf(" — ");
+  if (sep === -1) return null;
+  const candidate = text.slice(sep + 3).trim();
+  // Only treat as author if it looks like a name (starts uppercase, no sentence-length)
+  if (candidate.length > 0 && candidate.length < 60 && /^[A-Z]/.test(candidate)) {
+    return candidate;
+  }
+  return null;
+}
+
+/** Infer category from content and authorship. */
+function inferCategory(text: string, author: string | null): Category {
+  const lower = text.toLowerCase();
+
+  // Author-based classification
+  if (author) {
+    const stoics = ["Marcus Aurelius", "Seneca", "Epictetus"];
+    if (stoics.some((s) => author.includes(s))) return "stoicism";
+
+    const eastern = ["Lao Tzu", "Buddha", "Rumi", "Confucius"];
+    if (eastern.some((e) => author.includes(e))) return "eastern";
+
+    const philosophers = [
+      "Socrates", "Plato", "Aristotle", "Nietzsche", "Kierkegaard",
+      "Jung", "Campbell", "Rilke", "Ayn Rand", "Virgil",
+      "Saint-Exupéry", "Oscar Wilde", "Leonard Cohen",
+    ];
+    if (philosophers.some((p) => author.includes(p))) return "philosophy";
+  }
+
+  // Content-based classification
+  const sovereigntyKw = [
+    "sats", "money", "bitcoin", "proof of work", "time preference",
+    "fix the", "savings", "sound money", "freedom compounds",
+    "sovereign", "value for value",
+  ];
+  if (sovereigntyKw.some((k) => lower.includes(k))) return "sovereignty";
+
+  const fortuneKw = [
+    "will soon", "is moving", "is arriving", "tonight", "right now",
+    "soon return", "quietly opening", "are moving toward", "soon pay",
+    "grow clearer", "make room", "echoing outward", "thinking about you",
+  ];
+  if (fortuneKw.some((k) => lower.includes(k))) return "fortune";
+
+  const witKw = [
+    "dog thinks", "alphabet has range", "algorithm", "notification",
+    "plot twist", "commit", "ship it", "imposter syndrome",
+    "brave enough", "extrapolate", "forecast",
+  ];
+  if (witKw.some((k) => lower.includes(k))) return "wit";
+
+  return "growth";
+}
+
+/** Derive tags from content, author, and classification. */
+function inferTags(text: string, author: string | null, category: Category): string[] {
+  const tags: string[] = [category];
+  const lower = text.toLowerCase();
+
+  if (author) tags.push("attributed");
+  else tags.push("original");
+
+  if (lower.includes("mind") || lower.includes("thought")) tags.push("mindset");
+  if (lower.includes("time") || lower.includes("patience") || lower.includes("wait")) tags.push("patience");
+  if (lower.includes("strength") || lower.includes("power") || lower.includes("endur")) tags.push("strength");
+  if (lower.includes("wisdom") || lower.includes("knowledge") || lower.includes("learn")) tags.push("wisdom");
+
+  return tags;
+}
+
+/** Enrich a base Fortune into an AgentFortune. */
+function enrichFortune(f: Fortune): AgentFortune {
+  const author = extractAuthor(f.text);
+  const category = inferCategory(f.text, author);
+  return {
+    id: fortuneId(f.text),
+    text: f.text,
+    author,
+    rarity: f.rarity,
+    category,
+    tags: inferTags(f.text, author, category),
+  };
+}
+
+/**
+ * All fortunes with enriched metadata for agent consumption.
+ * Computed once at module load time.
+ */
+export const agentFortunes: AgentFortune[] = fortunes.map(enrichFortune);
+
+/** Lookup an enriched fortune by its stable ID. */
+export const agentFortuneById = new Map<string, AgentFortune>(
+  agentFortunes.map((f) => [f.id, f]),
+);
+
+/** Get a random enriched fortune (same weighted selection as getRandomFortune). */
+export function getRandomAgentFortune(): AgentFortune {
+  const base = getRandomFortune();
+  return enrichFortune(base);
+}
+
 /**
  * Get a random fortune that hasn't been claimed yet.
  * Falls back to any random fortune if all have been seen.
