@@ -35,7 +35,8 @@ export async function GET(req: Request) {
   let paid: boolean;
   try {
     paid = await isPaid(paymentHash);
-  } catch {
+  } catch (e) {
+    console.error("[fortune/claim:isPaid]", e);
     return Response.json(
       { error: { code: "service_unavailable", message: "Payment verification temporarily unavailable. Please retry." } },
       { status: 503 },
@@ -66,7 +67,8 @@ export async function GET(req: Request) {
         { status: 409 },
       );
     }
-  } catch {
+  } catch (e) {
+    console.error("[fortune/claim:claimCheck]", e);
     return Response.json(
       { error: { code: "service_unavailable", message: "Claim service temporarily unavailable. Please retry." } },
       { status: 503 },
@@ -85,7 +87,8 @@ export async function GET(req: Request) {
         { status: 409 },
       );
     }
-  } catch {
+  } catch (e) {
+    console.error("[fortune/claim:setNX]", e);
     return Response.json(
       { error: { code: "service_unavailable", message: "Claim service temporarily unavailable. Please retry." } },
       { status: 503 },

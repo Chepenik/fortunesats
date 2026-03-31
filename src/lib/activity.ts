@@ -56,8 +56,8 @@ export async function recordActivity(
     pipe.lpush(ACTIVITY_KEY, JSON.stringify(event));
     pipe.ltrim(ACTIVITY_KEY, 0, MAX_EVENTS - 1);
     await pipe.exec();
-  } catch {
-    // Non-critical — never break the fortune flow
+  } catch (e) {
+    console.error("[activity:recordActivity]", e);
   }
 }
 
@@ -83,7 +83,8 @@ export async function getRecentActivity(
         timestamp: parsed.t,
       };
     });
-  } catch {
+  } catch (e) {
+    console.error("[activity:getRecentActivity]", e);
     return [];
   }
 }

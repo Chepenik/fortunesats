@@ -65,7 +65,8 @@ export async function checkRateLimit(
         },
       );
     }
-  } catch {
+  } catch (e) {
+    console.error("[ratelimit:checkRateLimit]", e);
     // Rate limiting is best-effort — allow request if Redis fails
   }
 

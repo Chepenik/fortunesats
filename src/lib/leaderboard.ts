@@ -71,8 +71,8 @@ export async function recordFortuneReveal(
       lastFortuneAt: now.toISOString(),
     });
     await pipe.exec();
-  } catch {
-    // Non-critical — never break the fortune flow
+  } catch (e) {
+    console.error("[leaderboard:recordFortuneReveal]", e);
   }
 }
 
@@ -96,8 +96,8 @@ export async function recordSatsSpent(
     pipe.zincrby(LB_SATS, sats, deviceId);
     pipe.hset(deviceKey, { displayName });
     await pipe.exec();
-  } catch {
-    // Non-critical
+  } catch (e) {
+    console.error("[leaderboard:recordSatsSpent]", e);
   }
 }
 
@@ -114,8 +114,8 @@ export async function updateLeaderboardDisplayName(
 
   try {
     await redis.hset(`${DEVICE_PREFIX}${deviceId}`, { displayName });
-  } catch {
-    // Non-critical
+  } catch (e) {
+    console.error("[leaderboard:updateDisplayName]", e);
   }
 }
 
@@ -246,7 +246,8 @@ export async function getLeaderboard(
     }
 
     return { fortunes, sats, legendary, streak, you };
-  } catch {
+  } catch (e) {
+    console.error("[leaderboard:getLeaderboard]", e);
     return empty;
   }
 }
