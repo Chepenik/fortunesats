@@ -33,7 +33,8 @@ export async function GET(req: Request) {
   let paid: boolean;
   try {
     paid = await isPaid(paymentHash);
-  } catch {
+  } catch (e) {
+    console.error("[fortune/status:isPaid]", e);
     return Response.json(
       { error: { code: "service_unavailable", message: "Payment verification temporarily unavailable. Please retry." } },
       { status: 503 },
@@ -59,8 +60,9 @@ export async function GET(req: Request) {
             };
             localFortuneCache.set(paymentHash, cached);
           }
-        } catch {
-          // Fortune cache read failed — safe to generate a new one since payment is verified
+        } catch (e) {
+          console.error("[fortune/status:cacheRead]", e);
+          // Safe to generate a new one since payment is verified
         }
       }
     }
@@ -74,8 +76,9 @@ export async function GET(req: Request) {
         if (redis) {
           await redis.set(`fortune:${paymentHash}`, cached, { ex: FORTUNE_TTL });
         }
-      } catch {
-        // Fortune cache write failed — fortune is already in local cache, acceptable
+      } catch (e) {
+        console.error("[fortune/status:cacheWrite]", e);
+        // Fortune is already in local cache, acceptable
       }
     }
 

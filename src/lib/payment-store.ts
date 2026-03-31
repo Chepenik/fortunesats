@@ -45,8 +45,9 @@ export async function markPaidInRedis(paymentHash: string): Promise<void> {
     if (redis) {
       await redis.set(`paid:${paymentHash}`, Date.now(), { ex: PAYMENT_TTL });
     }
-  } catch {
-    // Best effort — in-memory still works on this instance
+  } catch (e) {
+    console.error("[payment-store:markPaidInRedis]", e);
+    // In-memory still works on this instance
   }
 }
 
