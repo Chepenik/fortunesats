@@ -18,10 +18,13 @@ import { updateLeaderboardDisplayName } from "@/lib/leaderboard";
  * Creates a device cookie if the user doesn't have one yet.
  */
 export async function POST(req: Request) {
+  console.log("[identity] POST received");
+
   const limited = await checkRateLimit(req, { prefix: "identity", limit: 5, window: "1 m" });
   if (limited) return limited;
 
   const { deviceId, isNew } = getOrCreateDeviceId(req);
+  console.log("[identity] deviceId=%s isNew=%s", deviceId.slice(0, 8), isNew);
 
   let body: { initials?: string | null };
   try {
@@ -34,6 +37,7 @@ export async function POST(req: Request) {
   }
 
   const raw = body.initials;
+  console.log("[identity] raw initials=%s", raw);
 
   // Clear initials — revert to pseudonym
   if (!raw) {
@@ -46,12 +50,14 @@ export async function POST(req: Request) {
     headers.append("Set-Cookie", clearInitialsCookieHeader());
     if (isNew) headers.append("Set-Cookie", deviceCookieHeader(deviceId));
 
+    console.log("[identity] cleared → %s", displayName);
     return new Response(JSON.stringify({ displayName }), { status: 200, headers });
   }
 
   // Validate initials
   const cleaned = validateInitials(raw);
   if (!cleaned) {
+    console.log("[identity] invalid initials rejected: %s", raw);
     return Response.json(
       { error: { code: "invalid_initials", message: "Initials must be 2-4 letters (A-Z)" } },
       { status: 400 },
@@ -67,6 +73,7 @@ export async function POST(req: Request) {
   headers.append("Set-Cookie", initialsCookieHeader(cleaned));
   if (isNew) headers.append("Set-Cookie", deviceCookieHeader(deviceId));
 
+  console.log("[identity] saved %s → %s (isNew=%s)", cleaned, displayName, isNew);
   return new Response(
     JSON.stringify({ displayName, initials: cleaned }),
     { status: 200, headers },
