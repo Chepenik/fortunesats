@@ -182,7 +182,7 @@ export default async function OGImage({
                 letterSpacing: "0.02em",
               }}
             >
-              {"\u2014"} {author}
+              {`\u2014 ${author}`}
             </div>
           )}
         </div>

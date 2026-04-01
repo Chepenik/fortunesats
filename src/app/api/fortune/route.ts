@@ -39,7 +39,17 @@ export async function GET(req: Request) {
   const { fortuneSingleEnabled, freeFortunePromo } = getFlags();
   if (!fortuneSingleEnabled) return unavailableResponse("Fortunes");
   if (freeFortunePromo) return handler(req);
-  return paidHandler(req);
+  try {
+    return await paidHandler(req);
+  } catch (e) {
+    // MDK/LDK failures (cold-start sync timeout, node init errors).
+    // Client falls back to /fortune/status + /fortune/claim polling.
+    console.error("[fortune:GET] MDK handler error:", e);
+    return Response.json(
+      { error: { code: "payment_unavailable", message: "Payment processing temporarily unavailable. Please retry shortly." } },
+      { status: 503, headers: { "Retry-After": "5" } },
+    );
+  }
 }
 
 // MDK's LDK node needs time to build + sync on cold start
