@@ -6,7 +6,9 @@ const MDK_PAYMENT_STATE_KEY = Symbol.for("mdk-checkout:payment-state");
 /**
  * Set of hashes we've already synced to Redis on this instance,
  * so we don't re-write them on every webhook call.
+ * Capped to prevent unbounded growth on warm Fluid Compute instances.
  */
+const MAX_SYNCED = 500;
 const syncedHashes = new Set<string>();
 
 export async function POST(req: Request) {
@@ -44,6 +46,7 @@ export async function POST(req: Request) {
     const writes: Promise<void>[] = [];
     for (const hash of stateAfter.receivedPaymentHashes) {
       if (!before.has(hash) && !syncedHashes.has(hash)) {
+        if (syncedHashes.size >= MAX_SYNCED) syncedHashes.clear();
         syncedHashes.add(hash);
         writes.push(markPaidInRedis(hash));
       }

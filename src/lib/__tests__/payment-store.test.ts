@@ -79,7 +79,7 @@ describe("markPaidInRedis", () => {
     expect(mockSet).toHaveBeenCalledWith(
       "paid:mark-hash-1",
       expect.any(Number),
-      { ex: 86_400 }
+      { nx: true, ex: 86_400 }
     );
   });
 });

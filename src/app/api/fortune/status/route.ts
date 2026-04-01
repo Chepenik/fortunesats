@@ -10,7 +10,9 @@ const FORTUNE_TTL = 86_400; // 24 hours
 
 /**
  * In-memory fortune cache (fast path). Redis is authoritative.
+ * Capped to prevent unbounded growth on warm Fluid Compute instances.
  */
+const MAX_FORTUNE_CACHE = 500;
 const localFortuneCache = new Map<string, { fortune: string; rarity: Rarity; timestamp: string }>();
 
 export async function GET(req: Request) {
@@ -58,6 +60,7 @@ export async function GET(req: Request) {
               rarity: stored.rarity ?? "common",
               timestamp: stored.timestamp,
             };
+            if (localFortuneCache.size >= MAX_FORTUNE_CACHE) localFortuneCache.clear();
             localFortuneCache.set(paymentHash, cached);
           }
         } catch (e) {
@@ -70,6 +73,7 @@ export async function GET(req: Request) {
     if (!cached) {
       const fortune = getRandomFortune();
       cached = { fortune: fortune.text, rarity: fortune.rarity, timestamp: new Date().toISOString() };
+      if (localFortuneCache.size >= MAX_FORTUNE_CACHE) localFortuneCache.clear();
       localFortuneCache.set(paymentHash, cached);
       try {
         const redis = getRedis();

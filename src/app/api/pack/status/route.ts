@@ -59,7 +59,12 @@ export async function POST(req: Request) {
         confirmed: false,
       }));
       if (confirmed) {
-        await markOrderConfirmed(orderId);
+        try {
+          await markOrderConfirmed(orderId);
+        } catch (e) {
+          // Non-critical: order stays "mempool" and will be upgraded on next poll
+          console.error("[pack/status] markOrderConfirmed failed:", e);
+        }
         return Response.json({
           status: "confirmed",
           txid: order.txid,

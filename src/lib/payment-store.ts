@@ -16,9 +16,17 @@ interface MdkPaymentState {
 }
 
 /* ─── In-memory caches (fast path, not authoritative) ───── */
+// Capped to prevent unbounded growth on warm Fluid Compute instances.
+// Redis is authoritative; clearing local cache just means an extra Redis lookup.
+const MAX_LOCAL_CACHE = 1000;
 
 const localPaidCache = new Set<string>();
 const localConsumedCache = new Set<string>();
+
+function addCapped(cache: Set<string>, value: string) {
+  if (cache.size >= MAX_LOCAL_CACHE) cache.clear();
+  cache.add(value);
+}
 
 /* ─── Helpers ────────────────────────────────────────────── */
 
@@ -39,11 +47,13 @@ function isLocallyPaid(paymentHash: string): boolean {
  * webhook wrapper after MDK processes the payment.
  */
 export async function markPaidInRedis(paymentHash: string): Promise<void> {
-  localPaidCache.add(paymentHash);
+  addCapped(localPaidCache, paymentHash);
   try {
     const redis = getRedis();
     if (redis) {
-      await redis.set(`paid:${paymentHash}`, Date.now(), { ex: PAYMENT_TTL });
+      // NX: idempotent — only writes if key doesn't exist.
+      // Prevents redundant Redis writes on duplicate webhooks.
+      await redis.set(`paid:${paymentHash}`, Date.now(), { nx: true, ex: PAYMENT_TTL });
     }
   } catch (e) {
     console.error("[payment-store:markPaidInRedis]", e);
@@ -68,7 +78,7 @@ export async function isPaid(paymentHash: string): Promise<boolean> {
   }
   const val = await redis.get(`paid:${paymentHash}`);
   if (val !== null) {
-    localPaidCache.add(paymentHash); // warm local cache
+    addCapped(localPaidCache, paymentHash); // warm local cache
     return true;
   }
   return false;
@@ -94,6 +104,6 @@ export async function consumePayment(paymentHash: string): Promise<boolean> {
     if (!acquired) return false; // another instance already consumed it
   }
 
-  localConsumedCache.add(paymentHash);
+  addCapped(localConsumedCache, paymentHash);
   return true;
 }

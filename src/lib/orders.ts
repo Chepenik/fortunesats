@@ -227,7 +227,9 @@ export async function markOrderPaid(
   const store = await getStore();
   const order = await store.get(orderId);
   if (!order) return null;
-  if (order.status === "confirmed") return order;
+  // Idempotent: if already paid/confirmed, return current state without overwriting.
+  // Prevents race where two concurrent requests with different txids corrupt the order.
+  if (order.status !== "pending") return order;
 
   const updated: Order = {
     ...order,
