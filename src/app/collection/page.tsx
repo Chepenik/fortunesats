@@ -1,8 +1,11 @@
 import { CollectionView } from "@/components/collection-view";
 
-export const metadata = {
-  title: "My Collection — Fortune Sats",
-  description: "Browse every fortune you have revealed. Track your rarity progress across 119 fortunes.",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Fortune Collection — Track Your Bitcoin Wisdom Fortunes",
+  description: "Browse and track every wisdom fortune you have revealed. 119 collectible quotes across Legendary, Epic, Rare, and Common rarity tiers.",
+  alternates: { canonical: "https://fortunesats.com/collection" },
 };
 
 export default function CollectionPage() {

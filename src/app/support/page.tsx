@@ -1,8 +1,11 @@
 import { SupportView } from "@/components/support-view";
 
-export const metadata = {
-  title: "Support — Fortune Sats",
-  description: "Support FortuneSats with an on-chain Bitcoin donation. Every sat helps keep the oracle alive.",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Support the Oracle — Donate Bitcoin to Fortune Sats",
+  description: "Support FortuneSats with an on-chain Bitcoin donation. Every sat helps keep the fortune oracle alive and open source.",
+  alternates: { canonical: "https://fortunesats.com/support" },
 };
 
 export default function SupportPage() {

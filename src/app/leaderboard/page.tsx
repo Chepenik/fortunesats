@@ -2,9 +2,12 @@ import { LeaderboardView } from "@/components/leaderboard-view";
 import { getFlags } from "@/lib/flags";
 import Link from "next/link";
 
-export const metadata = {
-  title: "Hall of Fortunes — Fortune Sats",
-  description: "Global leaderboard for Fortune Sats — see who has revealed the most fortunes.",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Hall of Fortunes — Bitcoin Fortune Leaderboard",
+  description: "Global leaderboard for Fortune Sats. See who has revealed the most fortunes, earned the most sats, and collected the rarest wisdom.",
+  alternates: { canonical: "https://fortunesats.com/leaderboard" },
 };
 
 export default function LeaderboardPage() {

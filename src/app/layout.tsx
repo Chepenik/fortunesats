@@ -17,24 +17,31 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://fortunesats.com"),
-  title: "Fortune Sats",
+  title: {
+    default: "Fortune Sats — Bitcoin Fortune Oracle Powered by Lightning",
+    template: "%s | Fortune Sats",
+  },
   description:
-    "100 sats. One fortune. A tiny Lightning-powered ritual using the L402 protocol.",
+    "Pay 100 sats over Lightning, receive a wisdom fortune. A Bitcoin-native fortune oracle with 119 collectible quotes across 4 rarity tiers.",
   icons: {
     icon: "/icon.svg",
   },
   openGraph: {
-    title: "Fortune Sats",
+    title: "Fortune Sats — Bitcoin Fortune Oracle",
     description:
-      "100 sats. One fortune. A tiny Lightning-powered ritual using the L402 protocol.",
+      "Pay 100 sats over Lightning, receive a wisdom fortune. 119 collectible quotes across 4 rarity tiers.",
     siteName: "Fortune Sats",
     type: "website",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Fortune Sats",
+    title: "Fortune Sats — Bitcoin Fortune Oracle",
     description:
-      "100 sats. One fortune. A tiny Lightning-powered ritual using the L402 protocol.",
+      "Pay 100 sats over Lightning, receive a wisdom fortune. 119 collectible quotes across 4 rarity tiers.",
+  },
+  alternates: {
+    canonical: "https://fortunesats.com",
   },
 };
 

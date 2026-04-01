@@ -2,10 +2,13 @@ import { FortunePack } from "@/components/fortune-pack";
 import { getFlags } from "@/lib/flags";
 import Link from "next/link";
 
-export const metadata = {
-  title: "Fortune Pack — Fortune Sats",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Fortune Pack — 100 Bitcoin Fortunes for 10,000 Sats",
   description:
-    "100 fortunes for 10,000 sats. Pay on-chain, accepted instantly on mempool detection.",
+    "Buy a Fortune Pack: 100 wisdom fortunes for 10,000 sats. Pay on-chain Bitcoin, accepted instantly on mempool detection.",
+  alternates: { canonical: "https://fortunesats.com/pack" },
 };
 
 export default function PackPage() {

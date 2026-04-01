@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { decodeFortuneSlug, parseFortune } from "@/lib/og";
-import { RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
+import { decodeFortuneSlug, encodeFortuneSlug, parseFortune } from "@/lib/og";
+import { RARITY_CONFIG, fortunes, type Rarity } from "@/lib/fortunes";
+
+/* ─── Static generation ────────────────────────────────── */
+
+export function generateStaticParams() {
+  return fortunes.map((f) => ({
+    slug: encodeFortuneSlug(f.text, f.rarity),
+  }));
+}
 
 /* ─── Metadata ──────────────────────────────────────────── */
 
@@ -15,33 +23,42 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!decoded) {
     return {
-      title: "Fortune Sats",
+      title: "Fortune Not Found",
       description:
-        "100 sats. One fortune. A tiny Lightning-powered ritual.",
+        "This fortune link may have expired or been corrupted.",
+      robots: { index: false },
     };
   }
 
   const { quote, author } = parseFortune(decoded.text);
-  const rarityLabel =
-    decoded.rarity !== "common"
-      ? `[${RARITY_CONFIG[decoded.rarity].label}] `
-      : "";
+  const rarityLabel = RARITY_CONFIG[decoded.rarity].label;
   const truncatedQuote =
     quote.length > 120 ? quote.slice(0, 117) + "\u2026" : quote;
-  const description = `${rarityLabel}\u201C${truncatedQuote}\u201D${author ? ` \u2014 ${author}` : ""}`;
+
+  // Title: use the quote itself (truncated) for unique, indexable titles
+  const titleQuote = quote.length > 60 ? quote.slice(0, 57) + "\u2026" : quote;
+  const title = author
+    ? `${titleQuote} \u2014 ${author}`
+    : titleQuote;
+
+  const description = `${rarityLabel} fortune: \u201C${truncatedQuote}\u201D${author ? ` \u2014 ${author}` : ""} | Collect wisdom fortunes on Fortune Sats.`;
+
+  const canonicalUrl = `https://fortunesats.com/fortune/${slug}`;
 
   return {
-    title: `Fortune Sats \u2014 ${decoded.rarity !== "common" ? RARITY_CONFIG[decoded.rarity].label + " " : ""}Fortune`,
+    title,
     description,
+    alternates: { canonical: canonicalUrl },
     openGraph: {
-      title: "Fortune Sats",
+      title: `${titleQuote} | Fortune Sats`,
       description,
       siteName: "Fortune Sats",
-      type: "website",
+      type: "article",
+      url: canonicalUrl,
     },
     twitter: {
       card: "summary_large_image",
-      title: "Fortune Sats",
+      title: `${titleQuote} | Fortune Sats`,
       description,
     },
   };
@@ -61,8 +78,30 @@ export default async function FortunePage({ params }: Props) {
   const { quote, author } = parseFortune(text);
   const config = RARITY_CONFIG[rarity];
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Quotation",
+    text: quote,
+    ...(author ? { creator: { "@type": "Person", name: author } } : {}),
+    isPartOf: {
+      "@type": "CreativeWork",
+      name: "Fortune Sats",
+      url: "https://fortunesats.com",
+    },
+    url: `https://fortunesats.com/fortune/${slug}`,
+    additionalProperty: {
+      "@type": "PropertyValue",
+      name: "rarity",
+      value: RARITY_CONFIG[rarity].label,
+    },
+  };
+
   return (
     <main className="flex-1 flex flex-col items-center justify-center px-6 py-16 relative overflow-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Ambient glows */}
       <div className="pointer-events-none absolute inset-0 flex flex-col">
         <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-lacquer/[0.04] blur-[120px]" />
@@ -135,6 +174,13 @@ export default async function FortunePage({ params }: Props) {
             className="btn-lacquer inline-flex items-center justify-center w-full h-14 rounded-xl text-sm font-semibold tracking-wide transition-all active:scale-[0.98]"
           >
             Get Your Own Fortune
+          </Link>
+
+          <Link
+            href="/collection"
+            className="inline-block text-xs text-gold/40 hover:text-gold/60 transition-colors"
+          >
+            View your collection &rarr;
           </Link>
 
           <p className="text-xs text-gold/30 leading-relaxed">

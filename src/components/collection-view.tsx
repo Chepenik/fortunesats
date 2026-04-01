@@ -10,6 +10,7 @@ import {
   type CollectionStats,
 } from "@/lib/collection";
 import { RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
+import { encodeFortuneSlug } from "@/lib/og";
 
 /* ─── Constants ─────────────────────────────────────────── */
 
@@ -214,7 +215,12 @@ export function CollectionView() {
           ) : (
             <div className="space-y-2">
               {filtered.map((fortune) => (
-                <FortuneCard key={fortune.text} fortune={fortune} />
+                <Link
+                  key={fortune.text}
+                  href={`/fortune/${encodeFortuneSlug(fortune.text, fortune.rarity)}`}
+                >
+                  <FortuneCard fortune={fortune} />
+                </Link>
               ))}
             </div>
           )}

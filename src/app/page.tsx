@@ -1,15 +1,39 @@
+import type { Metadata } from "next";
 import { FortuneMachine } from "@/components/fortune-machine";
 import { ActivityFeed } from "@/components/activity-feed";
 import { InitialsEditor } from "@/components/initials-editor";
 import { DragonLoader } from "@/components/dragon/DragonLoader";
 import { getFlags } from "@/lib/flags";
+import { fortunes } from "@/lib/fortunes";
+import { encodeFortuneSlug, parseFortune } from "@/lib/og";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "https://fortunesats.com" },
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Fortune Sats",
+  url: "https://fortunesats.com",
+  description:
+    "Pay 100 sats over Lightning, receive a wisdom fortune. A Bitcoin-native fortune oracle with 119 collectible quotes.",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: "https://fortunesats.com/collection",
+  },
+};
 
 export default function Home() {
   const { fortuneSingleEnabled, fortunePackEnabled, activityFeedEnabled, freeFortunePromo } = getFlags();
 
   return (
     <main className="relative flex-1 flex flex-col items-center justify-center px-6 py-12 overflow-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* 3D Dragon — background layer, homepage only */}
       <div
         className="absolute inset-0 z-0 pointer-events-none opacity-80"
@@ -78,6 +102,39 @@ export default function Home() {
 
         {/* Initials editor */}
         <InitialsEditor />
+
+        {/* Featured wisdom — internal links for SEO */}
+        <nav className="space-y-3" aria-label="Featured fortunes">
+          <p className="text-[10px] tracking-[0.2em] uppercase text-gold/30 font-mono text-center">
+            Featured wisdom
+          </p>
+          <div className="space-y-1.5">
+            {fortunes
+              .filter((f) => f.rarity === "legendary")
+              .slice(0, 4)
+              .map((f) => {
+                const { quote, author } = parseFortune(f.text);
+                const shortQuote = quote.length > 50 ? quote.slice(0, 47) + "\u2026" : quote;
+                return (
+                  <Link
+                    key={f.text}
+                    href={`/fortune/${encodeFortuneSlug(f.text, f.rarity)}`}
+                    className="block px-3 py-2 rounded-lg text-[11px] text-muted-foreground/40 hover:text-gold/60 hover:bg-gold/[0.03] transition-colors leading-relaxed"
+                  >
+                    &ldquo;{shortQuote}&rdquo;{author ? ` \u2014 ${author}` : ""}
+                  </Link>
+                );
+              })}
+          </div>
+          <div className="flex justify-center gap-4 text-[11px]">
+            <Link href="/collection" className="text-gold/40 hover:text-gold/60 transition-colors">
+              View collection &rarr;
+            </Link>
+            <Link href="/leaderboard" className="text-gold/40 hover:text-gold/60 transition-colors">
+              Leaderboard &rarr;
+            </Link>
+          </div>
+        </nav>
 
         {/* Footer */}
         <footer className="space-y-4 text-center">
