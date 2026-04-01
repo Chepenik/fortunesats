@@ -19,7 +19,7 @@ export default function Home() {
       </div>
 
       {/* Ambient radial glows */}
-      <div className="pointer-events-none absolute inset-0 z-[1]">
+      <div className="pointer-events-none absolute inset-0 z-[1] flex flex-col">
         <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-lacquer/[0.04] blur-[120px]" />
         <div className="absolute bottom-[-10%] left-1/2 -translate-x-1/2 w-[500px] h-[300px] rounded-full bg-gold/[0.03] blur-[100px]" />
         <div className="absolute top-[20%] right-[-10%] w-[200px] h-[200px] rounded-full bg-cyan/[0.02] blur-[80px]" />
