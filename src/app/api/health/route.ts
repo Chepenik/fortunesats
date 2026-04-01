@@ -1,8 +1,8 @@
 /**
  * Health check endpoint.
  *
- * Called every 5 minutes by Vercel Cron to keep the serverless function
- * instance alive, reducing cold starts on real payment requests.
+ * Called periodically by Vercel Cron. On Hobby plan this runs every 12h
+ * (minimum allowed). On Pro plan, change schedule to every 5 min for true warm-keeping.
  *
  * Note: this does NOT warm the LDK node itself — that only happens when
  * /api/mdk receives an actual webhook. The value here is keeping the
