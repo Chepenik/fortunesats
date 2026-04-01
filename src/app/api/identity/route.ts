@@ -1,8 +1,9 @@
 import { checkRateLimit } from "@/lib/ratelimit";
 import {
-  getDeviceId,
+  getOrCreateDeviceId,
   validateInitials,
   resolveDisplayName,
+  deviceCookieHeader,
   initialsCookieHeader,
   clearInitialsCookieHeader,
 } from "@/lib/device-id";
@@ -14,19 +15,13 @@ import { updateLeaderboardDisplayName } from "@/lib/leaderboard";
  * Body: { initials: string }          → set initials (2-4 uppercase letters)
  * Body: { initials: "" } or { initials: null } → clear initials (revert to pseudonym)
  *
- * Requires existing device cookie (must have visited the site before).
+ * Creates a device cookie if the user doesn't have one yet.
  */
 export async function POST(req: Request) {
   const limited = await checkRateLimit(req, { prefix: "identity", limit: 5, window: "1 m" });
   if (limited) return limited;
 
-  const deviceId = getDeviceId(req);
-  if (!deviceId) {
-    return Response.json(
-      { error: { code: "no_device", message: "No device cookie found. Visit the site first." } },
-      { status: 400 },
-    );
-  }
+  const { deviceId, isNew } = getOrCreateDeviceId(req);
 
   let body: { initials?: string | null };
   try {
@@ -45,16 +40,13 @@ export async function POST(req: Request) {
     const displayName = resolveDisplayName(deviceId, null);
     await updateLeaderboardDisplayName(deviceId, displayName);
 
-    return new Response(
-      JSON.stringify({ displayName }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Set-Cookie": clearInitialsCookieHeader(),
-        },
-      },
-    );
+    const headers = new Headers({
+      "Content-Type": "application/json",
+    });
+    headers.append("Set-Cookie", clearInitialsCookieHeader());
+    if (isNew) headers.append("Set-Cookie", deviceCookieHeader(deviceId));
+
+    return new Response(JSON.stringify({ displayName }), { status: 200, headers });
   }
 
   // Validate initials
@@ -69,14 +61,14 @@ export async function POST(req: Request) {
   const displayName = resolveDisplayName(deviceId, cleaned);
   await updateLeaderboardDisplayName(deviceId, displayName);
 
+  const headers = new Headers({
+    "Content-Type": "application/json",
+  });
+  headers.append("Set-Cookie", initialsCookieHeader(cleaned));
+  if (isNew) headers.append("Set-Cookie", deviceCookieHeader(deviceId));
+
   return new Response(
     JSON.stringify({ displayName, initials: cleaned }),
-    {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Set-Cookie": initialsCookieHeader(cleaned),
-      },
-    },
+    { status: 200, headers },
   );
 }

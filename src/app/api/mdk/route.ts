@@ -18,10 +18,24 @@ export async function POST(req: Request) {
     ? new Set(stateBefore.receivedPaymentHashes)
     : new Set<string>();
 
-  // Let MDK handle the webhook (starts LDK node, processes payments)
-  const response = await mdkPost(req);
+  // Let MDK handle the webhook (starts LDK node, processes payments).
+  // Sync timeout is hardcoded at 10s in the native binary — catch failures
+  // so we can still extract any payment hashes that were recorded before the crash.
+  let response: Response;
+  let mdkError: unknown = null;
+  try {
+    response = await mdkPost(req);
+  } catch (e) {
+    mdkError = e;
+    console.error("[mdk:POST] MDK handler failed (likely sync timeout):", e);
+    response = Response.json(
+      { error: { code: "sync_failed", message: "Lightning node sync timed out. Payment may still be processing." } },
+      { status: 503, headers: { "Retry-After": "5" } },
+    );
+  }
 
-  // After MDK finishes, diff the globalThis set and sync new hashes to Redis
+  // After MDK finishes (or fails), diff the globalThis set and sync new hashes to Redis.
+  // Payment hashes may have been recorded before the sync timeout.
   const stateAfter = (
     globalThis as Record<symbol, { receivedPaymentHashes: Set<string> } | undefined>
   )[MDK_PAYMENT_STATE_KEY];
@@ -36,6 +50,9 @@ export async function POST(req: Request) {
     }
     if (writes.length > 0) {
       await Promise.allSettled(writes);
+      if (mdkError) {
+        console.log(`[mdk:POST] Recovered ${writes.length} payment hash(es) despite sync failure`);
+      }
     }
   }
 
