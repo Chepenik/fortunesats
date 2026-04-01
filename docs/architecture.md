@@ -1,137 +1,163 @@
 # Architecture
 
-FortuneSats is structured in four layers. Each layer has a clear responsibility and communicates through well-defined interfaces.
+FortuneSats is a four-layer cake. Each layer has one job and talks to the others through clean interfaces. No spaghetti, no surprises.
 
 ```
-┌─────────────────────────────────────────────┐
-│           Human Experience Layer            │
-│   Next.js pages, components, animations     │
-│   Ritual flow: pay → reveal → collect       │
-├─────────────────────────────────────────────┤
-│           Agent Interface Layer             │
-│   /api/agent/* endpoints, OpenAPI spec      │
-│   Structured JSON, stable IDs, filtering    │
-├─────────────────────────────────────────────┤
-│          Access / Payment Layer             │
-│   L402 gating, rate limiting, device auth   │
-│   MoneyDevKit, withAgentPayment wrapper     │
-├─────────────────────────────────────────────┤
-│           Shared Domain Layer               │
-│   Fortunes, rarity, config, Redis state     │
-│   Leaderboard, activity, collections        │
-└─────────────────────────────────────────────┘
+  +-----------------------------------------+
+  |       Human Experience Layer            |  Next.js pages, 3D dragon, animations
+  |       "Make it feel like magic"         |  Ritual: pay -> reveal -> collect
+  +-----------------------------------------+
+  |       Agent Interface Layer             |  /api/agent/* endpoints, OpenAPI
+  |       "Make it parseable"               |  Structured JSON, stable IDs, filters
+  +-----------------------------------------+
+  |       Access / Payment Layer            |  L402 gating, rate limits, device auth
+  |       "Make them pay (fairly)"          |  MoneyDevKit, withAgentPayment wrapper
+  +-----------------------------------------+
+  |       Shared Domain Layer               |  Fortunes, rarity, config, Redis state
+  |       "The source of truth"             |  Leaderboard, activity, collections
+  +-----------------------------------------+
 ```
+
+---
 
 ## Human Experience Layer
 
-The top layer is what humans see and interact with. It prioritizes ritual, delight, and simplicity.
+This is what people see. It's designed to feel like a premium ritual, not a web app.
 
 **Key files:**
-- `src/app/page.tsx` — Homepage with 3D dragon, fortune machine, activity feed
-- `src/components/fortune-machine.tsx` — The core pay-and-reveal ritual
-- `src/components/fortune-pack.tsx` — On-chain 100-fortune pack purchase
-- `src/app/collection/page.tsx` — Personal fortune collection
-- `src/app/leaderboard/page.tsx` — Global rankings
+- `src/app/page.tsx` -- Homepage with 3D dragon, fortune machine, activity feed
+- `src/components/fortune-machine.tsx` -- The core pay-and-reveal experience
+- `src/components/fortune-pack.tsx` -- On-chain 100-fortune pack purchase
+- `src/app/collection/page.tsx` -- Personal fortune collection
+- `src/app/leaderboard/page.tsx` -- Global rankings
 
-**Principles:**
+**Rules of this layer:**
 - Never expose implementation complexity to the user
 - Every interaction should feel intentional and premium
-- Animations and rarity reveals are part of the product, not decoration
+- Animations and rarity reveals are the product, not decoration
+- If it needs explanation, it's too complex
+
+---
 
 ## Agent Interface Layer
 
-The agent layer serves machines. It returns structured, filterable, documented JSON.
+This layer serves machines. Structured, filterable, documented JSON.
 
 **Key files:**
-- `src/app/api/agent/fortune/route.ts` — Structured fortune endpoint
-- `src/app/api/openapi/route.ts` — Machine-readable API spec
+- `src/app/api/agent/fortune/route.ts` -- Structured fortune endpoint with filtering
+- `src/app/api/openapi/route.ts` -- Machine-readable API specification
 
-**Principles:**
+**Rules of this layer:**
 - Responses are stable and predictable (consistent schema, stable IDs)
 - Filtering is explicit (query parameters, not URL guessing)
-- Errors are machine-parseable (consistent `{ error: { code, message } }` format)
-- Documentation is co-located (OpenAPI served at `/api/openapi`)
+- Errors are machine-parseable (`{ error: { code, message } }`)
+- Documentation lives next to the code (OpenAPI at `/api/openapi`)
+
+---
 
 ## Access / Payment Layer
 
-This layer controls who can access what and how they pay.
+This layer decides who gets in and how they pay.
 
 **Key files:**
-- `src/lib/l402.ts` — L402 payment gate abstraction for agent endpoints
-- `src/lib/ratelimit.ts` — Per-endpoint rate limiting (Upstash)
-- `src/lib/device-id.ts` — Cookie-based device identity
-- `src/lib/payment-store.ts` — Lightning payment state (Redis-backed MDK sync)
-- `src/lib/config.ts` — Central config including feature flags
+- `src/lib/l402.ts` -- L402 payment gate for agent endpoints
+- `src/lib/ratelimit.ts` -- Per-endpoint rate limiting (Upstash)
+- `src/lib/device-id.ts` -- Cookie-based device identity
+- `src/lib/payment-store.ts` -- Lightning payment state (Redis-backed MDK sync)
+- `src/lib/config.ts` -- Central config including feature flags
 
 **Payment methods:**
-- Lightning (L402 via MoneyDevKit): 100 sats per fortune, instant
-- On-chain Bitcoin: 10,000 sats for a 100-fortune pack, mempool.space verification
-- Agent L402 (when enabled): Same Lightning flow, machine-to-machine
 
-**Principles:**
+| Method | Who | Price | Speed |
+|--------|-----|-------|-------|
+| Lightning (MDK) | Humans | 100 sats/fortune | Instant |
+| On-chain Bitcoin | Humans | ~10,000 sats/100 fortunes | ~10 min confirmation |
+| L402 (when enabled) | Agents | 100 sats/fortune | Instant |
+
+**Rules of this layer:**
 - Payment is value exchange, not a paywall
-- L402 is opt-in and additive — the agent API works without it during development
-- Rate limiting is defense-in-depth, not payment-critical
+- L402 is opt-in -- the agent API works without it during development
+- Rate limiting is defense-in-depth, not revenue protection
+
+---
 
 ## Shared Domain Layer
 
-The bottom layer holds business logic shared by both human and agent surfaces.
+The foundation. Business logic that both humans and agents share.
 
 **Key files:**
-- `src/lib/fortunes.ts` — Fortune pool, rarity system, enriched agent model
-- `src/lib/config.ts` — Pricing, rarity weights, feature flags
-- `src/lib/leaderboard.ts` — Redis sorted sets for rankings
-- `src/lib/activity.ts` — Activity feed (Redis list)
-- `src/lib/collection.ts` — Client-side fortune collection (localStorage)
-- `src/lib/streak.ts` — Client-side streak tracking (localStorage)
-- `src/lib/redis.ts` — Shared Upstash Redis singleton
+- `src/lib/fortunes.ts` -- Fortune pool (170 items), rarity system, enriched agent model
+- `src/lib/config.ts` -- Pricing, rarity weights, feature flags
+- `src/lib/leaderboard.ts` -- Redis sorted sets for global rankings
+- `src/lib/activity.ts` -- Activity feed (Redis list)
+- `src/lib/collection.ts` -- Client-side fortune collection (localStorage)
+- `src/lib/streak.ts` -- Client-side streak tracking (localStorage)
+- `src/lib/redis.ts` -- Shared Upstash Redis singleton
 
 **Data flow:**
 ```
 Fortune Pool (170 items, in-memory)
-    ├── getRandomFortune()        → Human API → UI
-    ├── getRandomAgentFortune()   → Agent API → JSON
-    ├── agentFortuneById          → Agent API (by ID lookup)
-    └── getUniqueRandomFortune()  → Pack API → UI
+    |-- getRandomFortune()        -> Human API -> UI
+    |-- getRandomAgentFortune()   -> Agent API -> JSON
+    |-- agentFortuneById          -> Agent API (by ID lookup)
+    +-- getUniqueRandomFortune()  -> Pack API -> UI
 
 Leaderboard (Redis sorted sets)
-    ├── recordFortuneReveal()     → Called after payment verification
-    └── getLeaderboard()          → Leaderboard page + API
+    |-- recordFortuneReveal()     -> Called after payment verification
+    +-- getLeaderboard()          -> Leaderboard page + API
 
 Activity Feed (Redis list)
-    ├── recordActivity()          → Called after fortune reveal
-    └── getActivity()             → Homepage feed + API
+    |-- recordActivity()          -> Called after fortune reveal
+    +-- getActivity()             -> Homepage feed + API
 ```
+
+---
 
 ## Tech Stack
 
-| Concern        | Technology                              |
-|---------------|----------------------------------------|
-| Framework     | Next.js 16 (App Router)                |
-| Hosting       | Vercel (Fluid Compute)                 |
-| Database      | Upstash Redis (sorted sets, hashes, lists) |
-| Lightning     | MoneyDevKit (L402/LDK)                 |
-| On-chain      | mempool.space API                      |
-| Styling       | Tailwind CSS v4, shadcn/ui             |
-| 3D            | Three.js via React Three Fiber         |
-| Analytics     | Vercel Analytics                       |
+| Layer | Tech | Why |
+|-------|------|-----|
+| Framework | Next.js 16 (App Router) | Server Components, streaming, edge-ready |
+| Hosting | Vercel (Fluid Compute) | Zero-config deploys, global edge |
+| Database | Upstash Redis | Sorted sets, hashes, lists -- perfect for leaderboards |
+| Lightning | MoneyDevKit (L402/LDK) | Best DX for Lightning integration |
+| On-chain | mempool.space API | Real-time transaction verification |
+| Styling | Tailwind CSS v4 + shadcn/ui | Utility-first + accessible components |
+| 3D | Three.js via React Three Fiber | Declarative 3D for the dragon guardian |
+| Analytics | Vercel Analytics | Privacy-friendly, zero-config |
+| Testing | Vitest | Fast, modern, ESM-native |
+
+---
 
 ## Configuration
 
-All runtime config lives in `src/lib/config.ts` and can be overridden via environment variables:
+All runtime config lives in `src/lib/config.ts` with environment variable overrides:
 
-| Variable           | Default | Description                    |
-|--------------------|---------|---------------------------------|
-| `FS_FORTUNE_PRICE` | 100     | Single fortune price (sats)    |
-| `FS_PACK_PRICE`    | 10000   | Pack base price (sats)         |
-| `FS_PACK_SIZE`     | 100     | Fortunes per pack              |
-| `FS_AGENT_API`     | true    | Enable agent API endpoints     |
-| `FS_L402`          | false   | Enable L402 payment gating     |
+| Variable | Default | What It Controls |
+|----------|---------|-----------------|
+| `FS_FORTUNE_PRICE` | `100` | Single fortune price (sats) |
+| `FS_PACK_PRICE` | `10000` | Pack base price (sats) |
+| `FS_PACK_SIZE` | `100` | Fortunes per pack |
+| `FS_AGENT_API` | `true` | Enable agent API endpoints |
+| `FS_L402` | `false` | Enable L402 payment gating |
+
+---
 
 ## Future Directions
 
-- **Vercel Flags integration**: Move feature flags to Edge Config for instant toggling
-- **MCP server**: Expose fortunes as an MCP resource for AI agent ecosystems
-- **Telegram bot**: Chat SDK integration for fortune delivery via Telegram
-- **Deeper L402**: Full MDK integration for agent payment validation
-- **Durable workflows**: Workflow DevKit for multi-step agent interactions
+Some things we'd love to build (PRs welcome):
+
+- **MCP server** -- Expose fortunes as an MCP resource for AI agent ecosystems
+- **Telegram bot** -- Chat SDK integration for fortune delivery via Telegram
+- **Edge Config feature flags** -- Move flags to Vercel Edge Config for instant toggling
+- **Full L402 activation** -- Wire up MoneyDevKit for production agent payments
+- **Durable workflows** -- Workflow DevKit for multi-step agent interactions
+- **Fortune submissions** -- Let the community contribute wisdom
+
+---
+
+## Related Docs
+
+- [Agent Integration Guide](./agent.md) -- API reference for machines
+- [L402 Payment Protocol](./l402.md) -- How machine payments work
+- [Product Principles](./product-principles.md) -- Design guardrails
