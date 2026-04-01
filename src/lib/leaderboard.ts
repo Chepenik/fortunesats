@@ -159,29 +159,41 @@ export async function getLeaderboard(
   if (!redis) return empty;
 
   try {
-    // Fetch top entries WITH scores in one call each (eliminates 4 separate score-fetching pipelines)
-    const [fortuneRaw, satRaw, legendaryRaw, streakRaw] = await Promise.all([
-      redis.zrange(LB_FORTUNES, 0, limit - 1, { rev: true, withScores: true }),
-      redis.zrange(LB_SATS, 0, limit - 1, { rev: true, withScores: true }),
-      redis.zrange(LB_LEGENDARY, 0, limit - 1, { rev: true, withScores: true }),
-      redis.zrange(LB_STREAK, 0, limit - 1, { rev: true, withScores: true }),
-    ]);
+    // Single pipeline: 4 ZRANGE + (optionally) 9 "you" commands
+    // Reduces Upstash HTTP requests from 5-6 to 2 (this + display name batch)
+    const mainPipe = redis.pipeline();
+    mainPipe.zrange(LB_FORTUNES, 0, limit - 1, { rev: true, withScores: true });   // [0]
+    mainPipe.zrange(LB_SATS, 0, limit - 1, { rev: true, withScores: true });       // [1]
+    mainPipe.zrange(LB_LEGENDARY, 0, limit - 1, { rev: true, withScores: true });  // [2]
+    mainPipe.zrange(LB_STREAK, 0, limit - 1, { rev: true, withScores: true });     // [3]
+    if (deviceId) {
+      mainPipe.zrevrank(LB_FORTUNES, deviceId);                          // [4]
+      mainPipe.zscore(LB_FORTUNES, deviceId);                            // [5]
+      mainPipe.zrevrank(LB_SATS, deviceId);                              // [6]
+      mainPipe.zscore(LB_SATS, deviceId);                                // [7]
+      mainPipe.zrevrank(LB_LEGENDARY, deviceId);                         // [8]
+      mainPipe.zscore(LB_LEGENDARY, deviceId);                           // [9]
+      mainPipe.zrevrank(LB_STREAK, deviceId);                            // [10]
+      mainPipe.zscore(LB_STREAK, deviceId);                              // [11]
+      mainPipe.hget(`${DEVICE_PREFIX}${deviceId}`, "displayName");       // [12]
+    }
+    const raw = await mainPipe.exec();
 
     // Parse withScores results: [member, score, member, score, ...]
     type ScoredEntry = { member: string; score: number };
-    function parseScoredResults(raw: unknown): ScoredEntry[] {
-      const arr = raw as (string | number)[];
+    function parseScoredResults(data: unknown): ScoredEntry[] {
+      if (!Array.isArray(data)) return [];
       const entries: ScoredEntry[] = [];
-      for (let i = 0; i < arr.length; i += 2) {
-        entries.push({ member: String(arr[i]), score: Number(arr[i + 1]) || 0 });
+      for (let i = 0; i < data.length; i += 2) {
+        entries.push({ member: String(data[i]), score: Number(data[i + 1]) || 0 });
       }
       return entries;
     }
 
-    const fortuneEntries = parseScoredResults(fortuneRaw);
-    const satEntries = parseScoredResults(satRaw);
-    const legendaryEntries = parseScoredResults(legendaryRaw);
-    const streakEntries = parseScoredResults(streakRaw);
+    const fortuneEntries = parseScoredResults(raw[0]);
+    const satEntries = parseScoredResults(raw[1]);
+    const legendaryEntries = parseScoredResults(raw[2]);
+    const streakEntries = parseScoredResults(raw[3]);
 
     // Collect unique device IDs to batch-fetch display names
     const allIds = new Set<string>();
@@ -189,21 +201,21 @@ export async function getLeaderboard(
       allIds.add(e.member);
     }
 
-    // Batch fetch display names (single pipeline)
+    // Batch fetch display names (single pipeline — 2nd and final HTTP request)
     const nameMap = new Map<string, string>();
     if (allIds.size > 0) {
-      const pipe = redis.pipeline();
+      const namePipe = redis.pipeline();
       for (const id of allIds) {
-        pipe.hget(`${DEVICE_PREFIX}${id}`, "displayName");
+        namePipe.hget(`${DEVICE_PREFIX}${id}`, "displayName");
       }
-      const results = await pipe.exec();
+      const results = await namePipe.exec();
       const ids = [...allIds];
       for (let i = 0; i < ids.length; i++) {
         nameMap.set(ids[i], (results[i] as string) || getDisplayName(ids[i]));
       }
     }
 
-    // Build LeaderboardEntry arrays (scores already fetched — no extra Redis calls)
+    // Build LeaderboardEntry arrays
     function toEntries(scored: ScoredEntry[]): LeaderboardEntry[] {
       return scored.map((e, i) => ({
         rank: i + 1,
@@ -218,29 +230,17 @@ export async function getLeaderboard(
     const legendary = toEntries(legendaryEntries);
     const streak = toEntries(streakEntries);
 
-    // Fetch caller's rank in each dimension (single pipeline, 9 commands)
+    // Extract caller's rank from the same pipeline results
     let you: YouData | null = null;
     if (deviceId) {
-      const pipe = redis.pipeline();
-      pipe.zrevrank(LB_FORTUNES, deviceId);
-      pipe.zscore(LB_FORTUNES, deviceId);
-      pipe.zrevrank(LB_SATS, deviceId);
-      pipe.zscore(LB_SATS, deviceId);
-      pipe.zrevrank(LB_LEGENDARY, deviceId);
-      pipe.zscore(LB_LEGENDARY, deviceId);
-      pipe.zrevrank(LB_STREAK, deviceId);
-      pipe.zscore(LB_STREAK, deviceId);
-      pipe.hget(`${DEVICE_PREFIX}${deviceId}`, "displayName");
-      const r = await pipe.exec();
-
-      const hasAny = r[0] !== null || r[2] !== null || r[4] !== null || r[6] !== null;
+      const hasAny = raw[4] !== null || raw[6] !== null || raw[8] !== null || raw[10] !== null;
       if (hasAny) {
         you = {
-          displayName: (r[8] as string) || getDisplayName(deviceId),
-          fortunes: r[0] !== null ? { rank: (r[0] as number) + 1, score: Number(r[1]) || 0 } : null,
-          sats: r[2] !== null ? { rank: (r[2] as number) + 1, score: Number(r[3]) || 0 } : null,
-          legendary: r[4] !== null ? { rank: (r[4] as number) + 1, score: Number(r[5]) || 0 } : null,
-          streak: r[6] !== null ? { rank: (r[6] as number) + 1, score: Number(r[7]) || 0 } : null,
+          displayName: (raw[12] as string) || getDisplayName(deviceId),
+          fortunes: raw[4] !== null ? { rank: (raw[4] as number) + 1, score: Number(raw[5]) || 0 } : null,
+          sats: raw[6] !== null ? { rank: (raw[6] as number) + 1, score: Number(raw[7]) || 0 } : null,
+          legendary: raw[8] !== null ? { rank: (raw[8] as number) + 1, score: Number(raw[9]) || 0 } : null,
+          streak: raw[10] !== null ? { rank: (raw[10] as number) + 1, score: Number(raw[11]) || 0 } : null,
         };
       }
     }

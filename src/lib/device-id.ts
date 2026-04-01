@@ -32,15 +32,19 @@ const BLOCKED_INITIALS = new Set([
 
 /* ─── Cookie helpers ────────────────────────────────────── */
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function parseCookie(req: Request, name: string): string | null {
   const cookie = req.headers.get("cookie") ?? "";
   const match = cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
   return match ? match[1] : null;
 }
 
-/** Read device ID from the cookie header */
+/** Read device ID from the cookie header. Returns null if missing or malformed. */
 export function getDeviceId(req: Request): string | null {
-  return parseCookie(req, COOKIE_NAME);
+  const raw = parseCookie(req, COOKIE_NAME);
+  if (!raw) return null;
+  return UUID_RE.test(raw) ? raw : null;
 }
 
 /** Read custom initials from the cookie header (already validated on write) */
@@ -107,6 +111,9 @@ export function getDisplayName(deviceId: string): string {
   const hex = deviceId.replace(/-/g, "");
   const adjIdx = parseInt(hex.slice(0, 4), 16) % ADJECTIVES.length;
   const nounIdx = parseInt(hex.slice(4, 8), 16) % NOUNS.length;
+  if (Number.isNaN(adjIdx) || Number.isNaN(nounIdx)) {
+    return `Anon-${hexSuffix(deviceId) || "0000"}`;
+  }
   return `${ADJECTIVES[adjIdx]}-${NOUNS[nounIdx]}-${hexSuffix(deviceId)}`;
 }
 

@@ -30,7 +30,7 @@ export type AgentHandler = (req: Request) => Promise<Response>;
 export function withAgentPayment(
   handler: AgentHandler,
   opts: { amount?: number } = {},
-): AgentHandler | ReturnType<typeof createGatedHandler> {
+): AgentHandler {
   if (!config.features.l402) {
     return handler;
   }
@@ -40,46 +40,18 @@ export function withAgentPayment(
 
 /**
  * Create an L402-gated handler using MoneyDevKit.
- * Isolated so the MDK import only loads when L402 is enabled.
+ * Uses lazy dynamic import so the MDK dependency only loads when
+ * L402 is actually enabled and the first request arrives.
  */
-function createGatedHandler(handler: AgentHandler, amount: number) {
-  // MDK's withPayment wraps at module level — we import and call it here
-  // so the dependency is only loaded when L402 is actually enabled.
-  //
-  // In production, this would be:
-  //   import { withPayment } from "@moneydevkit/nextjs/server";
-  //   return withPayment({ amount, currency: "SAT" }, handler);
-  //
-  // For now, we return a handler that signals payment requirement
-  // in the L402 response format when no valid authorization is present.
+function createGatedHandler(handler: AgentHandler, amount: number): AgentHandler {
+  let wrapped: AgentHandler | null = null;
+
   return async (req: Request): Promise<Response> => {
-    const authHeader = req.headers.get("authorization");
-
-    if (!authHeader || !authHeader.startsWith("L402 ")) {
-      return Response.json(
-        {
-          error: {
-            code: "payment_required",
-            message: "This endpoint requires payment via L402.",
-            amount,
-            currency: "SAT",
-            protocol: "L402",
-            docs: "https://github.com/Chepenik/fortunesats/blob/main/docs/l402.md",
-          },
-        },
-        {
-          status: 402,
-          headers: {
-            "WWW-Authenticate": `L402 amount="${amount}", currency="SAT"`,
-          },
-        },
-      );
+    if (!wrapped) {
+      const { withPayment } = await import("@moneydevkit/nextjs/server");
+      wrapped = withPayment({ amount, currency: "SAT" }, handler) as AgentHandler;
     }
-
-    // When MDK is wired in, it validates the macaroon + preimage here.
-    // For now, delegate to handler if any L402 header is present.
-    // TODO: Wire MDK validation when L402 feature is fully enabled
-    return handler(req);
+    return wrapped(req);
   };
 }
 
