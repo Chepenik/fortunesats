@@ -1,1 +1,52 @@
-@AGENTS.md
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Commands
+
+```bash
+npm run dev          # Local dev server (http://localhost:3000)
+npm run build        # Production build
+npm run lint         # ESLint
+npm run test         # Run all tests (vitest)
+npx vitest run src/lib/__tests__/device-id.test.ts   # Single test file
+npx vitest --watch   # Watch mode
+```
+
+## Architecture
+
+FortuneSats is a Bitcoin fortune oracle — pay 100 sats, get a fortune. Four-layer architecture:
+
+1. **Human Experience** (`src/app/`, `src/components/`) — Pages and UI. The fortune-pulling ritual (pay → reveal → collect) is the core product. Components use `"use client"` only when needed. The 3D dragon lives in `src/components/dragon/`.
+
+2. **Agent Interface** (`src/app/api/agent/`) — Structured JSON API for machines. `GET /api/agent/fortune` with optional `?category=`, `?rarity=`, `?meta=true` filters. OpenAPI spec at `/api/openapi`.
+
+3. **Access/Payment** (`src/lib/l402.ts`, `src/lib/ratelimit.ts`, `src/lib/device-id.ts`, `src/lib/payment-store.ts`) — Lightning via MoneyDevKit (`withPayment` wrapper), on-chain packs via mempool.space, L402 gating for agents (off by default: `FS_L402=false`). Rate limiting uses Upstash with `ephemeralCache` to reduce Redis calls.
+
+4. **Shared Domain** (`src/lib/`) — Fortune pool (170 fortunes, weighted rarity in `fortunes.ts`), config/pricing (`config.ts`), feature flags (`flags.ts`), Redis-backed leaderboard/activity, client-side collections/streaks in localStorage.
+
+## Key Patterns
+
+- **Idempotency**: All payment-triggered side effects (leaderboard writes, activity recording) use Redis `SET NX` flags (`src/lib/idempotency.ts`) to prevent duplicates in distributed serverless. Always use `recordFortuneOnce()` / `recordSatsOnce()`, never call `recordFortuneReveal()` directly from endpoints.
+
+- **Payment flows**: Lightning fortunes go through `src/app/api/fortune/route.ts` (MDK `withPayment`), status polling at `/api/fortune/status`, atomic claim at `/api/fortune/claim`. On-chain packs: order creation at `/api/pack`, mempool polling at `/api/pack/status`, per-fortune claim at `/api/pack/fortune`.
+
+- **Device identity**: HttpOnly cookie `fsd` (UUID), optional initials cookie `fsi` (2-4 letters, blocklist filtered). Display names: `{initials}-{hex}` or `{adjective}-{noun}-{hex}`.
+
+- **Redis data model**: Leaderboard uses sorted sets (`lb:fortunes`, `lb:sats`, `lb:legendary`, `lb:streak`), device metadata in hashes (`lb:device:{id}`), activity in a capped list (`activity:recent`), idempotency flags with TTLs. Pipeline Redis operations — don't make multiple round trips.
+
+- **Non-critical Redis**: Leaderboard/activity writes catch and log errors silently — they must never break the payment flow.
+
+- **Config**: All pricing, rarity weights, and feature flags live in `src/lib/config.ts` and `src/lib/flags.ts`, overridable via environment variables.
+
+## Tech Stack
+
+Next.js 16 (App Router, React 19), Upstash Redis, MoneyDevKit (Lightning/L402), mempool.space (on-chain), Tailwind CSS v4 + shadcn/ui, React Three Fiber (3D), Vitest. Path alias: `@/*` → `./src/*`. Hosted on Vercel.
+
+## Testing
+
+Tests live in `src/lib/__tests__/`. They mock Redis via `vi.mock("@/lib/redis")` with an in-memory Map. Key test areas: idempotency (duplicate payment handling), device identity, collection storage, pack orders, payment state sync. When writing new tests, follow the existing mock Redis pattern.
+
+## Next.js Config
+
+`next.config.ts` wraps with MoneyDevKit's `withMdkCheckout` plugin. Security headers configured (X-Frame-Options, HSTS, etc.). Fortune endpoint has 60s `maxDuration` for LDK node cold starts.
