@@ -64,7 +64,7 @@ function createGatedHandler(handler: AgentHandler, amount: number) {
             amount,
             currency: "SAT",
             protocol: "L402",
-            docs: "https://github.com/your-repo/fortunesats/blob/main/docs/l402.md",
+            docs: "https://github.com/Chepenik/fortunesats/blob/main/docs/l402.md",
           },
         },
         {

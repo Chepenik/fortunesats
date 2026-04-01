@@ -21,7 +21,7 @@ No API key needed. No signup. Just `curl` and go.
 Pull a random fortune with full metadata.
 
 ```bash
-curl https://fortunesats.vercel.app/api/agent/fortune
+curl https://fortunesats.com/api/agent/fortune
 ```
 
 ```json
@@ -55,16 +55,16 @@ curl https://fortunesats.vercel.app/api/agent/fortune
 
 ```bash
 # Stoic wisdom only
-curl "https://fortunesats.vercel.app/api/agent/fortune?category=stoicism"
+curl "https://fortunesats.com/api/agent/fortune?category=stoicism"
 
 # I'm feeling lucky -- legendary or bust
-curl "https://fortunesats.vercel.app/api/agent/fortune?rarity=legendary"
+curl "https://fortunesats.com/api/agent/fortune?rarity=legendary"
 
 # Give me that exact fortune again
-curl "https://fortunesats.vercel.app/api/agent/fortune?id=0a3f2k1"
+curl "https://fortunesats.com/api/agent/fortune?id=0a3f2k1"
 
 # What's in the pool?
-curl "https://fortunesats.vercel.app/api/agent/fortune?meta=true"
+curl "https://fortunesats.com/api/agent/fortune?meta=true"
 ```
 
 ### Pool Metadata Response (`?meta=true`)
@@ -153,7 +153,7 @@ Full protocol details: [L402 Documentation](./l402.md)
 Machine-readable API description for auto-discovery:
 
 ```bash
-curl https://fortunesats.vercel.app/api/openapi
+curl https://fortunesats.com/api/openapi
 ```
 
 Feed this to your agent framework, API client, or MCP server to auto-generate tool definitions.

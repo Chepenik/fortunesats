@@ -13,7 +13,7 @@ Drop 100 sats into the machine. Pull the lever. A fortune appears — maybe comm
 
 It's a ritual, not a transaction.
 
-**[Try it live](https://fortunesats.vercel.app)**
+**[Try it live](https://fortunesats.com)**
 
 ---
 
@@ -119,7 +119,7 @@ FortuneSats has a structured API designed for AI agents, bots, and automated sys
 ### Quick Example
 
 ```bash
-curl https://fortunesats.vercel.app/api/agent/fortune
+curl https://fortunesats.com/api/agent/fortune
 ```
 
 ```json
@@ -144,19 +144,19 @@ curl https://fortunesats.vercel.app/api/agent/fortune
 
 ```bash
 # Only stoic wisdom
-curl "https://fortunesats.vercel.app/api/agent/fortune?category=stoicism"
+curl "https://fortunesats.com/api/agent/fortune?category=stoicism"
 
 # Only legendary fortunes
-curl "https://fortunesats.vercel.app/api/agent/fortune?rarity=legendary"
+curl "https://fortunesats.com/api/agent/fortune?rarity=legendary"
 
 # Full pool metadata
-curl "https://fortunesats.vercel.app/api/agent/fortune?meta=true"
+curl "https://fortunesats.com/api/agent/fortune?meta=true"
 ```
 
 ### OpenAPI Spec
 
 ```bash
-curl https://fortunesats.vercel.app/api/openapi
+curl https://fortunesats.com/api/openapi
 ```
 
 Full details: **[Agent Integration Guide](docs/agent.md)** | **[L402 Payment Protocol](docs/l402.md)**
@@ -257,5 +257,5 @@ MIT -- do whatever you want with it. If you build something cool, let us know.
 
 <p align="center">
   <strong>Built with sats and stubbornness.</strong><br/>
-  <a href="https://fortunesats.vercel.app">fortunesats.vercel.app</a>
+  <a href="https://fortunesats.com">fortunesats.com</a>
 </p>

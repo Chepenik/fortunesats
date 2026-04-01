@@ -1,7 +1,7 @@
 import type { Rarity } from "@/lib/fortunes";
 import { encodeFortuneSlug } from "@/lib/og";
 
-export const SITE_URL = "https://fortunesats.vercel.app";
+export const SITE_URL = "https://fortunesats.com";
 
 /**
  * Build a per-fortune share URL with OG card support.

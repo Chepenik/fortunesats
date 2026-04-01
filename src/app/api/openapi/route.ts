@@ -17,7 +17,7 @@ export async function GET() {
         "Pay sats, receive wisdom. FortuneSats is a human-centered fortune oracle with agent-ready infrastructure and L402 payment gating.",
       contact: {
         name: "FortuneSats",
-        url: "https://fortunesats.vercel.app",
+        url: "https://fortunesats.com",
       },
       license: {
         name: "MIT",
@@ -25,7 +25,7 @@ export async function GET() {
     },
     servers: [
       {
-        url: "https://fortunesats.vercel.app",
+        url: "https://fortunesats.com",
         description: "Production",
       },
     ],
