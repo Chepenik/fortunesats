@@ -67,10 +67,10 @@ export default function PackPage() {
         {/* Footer */}
         <footer className="space-y-4 text-center">
           <div className="dragon-line w-16 mx-auto" />
-          <p className="text-[10px] tracking-[0.2em] uppercase text-gold/25 font-mono">
+          <p className="text-[11px] tracking-[0.2em] uppercase text-gold/30 font-mono">
             On-chain &middot; Mempool acceptance &middot; Bitcoin
           </p>
-          <p className="text-[11px] text-muted-foreground/30">
+          <p className="text-xs text-muted-foreground/35">
             Powered by{" "}
             <a
               href="https://mempool.space"

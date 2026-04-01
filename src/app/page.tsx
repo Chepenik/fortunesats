@@ -105,7 +105,7 @@ export default function Home() {
 
         {/* Featured wisdom — internal links for SEO */}
         <nav className="space-y-3" aria-label="Featured fortunes">
-          <p className="text-[10px] tracking-[0.2em] uppercase text-gold/30 font-mono text-center">
+          <p className="text-[11px] tracking-[0.2em] uppercase text-gold/35 font-mono text-center">
             Featured wisdom
           </p>
           <div className="space-y-1.5">
@@ -119,18 +119,18 @@ export default function Home() {
                   <Link
                     key={f.text}
                     href={`/fortune/${encodeFortuneSlug(f.text, f.rarity)}`}
-                    className="block px-3 py-2 rounded-lg text-[11px] text-muted-foreground/40 hover:text-gold/60 hover:bg-gold/[0.03] transition-colors leading-relaxed"
+                    className="block px-3 py-2.5 rounded-lg text-xs text-muted-foreground/45 hover:text-gold/60 hover:bg-gold/[0.03] transition-colors leading-relaxed"
                   >
                     &ldquo;{shortQuote}&rdquo;{author ? ` \u2014 ${author}` : ""}
                   </Link>
                 );
               })}
           </div>
-          <div className="flex justify-center gap-4 text-[11px]">
-            <Link href="/collection" className="text-gold/40 hover:text-gold/60 transition-colors">
+          <div className="flex justify-center gap-4 text-xs">
+            <Link href="/collection" className="text-gold/45 hover:text-gold/65 transition-colors">
               View collection &rarr;
             </Link>
-            <Link href="/leaderboard" className="text-gold/40 hover:text-gold/60 transition-colors">
+            <Link href="/leaderboard" className="text-gold/45 hover:text-gold/65 transition-colors">
               Leaderboard &rarr;
             </Link>
           </div>
@@ -140,7 +140,7 @@ export default function Home() {
         <footer className="space-y-4 text-center">
           <div className="dragon-line w-16 mx-auto" />
 
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {fortunePackEnabled && (
               <Link
                 href="/pack"
@@ -149,13 +149,13 @@ export default function Home() {
                 Fortune Pack &rarr; 100 fortunes for 10,000 sats (on-chain)
               </Link>
             )}
-            <p className="text-[11px] tracking-[0.15em] uppercase text-gold/40 font-mono">
+            <p className="text-xs tracking-[0.15em] uppercase text-gold/40 font-mono">
               L402 &middot; Pay per request &middot; Lightning Network
             </p>
           </div>
 
           {/* Powered by + social */}
-          <div className="space-y-2 pt-1">
+          <div className="space-y-3 pt-1">
             <p className="text-xs text-muted-foreground/60">
               Powered by{" "}
               <a
@@ -167,12 +167,12 @@ export default function Home() {
                 MoneyDevKit
               </a>
             </p>
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center justify-center gap-5">
               <a
                 href="https://github.com/Chepenik/fortunesats"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center text-muted-foreground/40 hover:text-gold/60 transition-colors"
+                className="inline-flex items-center justify-center text-muted-foreground/40 hover:text-gold/60 transition-colors p-1"
                 aria-label="View source on GitHub"
               >
                 <svg
@@ -188,7 +188,7 @@ export default function Home() {
                 href="https://x.com/ConorChepenik"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center text-muted-foreground/40 hover:text-gold/60 transition-colors"
+                className="inline-flex items-center justify-center text-muted-foreground/40 hover:text-gold/60 transition-colors p-1"
                 aria-label="Follow on X"
               >
                 <svg

@@ -86,7 +86,7 @@ export function CollectionView() {
                 {stats.total}
                 <span className="text-lg text-muted-foreground/30">/{POOL_TOTAL}</span>
               </p>
-              <p className="text-[11px] text-muted-foreground/40 mt-0.5">
+              <p className="text-xs text-muted-foreground/45 mt-0.5">
                 unique fortunes collected
               </p>
             </div>
@@ -96,7 +96,7 @@ export function CollectionView() {
                 <span className="text-sm text-muted-foreground/30">%</span>
               </p>
               {totalPulls > stats.total && (
-                <p className="text-[10px] text-muted-foreground/30 font-mono">
+                <p className="text-[11px] text-muted-foreground/35 font-mono">
                   {totalPulls} total pulls
                 </p>
               )}
@@ -131,10 +131,10 @@ export function CollectionView() {
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between mb-1">
-                      <span className="text-[10px] font-medium" style={{ color: cfg.color }}>
+                      <span className="text-[11px] font-medium" style={{ color: cfg.color }}>
                         {cfg.label}
                       </span>
-                      <span className="text-[10px] font-mono text-muted-foreground/30">
+                      <span className="text-[11px] font-mono text-muted-foreground/35">
                         {count}/{total}
                       </span>
                     </div>
@@ -164,15 +164,15 @@ export function CollectionView() {
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={`flex-1 px-2 py-2 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+              className={`flex-1 px-2 py-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                 filter === f.key
                   ? "bg-gold/[0.08] text-gold border border-gold/15"
-                  : "text-muted-foreground/40 hover:text-muted-foreground/60 border border-transparent"
+                  : "text-muted-foreground/45 hover:text-muted-foreground/65 border border-transparent"
               }`}
             >
               {f.label}
               {count > 0 && (
-                <span className="ml-1 text-[9px] opacity-50">{count}</span>
+                <span className="ml-1 text-[10px] opacity-50">{count}</span>
               )}
             </button>
           );
@@ -228,7 +228,7 @@ export function CollectionView() {
       </AnimatePresence>
 
       {/* Device disclaimer */}
-      <p className="text-[10px] text-center text-muted-foreground/25 leading-relaxed">
+      <p className="text-[11px] text-center text-muted-foreground/30 leading-relaxed">
         Your collection is stored locally on this device.
         <br />
         Switching browsers or clearing storage resets it.
@@ -264,14 +264,14 @@ function FortuneCard({ fortune }: { fortune: CollectedFortune }) {
 
       <div className="relative space-y-2">
         {/* Fortune text */}
-        <p className="text-[13px] leading-relaxed text-foreground/80 italic">
+        <p className="text-sm leading-relaxed text-foreground/80 italic">
           &ldquo;{fortune.text}&rdquo;
         </p>
 
         {/* Meta row */}
         <div className="flex items-center justify-between">
           <span
-            className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-medium border ${cfg.badgeClass}`}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border ${cfg.badgeClass}`}
           >
             <span
               className="h-1.5 w-1.5 rounded-full"
@@ -280,9 +280,9 @@ function FortuneCard({ fortune }: { fortune: CollectedFortune }) {
             {cfg.label}
           </span>
 
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground/30 font-mono">
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground/35 font-mono">
             {fortune.pullCount > 1 && (
-              <span className="text-gold/30">&times;{fortune.pullCount}</span>
+              <span className="text-gold/35">&times;{fortune.pullCount}</span>
             )}
             <span>{dateStr}</span>
           </div>

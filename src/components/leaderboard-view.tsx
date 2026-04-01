@@ -88,10 +88,10 @@ export function LeaderboardView() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex-1 px-2 py-2 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+            className={`flex-1 px-2 py-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
               tab === t.key
                 ? "bg-gold/[0.08] text-gold border border-gold/15"
-                : "text-muted-foreground/40 hover:text-muted-foreground/60 border border-transparent"
+                : "text-muted-foreground/45 hover:text-muted-foreground/65 border border-transparent"
             }`}
           >
             {t.label}
@@ -144,7 +144,7 @@ export function LeaderboardView() {
                   }`}>
                     {entry.displayName}
                     {entry.isYou && (
-                      <span className="ml-2 text-[10px] text-gold/50 uppercase tracking-wider">
+                      <span className="ml-2 text-[11px] text-gold/50 uppercase tracking-wider">
                         you
                       </span>
                     )}
@@ -164,7 +164,7 @@ export function LeaderboardView() {
                 <>
                   <div className="flex items-center gap-2 py-1 px-4">
                     <div className="flex-1 h-px bg-gold/[0.06]" />
-                    <span className="text-[10px] text-gold/20 font-mono">···</span>
+                    <span className="text-[11px] text-gold/25 font-mono">···</span>
                     <div className="flex-1 h-px bg-gold/[0.06]" />
                   </div>
                   <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gold/[0.04] border border-gold/10">
@@ -173,7 +173,7 @@ export function LeaderboardView() {
                     </span>
                     <span className="flex-1 text-sm text-gold font-medium truncate">
                       {data.you.displayName}
-                      <span className="ml-2 text-[10px] text-gold/50 uppercase tracking-wider">
+                      <span className="ml-2 text-[11px] text-gold/50 uppercase tracking-wider">
                         you
                       </span>
                     </span>
@@ -189,7 +189,7 @@ export function LeaderboardView() {
       </AnimatePresence>
 
       {/* Device disclaimer */}
-      <p className="text-[10px] text-center text-muted-foreground/25 leading-relaxed">
+      <p className="text-[11px] text-center text-muted-foreground/30 leading-relaxed">
         Your progress is tied to this device.
         <br />
         Switching devices or clearing cookies resets your position.

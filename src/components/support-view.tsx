@@ -58,7 +58,7 @@ export function SupportView() {
 
           {/* Label */}
           <div className="text-center space-y-1">
-            <p className="text-[10px] font-mono tracking-[0.2em] uppercase text-gold/40">
+            <p className="text-[11px] font-mono tracking-[0.2em] uppercase text-gold/40">
               Bitcoin &middot; On-chain
             </p>
           </div>
@@ -68,7 +68,7 @@ export function SupportView() {
             onClick={copyAddress}
             className="w-full group relative flex items-center gap-2 px-4 py-3 rounded-xl border border-gold/[0.08] bg-background/60 hover:border-gold/15 hover:bg-gold/[0.02] transition-all cursor-pointer"
           >
-            <span className="flex-1 text-[10px] font-mono text-muted-foreground/50 break-all text-left leading-relaxed">
+            <span className="flex-1 text-[11px] font-mono text-muted-foreground/50 break-all text-left leading-relaxed">
               {BTC_ADDRESS}
             </span>
             <span className="shrink-0 text-gold/30 group-hover:text-gold/60 transition-colors">
@@ -81,7 +81,7 @@ export function SupportView() {
           </button>
 
           {copied && (
-            <p className="text-[10px] text-center text-emerald-400/70 font-medium">
+            <p className="text-[11px] text-center text-emerald-400/70 font-medium">
               Address copied
             </p>
           )}
@@ -92,7 +92,7 @@ export function SupportView() {
       <div className="space-y-3 px-1">
         <div className="flex items-center gap-2">
           <div className="h-px flex-1 bg-gold/[0.06]" />
-          <span className="text-[10px] font-mono tracking-[0.15em] uppercase text-gold/25">
+          <span className="text-[11px] font-mono tracking-[0.15em] uppercase text-gold/30">
             Where sats go
           </span>
           <div className="h-px flex-1 bg-gold/[0.06]" />
@@ -106,10 +106,10 @@ export function SupportView() {
           ].map((item) => (
             <div
               key={item.label}
-              className="text-center py-3 rounded-xl border border-gold/[0.05] bg-background/30"
+              className="text-center py-3.5 rounded-xl border border-gold/[0.05] bg-background/30"
             >
-              <p className="text-lg mb-1">{item.icon}</p>
-              <p className="text-[10px] text-muted-foreground/40 font-medium">
+              <p className="text-lg mb-1.5">{item.icon}</p>
+              <p className="text-[11px] text-muted-foreground/45 font-medium">
                 {item.label}
               </p>
             </div>
@@ -118,7 +118,7 @@ export function SupportView() {
       </div>
 
       {/* Disclaimer */}
-      <p className="text-[10px] text-center text-muted-foreground/25 leading-relaxed">
+      <p className="text-[11px] text-center text-muted-foreground/30 leading-relaxed">
         FortuneSats is open source and community-funded.
         <br />
         No accounts. No ads. Just sats and wisdom.

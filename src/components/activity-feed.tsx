@@ -71,7 +71,7 @@ export function ActivityFeed() {
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/8 to-transparent" />
         <div className="flex items-center gap-1.5">
           <div className="h-1 w-1 rounded-full bg-cyan/40 animate-glow-pulse" />
-          <span className="text-[9px] tracking-[0.2em] uppercase text-gold/25 font-mono">
+          <span className="text-[11px] tracking-[0.2em] uppercase text-gold/30 font-mono">
             Recent fortunes
           </span>
         </div>
@@ -100,7 +100,7 @@ export function ActivityFeed() {
               />
 
               {/* Event text */}
-              <span className="text-[11px] text-foreground/50 truncate">
+              <span className="text-xs text-foreground/50 truncate">
                 <span className="text-foreground/70 font-medium">
                   {event.displayName}
                 </span>
@@ -116,7 +116,7 @@ export function ActivityFeed() {
               </span>
 
               {/* Timestamp */}
-              <span className="text-[9px] text-gold/20 font-mono whitespace-nowrap ml-auto shrink-0">
+              <span className="text-[11px] text-gold/25 font-mono whitespace-nowrap ml-auto shrink-0">
                 {relativeTime(event.timestamp)}
               </span>
             </motion.div>

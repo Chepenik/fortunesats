@@ -85,7 +85,7 @@ export default function NotFound() {
           </AnimatePresence>
         </div>
 
-        <p className="text-muted-foreground/30 text-[10px] tracking-wide">
+        <p className="text-muted-foreground/35 text-[11px] tracking-wide">
           wait for the next misfortune…
         </p>
 
@@ -101,7 +101,7 @@ export default function NotFound() {
         </Link>
 
         {/* Footer quip */}
-        <p className="text-[10px] tracking-[0.15em] uppercase text-gold/20 font-mono">
+        <p className="text-[11px] tracking-[0.15em] uppercase text-gold/25 font-mono">
           The void is not on the Lightning Network
         </p>
       </motion.div>

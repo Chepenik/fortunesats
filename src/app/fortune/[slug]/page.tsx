@@ -188,11 +188,11 @@ export default async function FortunePage({ params }: Props) {
             One fortune. Paid over Lightning.
           </p>
 
-          <div className="flex items-center justify-center gap-4 text-[10px] tracking-[0.15em] uppercase font-mono text-gold/20">
+          <div className="flex items-center justify-center gap-4 text-[11px] tracking-[0.15em] uppercase font-mono text-gold/25">
             <span>L402</span>
-            <span className="text-lacquer/25">&middot;</span>
+            <span className="text-lacquer/30">&middot;</span>
             <span>Lightning Network</span>
-            <span className="text-lacquer/25">&middot;</span>
+            <span className="text-lacquer/30">&middot;</span>
             <span>Pay per request</span>
           </div>
         </div>

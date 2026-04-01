@@ -21,11 +21,11 @@ export function SiteNav({ hiddenRoutes = [] }: { hiddenRoutes?: string[] }) {
 
   return (
     <nav className="sticky top-0 z-50 w-full backdrop-blur-md bg-background/70 border-b border-gold/[0.06]">
-      <div className="max-w-2xl mx-auto px-4 h-12 flex items-center justify-between">
+      <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
         {/* Logo / Home link */}
         <Link
           href="/"
-          className="flex items-center gap-2 group"
+          className="flex items-center gap-2.5 group"
         >
           <span className="text-lg drop-shadow-[0_0_8px_rgba(212,162,87,0.2)] group-hover:drop-shadow-[0_0_12px_rgba(212,162,87,0.35)] transition-all">
             🥠
@@ -36,17 +36,17 @@ export function SiteNav({ hiddenRoutes = [] }: { hiddenRoutes?: string[] }) {
         </Link>
 
         {/* Nav links */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
                   isActive
                     ? "bg-gold/[0.08] text-gold border border-gold/15"
-                    : "text-muted-foreground/50 hover:text-gold/70 hover:bg-gold/[0.04] border border-transparent"
+                    : "text-muted-foreground/60 hover:text-gold/70 hover:bg-gold/[0.04] border border-transparent"
                 }`}
               >
                 {item.label}

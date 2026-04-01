@@ -458,19 +458,19 @@ export function FortunePack() {
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
                   <div className="font-mono text-lg text-gold/70">100</div>
-                  <div className="text-[10px] text-muted-foreground/40 uppercase tracking-wider">
+                  <div className="text-[11px] text-muted-foreground/45 uppercase tracking-wider">
                     Fortunes
                   </div>
                 </div>
                 <div>
                   <div className="font-mono text-lg text-gold/70">100</div>
-                  <div className="text-[10px] text-muted-foreground/40 uppercase tracking-wider">
+                  <div className="text-[11px] text-muted-foreground/45 uppercase tracking-wider">
                     sats/each
                   </div>
                 </div>
                 <div>
                   <div className="font-mono text-lg text-cyan/70">₿</div>
-                  <div className="text-[10px] text-muted-foreground/40 uppercase tracking-wider">
+                  <div className="text-[11px] text-muted-foreground/45 uppercase tracking-wider">
                     On-chain
                   </div>
                 </div>
@@ -484,14 +484,14 @@ export function FortunePack() {
               Buy Fortune Pack
             </button>
 
-            <div className="flex items-center justify-center gap-4 text-[10px] tracking-[0.15em] uppercase font-mono">
+            <div className="flex items-center justify-center gap-4 text-[11px] tracking-[0.15em] uppercase font-mono">
               <span className="text-lacquer/50">Order</span>
               <GoldDot />
-              <span className="text-gold/30">Pay</span>
+              <span className="text-gold/35">Pay</span>
               <GoldDot />
-              <span className="text-gold/30">Paste txid</span>
+              <span className="text-gold/35">Paste txid</span>
               <GoldDot />
-              <span className="text-gold/30">Fortunes</span>
+              <span className="text-gold/35">Fortunes</span>
             </div>
           </motion.div>
         )}
@@ -552,15 +552,15 @@ export function FortunePack() {
                 onClick={() => copyToClipboard(state.address, "address")}
                 className="w-full group cursor-pointer"
               >
-                <div className="font-mono text-[9px] leading-relaxed text-gold/30 group-hover:text-gold/50 transition-colors text-center break-all">
+                <div className="font-mono text-[10px] leading-relaxed text-gold/35 group-hover:text-gold/50 transition-colors text-center break-all">
                   {state.address}
                 </div>
-                <div className="text-[10px] text-lacquer/40 mt-1 group-hover:text-lacquer/60 transition-colors text-center">
+                <div className="text-[11px] text-lacquer/45 mt-1.5 group-hover:text-lacquer/60 transition-colors text-center">
                   {copied === "address" ? "Copied!" : "Tap to copy address"}
                 </div>
               </button>
 
-              <div className="flex items-center justify-center gap-3 text-[10px] font-mono text-gold/20">
+              <div className="flex items-center justify-center gap-3 text-[11px] font-mono text-gold/25">
                 <span>Send exactly</span>
                 <span className="text-ember/50">
                   {(state.amountSats / 1e8).toFixed(8)} BTC
@@ -572,12 +572,12 @@ export function FortunePack() {
             {/* Payment instructions */}
             <div className="rounded-xl border border-gold/8 bg-gold/[0.02] p-4 space-y-2.5">
               <div className="text-[11px] font-medium text-gold/50">Payment Instructions</div>
-              <ol className="space-y-1.5 text-[10px] text-gold/35 leading-relaxed list-decimal list-inside">
+              <ol className="space-y-1.5 text-[11px] text-gold/35 leading-relaxed list-decimal list-inside">
                 <li>Send <span className="text-ember/60 font-mono">{state.amountSats.toLocaleString()} sats</span> ({(state.amountSats / 1e8).toFixed(8)} BTC) to the address above</li>
                 <li>Payment is detected automatically when it appears in the mempool</li>
                 <li>After sending, paste your <span className="text-gold/50">transaction ID</span> below to verify</li>
               </ol>
-              <p className="text-[9px] text-gold/20 leading-relaxed">
+              <p className="text-[11px] text-gold/25 leading-relaxed">
                 Detection usually takes 10&ndash;60 seconds after broadcast.
                 If your wallet doesn&apos;t show a txid, check{" "}
                 <a
@@ -604,7 +604,7 @@ export function FortunePack() {
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/10 to-transparent" />
-                <span className="text-[9px] tracking-[0.2em] uppercase text-gold/25 font-mono">
+                <span className="text-[11px] tracking-[0.2em] uppercase text-gold/30 font-mono">
                   After paying
                 </span>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/10 to-transparent" />
@@ -635,8 +635,8 @@ export function FortunePack() {
                 />
                 {txidError && (
                   <div className="space-y-1">
-                    <p className="text-[11px] text-lacquer/70">{txidError}</p>
-                    <p className="text-[10px] text-gold/20">
+                    <p className="text-xs text-lacquer/70">{txidError}</p>
+                    <p className="text-[11px] text-gold/25">
                       Check{" "}
                       <a
                         href={`https://mempool.space/address/${state.step === "awaiting-payment" ? state.address : ""}`}
@@ -670,7 +670,7 @@ export function FortunePack() {
                   setTxidError(null);
                   setState({ step: "idle" });
                 }}
-                className="text-[11px] text-muted-foreground/30 hover:text-lacquer/50 transition-colors cursor-pointer"
+                className="text-xs text-muted-foreground/40 hover:text-lacquer/50 transition-colors cursor-pointer py-1"
               >
                 Cancel
               </button>
@@ -686,7 +686,7 @@ export function FortunePack() {
               <p className="text-sm text-gold/50 tracking-wide">
                 Verifying transaction&hellip;
               </p>
-              <p className="text-[10px] text-gold/20 font-mono">
+              <p className="text-[11px] text-gold/25 font-mono">
                 Checking mempool.space
               </p>
             </div>
@@ -759,7 +759,7 @@ export function FortunePack() {
                     </span>
                   </p>
 
-                  <div className="flex items-center justify-center gap-2 text-[10px] font-mono text-cyan/40">
+                  <div className="flex items-center justify-center gap-2 text-[11px] font-mono text-cyan/40">
                     <span>txid:</span>
                     <span className="text-cyan/50">
                       {state.txid?.slice(0, 12)}&hellip;
@@ -773,7 +773,7 @@ export function FortunePack() {
                   transition={{ delay: 0.8, duration: 0.4 }}
                   className="pt-2"
                 >
-                  <p className="text-[10px] text-cyan/25 italic">
+                  <p className="text-[11px] text-cyan/30 italic">
                     {state.txStatus === "mempool"
                       ? "Transaction seen in mempool \u2014 your fortunes are fully unlocked"
                       : "Transaction confirmed on-chain"}
@@ -833,7 +833,7 @@ export function FortunePack() {
                 >
                   {state.fortunesRemaining}
                 </motion.div>
-                <div className="text-[11px] text-muted-foreground/40 mt-1">
+                <div className="text-xs text-muted-foreground/45 mt-1">
                   fortunes remaining
                 </div>
 
@@ -846,14 +846,14 @@ export function FortunePack() {
                     transition={{ duration: 0.5, ease }}
                   />
                 </div>
-                <div className="mt-2 text-[10px] font-mono text-gold/20">
+                <div className="mt-2 text-[11px] font-mono text-gold/25">
                   {state.fortunesTotal - state.fortunesRemaining} claimed
                   &middot; {state.fortunesRemaining} to go
                 </div>
               </div>
 
               {state.txStatus === "mempool" && (
-                <p className="text-[10px] text-center text-cyan/30 leading-relaxed">
+                <p className="text-[11px] text-center text-cyan/35 leading-relaxed">
                   Transaction in mempool &mdash; awaiting block confirmation.
                   <br />
                   Your fortunes are fully unlocked.
@@ -974,17 +974,17 @@ export function FortunePack() {
                   className="flex items-center gap-3"
                 >
                   <div className="h-1 w-1 rounded-full bg-cyan/60 shadow-[0_0_6px_rgba(0,200,212,0.4)]" />
-                  <span className="font-mono text-[10px] text-cyan/40">
+                  <span className="font-mono text-[11px] text-cyan/45">
                     {new Date(state.timestamp).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
                   </span>
                   <div className="h-px flex-1 bg-gradient-to-r from-gold/10 to-transparent" />
-                  <span className="font-mono text-[10px] text-gold/30">
+                  <span className="font-mono text-[11px] text-gold/35">
                     #{state.fortunesTotal - state.fortunesRemaining}
                   </span>
-                  <span className="font-mono text-[10px] text-gold/15">
+                  <span className="font-mono text-[11px] text-gold/20">
                     of {state.fortunesTotal}
                   </span>
                 </motion.div>
@@ -1003,7 +1003,7 @@ export function FortunePack() {
                   transition={{ duration: 0.5, ease }}
                 />
               </div>
-              <span className="font-mono text-[10px] text-gold/25 whitespace-nowrap">
+              <span className="font-mono text-[11px] text-gold/30 whitespace-nowrap">
                 {state.fortunesRemaining} left
               </span>
             </div>
@@ -1017,7 +1017,7 @@ export function FortunePack() {
             >
               <div className="flex items-center gap-3">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/10 to-transparent" />
-                <span className="text-[9px] tracking-[0.2em] uppercase text-gold/25 font-mono">
+                <span className="text-[11px] tracking-[0.2em] uppercase text-gold/30 font-mono">
                   Share
                 </span>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/10 to-transparent" />
@@ -1094,7 +1094,7 @@ export function FortunePack() {
                   clearPack();
                   setState({ step: "depleted" });
                 }}
-                className="w-full h-11 rounded-xl text-sm text-muted-foreground/30 hover:text-gold/40 transition-colors cursor-pointer"
+                className="w-full h-11 rounded-xl text-sm text-muted-foreground/40 hover:text-gold/50 transition-colors cursor-pointer"
               >
                 Pack Complete
               </button>
@@ -1116,7 +1116,7 @@ export function FortunePack() {
                 May the wisdom serve you well.
               </p>
               <div className="dragon-line w-16 mx-auto" />
-              <p className="text-[10px] text-gold/25 italic">
+              <p className="text-[11px] text-gold/30 italic">
                 Thank you for investing in wisdom.
               </p>
             </div>

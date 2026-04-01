@@ -95,7 +95,7 @@ export function InitialsEditor() {
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/8 to-transparent" />
         <div className="flex items-center gap-1.5">
           <div className="h-1 w-1 rounded-full bg-gold/30" />
-          <span className="text-[9px] tracking-[0.2em] uppercase text-gold/25 font-mono">
+          <span className="text-[11px] tracking-[0.2em] uppercase text-gold/30 font-mono">
             Your tag
           </span>
         </div>
@@ -187,14 +187,14 @@ export function InitialsEditor() {
 
             {/* Help text + clear */}
             <div className="flex items-center justify-between px-1">
-              <span className="text-[9px] text-gold/20 font-mono">
+              <span className="text-[11px] text-gold/25 font-mono">
                 2-4 letters. Shows on leaderboard.
               </span>
               {saved && (
                 <button
                   onClick={handleClear}
                   disabled={saving}
-                  className="text-[9px] text-foreground/25 hover:text-foreground/50
+                  className="text-[11px] text-foreground/30 hover:text-foreground/50
                              font-mono transition-colors disabled:opacity-40"
                 >
                   clear
@@ -207,7 +207,7 @@ export function InitialsEditor() {
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-[10px] text-red-400/80 text-center font-mono"
+                className="text-xs text-red-400/80 text-center font-mono"
               >
                 {error}
               </motion.p>

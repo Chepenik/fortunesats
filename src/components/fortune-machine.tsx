@@ -306,20 +306,20 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
 
             {/* Flow steps */}
             {freePromo ? (
-              <div className="flex items-center justify-center gap-4 text-[10px] tracking-[0.15em] uppercase font-mono">
+              <div className="flex items-center justify-center gap-4 text-[11px] tracking-[0.15em] uppercase font-mono">
                 <span className="text-cyan/50">Request</span>
                 <GoldDot />
-                <span className="text-gold/30">Fortune</span>
+                <span className="text-gold/35">Fortune</span>
               </div>
             ) : (
-              <div className="flex items-center justify-center gap-4 text-[10px] tracking-[0.15em] uppercase font-mono">
+              <div className="flex items-center justify-center gap-4 text-[11px] tracking-[0.15em] uppercase font-mono">
                 <span className="text-lacquer/50">Request</span>
                 <GoldDot />
-                <span className="text-gold/30">Invoice</span>
+                <span className="text-gold/35">Invoice</span>
                 <GoldDot />
-                <span className="text-gold/30">Pay</span>
+                <span className="text-gold/35">Pay</span>
                 <GoldDot />
-                <span className="text-gold/30">Fortune</span>
+                <span className="text-gold/35">Fortune</span>
               </div>
             )}
 
@@ -341,7 +341,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
                   </div>
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/8 to-transparent" />
                 </div>
-                <p className="text-[10px] text-center text-gold/20 leading-relaxed">
+                <p className="text-[11px] text-center text-gold/25 leading-relaxed">
                   Your streak lives on this device &mdash; a personal ritual, just for you.
                 </p>
               </div>
@@ -396,10 +396,10 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
                 onClick={() => copyToClipboard(state.invoice, "invoice")}
                 className="w-full group cursor-pointer"
               >
-                <div className="font-mono text-[9px] leading-relaxed text-gold/25 group-hover:text-gold/40 transition-colors line-clamp-2 text-center">
+                <div className="font-mono text-[10px] leading-relaxed text-gold/30 group-hover:text-gold/45 transition-colors line-clamp-2 text-center">
                   {state.invoice}
                 </div>
-                <div className="text-[10px] text-lacquer/40 mt-1 group-hover:text-lacquer/60 transition-colors">
+                <div className="text-[11px] text-lacquer/45 mt-1.5 group-hover:text-lacquer/60 transition-colors">
                   {copied === "invoice" ? "Copied!" : "Tap to copy"}
                 </div>
               </button>
@@ -407,7 +407,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
               {/* Status indicator */}
               <div className="flex items-center justify-center gap-2">
                 <div className="h-px flex-1 bg-gold/5" />
-                <span className="font-mono text-[9px] text-gold/20">
+                <span className="font-mono text-[11px] text-gold/30">
                   {waitingSecs > 3
                     ? `Waiting ${waitingSecs}s\u2026`
                     : "Invoice created \u2014 awaiting payment"}
@@ -442,12 +442,12 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
                 {checking ? "Checking\u2026" : "I\u2019ve Paid \u2014 Check Now"}
               </button>
               {checkMsg && (
-                <p className="text-[10px] text-center text-gold/30 leading-relaxed">
+                <p className="text-[11px] text-center text-gold/35 leading-relaxed">
                   {checkMsg}
                 </p>
               )}
               {waitingSecs > 8 && !checkMsg && (
-                <p className="text-[10px] text-center text-gold/20 leading-relaxed">
+                <p className="text-[11px] text-center text-gold/30 leading-relaxed">
                   Paid already? Tap the button above to check payment status.
                 </p>
               )}
@@ -457,10 +457,10 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
             {waitingSecs > 15 && (
               <div className="space-y-2">
                 <div className="rounded-xl border border-gold/8 bg-gold/[0.02] p-3 space-y-2">
-                  <p className="text-[11px] text-gold/40 font-medium">
+                  <p className="text-xs text-gold/45 font-medium">
                     Payment not detected?
                   </p>
-                  <p className="text-[10px] text-gold/25 leading-relaxed">
+                  <p className="text-[11px] text-gold/30 leading-relaxed">
                     Lightning confirmations can take a moment to propagate across nodes.
                     If your wallet shows the payment as sent, tap below to claim your fortune directly.
                   </p>
@@ -478,7 +478,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
             <div className="text-center">
               <button
                 onClick={() => setState({ step: "idle" })}
-                className="text-[11px] text-muted-foreground/30 hover:text-lacquer/50 transition-colors cursor-pointer"
+                className="text-xs text-muted-foreground/40 hover:text-lacquer/50 transition-colors cursor-pointer py-1"
               >
                 Cancel
               </button>
@@ -662,14 +662,14 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
                   className="flex items-center gap-3"
                 >
                   <div className="h-1 w-1 rounded-full bg-cyan/60 shadow-[0_0_6px_rgba(0,200,212,0.4)]" />
-                  <span className="font-mono text-[10px] text-cyan/40">
+                  <span className="font-mono text-[11px] text-cyan/45">
                     {new Date(state.timestamp).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
                   </span>
                   <div className="h-px flex-1 bg-gradient-to-r from-gold/10 to-transparent" />
-                  <span className="font-mono text-[10px] text-gold/20">
+                  <span className="font-mono text-[11px] text-gold/30">
                     {freePromo ? "free" : "100 sats"}
                   </span>
                 </motion.div>
@@ -716,7 +716,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
               {/* Divider */}
               <div className="flex items-center gap-3">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/10 to-transparent" />
-                <span className="text-[9px] tracking-[0.2em] uppercase text-gold/25 font-mono">
+                <span className="text-[11px] tracking-[0.2em] uppercase text-gold/30 font-mono">
                   Share your fortune
                 </span>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/10 to-transparent" />
@@ -798,7 +798,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
                   transition={{ delay: 1.1, duration: 0.3 }}
                 >
                   <button
-                    className="w-full h-9 rounded-lg text-xs text-gold/25 hover:text-gold/40 transition-colors cursor-pointer"
+                    className="w-full h-9 rounded-lg text-xs text-gold/30 hover:text-gold/45 transition-colors cursor-pointer"
                     onClick={() => handleNativeShare(state.fortune, state.rarity)}
                   >
                     More sharing options&hellip;
@@ -815,7 +815,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
             >
               <button
                 onClick={() => setState({ step: "idle" })}
-                className="w-full h-11 rounded-xl text-sm text-muted-foreground/30 hover:text-gold/40 transition-colors cursor-pointer"
+                className="w-full h-11 rounded-xl text-sm text-muted-foreground/40 hover:text-gold/50 transition-colors cursor-pointer"
               >
                 Another Fortune
               </button>
