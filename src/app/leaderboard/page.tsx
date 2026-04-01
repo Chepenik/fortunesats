@@ -1,4 +1,6 @@
 import { LeaderboardView } from "@/components/leaderboard-view";
+import { getFlags } from "@/lib/flags";
+import Link from "next/link";
 
 export const metadata = {
   title: "Hall of Fortunes — Fortune Sats",
@@ -6,6 +8,8 @@ export const metadata = {
 };
 
 export default function LeaderboardPage() {
+  const { leaderboardEnabled } = getFlags();
+
   return (
     <main className="relative flex-1 flex flex-col items-center px-6 py-12 overflow-hidden">
       {/* Ambient glows */}
@@ -36,7 +40,16 @@ export default function LeaderboardPage() {
         </header>
 
         {/* Leaderboard */}
-        <LeaderboardView />
+        {leaderboardEnabled ? (
+          <LeaderboardView />
+        ) : (
+          <div className="text-center py-8 space-y-3">
+            <p className="text-sm text-muted-foreground/60">The leaderboard is temporarily hidden.</p>
+            <Link href="/" className="inline-block text-xs text-gold/50 hover:text-gold/70 transition-colors mt-2">
+              &larr; Back to Fortune Sats
+            </Link>
+          </div>
+        )}
       </div>
     </main>
   );

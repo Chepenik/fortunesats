@@ -4,11 +4,13 @@ import { checkRateLimit } from "@/lib/ratelimit";
 import { getOrCreateDeviceId, attachDeviceCookie, resolveDisplayNameFromReq } from "@/lib/device-id";
 import { recordFortuneReveal } from "@/lib/leaderboard";
 import { recordActivity } from "@/lib/activity";
+import { resolvePackCredentials, attachClearPackCookie } from "@/lib/pack-session";
 
 /**
  * POST /api/pack/fortune — Claim one fortune from a paid pack.
  *
- * Body: { orderId: string, secret: string }
+ * Body: { orderId?, secret? }
+ * Credentials come from the HttpOnly fsp cookie (preferred) or body (backward compat).
  */
 export async function POST(req: Request) {
   const limited = await checkRateLimit(req, { prefix: "pack-fortune", limit: 10, window: "1 m" });
@@ -24,13 +26,16 @@ export async function POST(req: Request) {
     );
   }
 
-  const { orderId, secret } = body;
-  if (!orderId || !secret) {
+  // Resolve credentials: HttpOnly cookie first, body fallback
+  const creds = resolvePackCredentials(req, body);
+  if (!creds) {
     return Response.json(
       { error: { code: "invalid_params", message: "orderId and secret required" } },
       { status: 400 },
     );
   }
+
+  const { orderId, secret } = creds;
 
   try {
     const order = await getOrder(orderId, secret);
@@ -49,21 +54,30 @@ export async function POST(req: Request) {
     }
 
     if (order.fortunesRemaining <= 0) {
-      return Response.json(
+      const res = Response.json(
         { error: { code: "depleted", message: "All fortunes in this pack have been claimed" } },
         { status: 410 },
       );
+      attachClearPackCookie(res);
+      return res;
     }
 
     // Pick a fortune the buyer hasn't seen yet
     const fortune = getUniqueRandomFortune(order.claimedFortunes);
+
+    // Atomic claim: Redis DECR prevents over-claiming across concurrent requests
     const result = await claimFortune(orderId, secret, fortune.text);
 
     if (!result.success) {
-      return Response.json(
+      const res = Response.json(
         { error: { code: "claim_failed", message: result.error } },
         { status: 400 },
       );
+      // Clear cookie if depleted
+      if (result.error === "All fortunes claimed") {
+        attachClearPackCookie(res);
+      }
+      return res;
     }
 
     // Leaderboard: record fortune reveal (sats=0, already tracked at pack payment)
@@ -83,6 +97,12 @@ export async function POST(req: Request) {
       fortunesTotal: order.fortunesTotal,
     });
     if (isNew) attachDeviceCookie(res, deviceId);
+
+    // Clear cookie when pack is depleted
+    if (result.fortunesRemaining <= 0) {
+      attachClearPackCookie(res);
+    }
+
     return res;
   } catch (e) {
     console.error("[pack/fortune] Error:", e);

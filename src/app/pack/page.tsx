@@ -1,4 +1,6 @@
 import { FortunePack } from "@/components/fortune-pack";
+import { getFlags } from "@/lib/flags";
+import Link from "next/link";
 
 export const metadata = {
   title: "Fortune Pack — Fortune Sats",
@@ -7,6 +9,8 @@ export const metadata = {
 };
 
 export default function PackPage() {
+  const { fortunePackEnabled } = getFlags();
+
   return (
     <main className="relative flex-1 flex flex-col items-center justify-center px-6 py-12 overflow-hidden">
       {/* Ambient radial glows */}
@@ -45,7 +49,17 @@ export default function PackPage() {
         </header>
 
         {/* Machine */}
-        <FortunePack />
+        {fortunePackEnabled ? (
+          <FortunePack />
+        ) : (
+          <div className="text-center py-8 space-y-3">
+            <p className="text-sm text-muted-foreground/60">New pack purchases are temporarily unavailable.</p>
+            <p className="text-xs text-gold/30">Existing packs can still be claimed.</p>
+            <Link href="/" className="inline-block text-xs text-gold/50 hover:text-gold/70 transition-colors mt-2">
+              &larr; Back to Fortune Sats
+            </Link>
+          </div>
+        )}
 
         {/* Footer */}
         <footer className="space-y-4 text-center">

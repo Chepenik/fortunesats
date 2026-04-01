@@ -169,32 +169,76 @@ export const fortunes: Fortune[] = [
   { text: "The right people are moving toward you already.", rarity: "common" },
 ];
 
+/* ─── Seasonal bonus pool ───────────────────────────────── */
+
+/**
+ * Seasonal fortunes are mixed into the main pool when the
+ * SEASONAL_POOL_ENABLED flag is true. Edit this array to rotate
+ * seasonal content without touching the core fortune pool.
+ */
+export const seasonalFortunes: Fortune[] = [
+  { text: "Spring cleans more than houses. Let something old fall away.", rarity: "rare" },
+  { text: "The equinox reminds us: balance is not stillness, it is motion.", rarity: "epic" },
+  { text: "Plant now. The harvest has its own calendar.", rarity: "common" },
+  { text: "A season of building begins. Trust what you start this week.", rarity: "common" },
+  { text: "Even the sun takes turns. Rest is not retreat.", rarity: "rare" },
+];
+
 /* ─── Pre-computed pools for O(1) selection ─────────────── */
 
-const pools: Record<Rarity, Fortune[]> = {
-  legendary: fortunes.filter((f) => f.rarity === "legendary"),
-  epic: fortunes.filter((f) => f.rarity === "epic"),
-  rare: fortunes.filter((f) => f.rarity === "rare"),
-  common: fortunes.filter((f) => f.rarity === "common"),
-};
+import { getFlags } from "@/lib/flags";
+
+function buildPools(base: Fortune[]): Record<Rarity, Fortune[]> {
+  return {
+    legendary: base.filter((f) => f.rarity === "legendary"),
+    epic: base.filter((f) => f.rarity === "epic"),
+    rare: base.filter((f) => f.rarity === "rare"),
+    common: base.filter((f) => f.rarity === "common"),
+  };
+}
+
+const pools = buildPools(fortunes);
+
+/** Get the active fortune list (main + seasonal when enabled). */
+function getActiveFortunes(): Fortune[] {
+  const { seasonalPoolEnabled } = getFlags();
+  return seasonalPoolEnabled ? [...fortunes, ...seasonalFortunes] : fortunes;
+}
+
+/** Get rarity pools, including seasonal when enabled. */
+function getActivePools(): Record<Rarity, Fortune[]> {
+  const { seasonalPoolEnabled } = getFlags();
+  if (!seasonalPoolEnabled) return pools;
+  return buildPools([...fortunes, ...seasonalFortunes]);
+}
 
 /**
  * Weighted random fortune selection.
  * Rarity determines the *probability* of being selected, not pool size:
- *   Legendary: 5%, Epic: 15%, Rare: 30%, Common: 50%
+ *   Base rates: Legendary 5%, Epic 15%, Rare 30%, Common 50%
+ *   legendaryRateMultiplier scales the legendary threshold (clamped 0.5-4.0).
  */
 export function getRandomFortune(): Fortune {
+  const { legendaryRateMultiplier } = getFlags();
+  const activePools = getActivePools();
+
+  const legendaryRate = 0.05 * legendaryRateMultiplier;
+  // Compress remaining rates proportionally into the leftover space
+  const remaining = 1 - legendaryRate;
+  const epicCeil = legendaryRate + 0.15 * (remaining / 0.95);
+  const rareCeil = epicCeil + 0.30 * (remaining / 0.95);
+
   const roll = Math.random();
   let pool: Fortune[];
 
-  if (roll < 0.05) {
-    pool = pools.legendary;
-  } else if (roll < 0.20) {
-    pool = pools.epic;
-  } else if (roll < 0.50) {
-    pool = pools.rare;
+  if (roll < legendaryRate && activePools.legendary.length > 0) {
+    pool = activePools.legendary;
+  } else if (roll < epicCeil && activePools.epic.length > 0) {
+    pool = activePools.epic;
+  } else if (roll < rareCeil && activePools.rare.length > 0) {
+    pool = activePools.rare;
   } else {
-    pool = pools.common;
+    pool = activePools.common;
   }
 
   return pool[Math.floor(Math.random() * pool.length)];
@@ -339,10 +383,17 @@ export function getRandomAgentFortune(): AgentFortune {
  */
 export function getUniqueRandomFortune(claimed: string[]): Fortune {
   const claimedSet = new Set(claimed);
-  const available = fortunes.filter((f) => !claimedSet.has(f.text));
+  const all = getActiveFortunes();
+  const available = all.filter((f) => !claimedSet.has(f.text));
   if (available.length === 0) {
     return getRandomFortune();
   }
+
+  const { legendaryRateMultiplier } = getFlags();
+  const legendaryRate = 0.05 * legendaryRateMultiplier;
+  const remaining = 1 - legendaryRate;
+  const epicCeil = legendaryRate + 0.15 * (remaining / 0.95);
+  const rareCeil = epicCeil + 0.30 * (remaining / 0.95);
 
   // Weighted selection from available pool
   const availPools: Record<Rarity, Fortune[]> = {
@@ -355,11 +406,11 @@ export function getUniqueRandomFortune(claimed: string[]): Fortune {
   const roll = Math.random();
   let pool: Fortune[];
 
-  if (roll < 0.05 && availPools.legendary.length > 0) {
+  if (roll < legendaryRate && availPools.legendary.length > 0) {
     pool = availPools.legendary;
-  } else if (roll < 0.20 && availPools.epic.length > 0) {
+  } else if (roll < epicCeil && availPools.epic.length > 0) {
     pool = availPools.epic;
-  } else if (roll < 0.50 && availPools.rare.length > 0) {
+  } else if (roll < rareCeil && availPools.rare.length > 0) {
     pool = availPools.rare;
   } else if (availPools.common.length > 0) {
     pool = availPools.common;

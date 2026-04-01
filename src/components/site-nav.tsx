@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 /* ─── Nav items ─────────────────────────────────────────── */
 
-const NAV_ITEMS = [
+const ALL_NAV_ITEMS = [
   { href: "/collection", label: "Collection" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/support", label: "Support" },
@@ -13,8 +13,11 @@ const NAV_ITEMS = [
 
 /* ─── Component ─────────────────────────────────────────── */
 
-export function SiteNav() {
+/** @param hiddenRoutes — hrefs to omit from nav (controlled by flags in layout) */
+export function SiteNav({ hiddenRoutes = [] }: { hiddenRoutes?: string[] }) {
   const pathname = usePathname();
+  const hidden = new Set(hiddenRoutes);
+  const navItems = ALL_NAV_ITEMS.filter((item) => !hidden.has(item.href));
 
   return (
     <nav className="sticky top-0 z-50 w-full backdrop-blur-md bg-background/70 border-b border-gold/[0.06]">
@@ -34,7 +37,7 @@ export function SiteNav() {
 
         {/* Nav links */}
         <div className="flex items-center gap-1">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link

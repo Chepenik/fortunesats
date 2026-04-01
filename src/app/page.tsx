@@ -2,9 +2,12 @@ import { FortuneMachine } from "@/components/fortune-machine";
 import { ActivityFeed } from "@/components/activity-feed";
 import { InitialsEditor } from "@/components/initials-editor";
 import { DragonLoader } from "@/components/dragon/DragonLoader";
+import { getFlags } from "@/lib/flags";
 import Link from "next/link";
 
 export default function Home() {
+  const { fortuneSingleEnabled, fortunePackEnabled, activityFeedEnabled, freeFortunePromo } = getFlags();
+
   return (
     <main className="relative flex-1 flex flex-col items-center justify-center px-6 py-12 overflow-hidden">
       {/* 3D Dragon — background layer, homepage only */}
@@ -41,8 +44,17 @@ export default function Home() {
               Fortune Sats
             </h1>
             <p className="text-lg leading-relaxed">
-              <span className="text-gold font-medium">100 sats.</span>{" "}
-              <span className="text-foreground/80">One fortune.</span>
+              {freeFortunePromo ? (
+                <>
+                  <span className="text-cyan font-medium">Free fortune.</span>{" "}
+                  <span className="text-foreground/80">Limited time.</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-gold font-medium">100 sats.</span>{" "}
+                  <span className="text-foreground/80">One fortune.</span>
+                </>
+              )}
               <br />
               <span className="text-muted-foreground/70 text-base">
                 A ritual powered by Lightning.
@@ -52,10 +64,17 @@ export default function Home() {
         </header>
 
         {/* Machine */}
-        <FortuneMachine />
+        {fortuneSingleEnabled ? (
+          <FortuneMachine freePromo={freeFortunePromo} />
+        ) : (
+          <div className="text-center py-8 space-y-2">
+            <p className="text-sm text-muted-foreground/60">Fortunes are temporarily unavailable.</p>
+            <p className="text-xs text-gold/30">Check back soon.</p>
+          </div>
+        )}
 
         {/* Live activity feed */}
-        <ActivityFeed />
+        {activityFeedEnabled && <ActivityFeed />}
 
         {/* Initials editor */}
         <InitialsEditor />
@@ -65,12 +84,14 @@ export default function Home() {
           <div className="dragon-line w-16 mx-auto" />
 
           <div className="space-y-1.5">
-            <Link
-              href="/pack"
-              className="inline-block text-xs text-gold/50 hover:text-gold/70 transition-colors"
-            >
-              Fortune Pack &rarr; 100 fortunes for 10,000 sats (on-chain)
-            </Link>
+            {fortunePackEnabled && (
+              <Link
+                href="/pack"
+                className="inline-block text-xs text-gold/50 hover:text-gold/70 transition-colors"
+              >
+                Fortune Pack &rarr; 100 fortunes for 10,000 sats (on-chain)
+              </Link>
+            )}
             <p className="text-[11px] tracking-[0.15em] uppercase text-gold/40 font-mono">
               L402 &middot; Pay per request &middot; Lightning Network
             </p>

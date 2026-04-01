@@ -3,8 +3,8 @@ import { getRedis } from "@/lib/redis";
 import { getRandomFortune, type Rarity } from "@/lib/fortunes";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { getOrCreateDeviceId, attachDeviceCookie, resolveDisplayNameFromReq } from "@/lib/device-id";
-import { recordFortuneReveal } from "@/lib/leaderboard";
-import { recordActivity } from "@/lib/activity";
+import { recordFortuneOnce } from "@/lib/idempotency";
+import { getFlags, unavailableResponse } from "@/lib/flags";
 
 const FORTUNE_TTL = 86_400; // 24 hours
 
@@ -13,10 +13,10 @@ const FORTUNE_TTL = 86_400; // 24 hours
  */
 const localFortuneCache = new Map<string, { fortune: string; rarity: Rarity; timestamp: string }>();
 
-/** Track which payment hashes we've already recorded to the leaderboard (avoid double-counting) */
-const recordedHashes = new Set<string>();
-
 export async function GET(req: Request) {
+  const { fortuneSingleEnabled } = getFlags();
+  if (!fortuneSingleEnabled) return unavailableResponse("Fortunes");
+
   const limited = await checkRateLimit(req, { prefix: "fortune-status", limit: 10, window: "1 m" });
   if (limited) return limited;
 
@@ -82,16 +82,10 @@ export async function GET(req: Request) {
       }
     }
 
-    // Record to leaderboard + activity once per payment hash (avoid double-counting on re-checks)
+    // Record to leaderboard + activity once per payment hash (Redis SET NX — cross-instance safe)
     const { deviceId, isNew } = getOrCreateDeviceId(req);
-    if (!recordedHashes.has(paymentHash)) {
-      recordedHashes.add(paymentHash);
-      const displayName = resolveDisplayNameFromReq(req, deviceId);
-      await Promise.all([
-        recordFortuneReveal(deviceId, displayName, cached.rarity, 100),
-        recordActivity(displayName, cached.rarity),
-      ]);
-    }
+    const displayName = resolveDisplayNameFromReq(req, deviceId);
+    await recordFortuneOnce(paymentHash, deviceId, displayName, cached.rarity, 100);
 
     const res = Response.json({
       paid: true,

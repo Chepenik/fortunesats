@@ -177,6 +177,17 @@ export async function createOrder(): Promise<Order> {
   await store.set(order);
   await store.addToPending(order.id);
 
+  // Initialize atomic claim counter (used by claimFortuneAtomic)
+  try {
+    const { getRedis } = await import("@/lib/redis");
+    const redis = getRedis();
+    if (redis) {
+      await redis.set(`pack:remaining:${order.id}`, PACK_SIZE, { ex: REDIS_TTL_SECONDS });
+    }
+  } catch (e) {
+    console.error("[orders:createOrder] Failed to init claim counter:", e);
+  }
+
   return order;
 }
 
@@ -284,9 +295,32 @@ export async function claimFortune(
     return { success: false, fortunesRemaining: 0, error: "All fortunes claimed" };
   }
 
+  // Atomic decrement via Redis counter (prevents race conditions on concurrent claims)
+  let atomicRemaining: number | null = null;
+  try {
+    const { getRedis } = await import("@/lib/redis");
+    const redis = getRedis();
+    if (redis) {
+      // Ensure counter exists (backward compat for pre-migration orders)
+      await redis.set(`pack:remaining:${orderId}`, order.fortunesRemaining, { nx: true });
+
+      atomicRemaining = await redis.decr(`pack:remaining:${orderId}`);
+      if (atomicRemaining < 0) {
+        // Undo: over-claimed — restore counter
+        await redis.incr(`pack:remaining:${orderId}`);
+        return { success: false, fortunesRemaining: 0, error: "All fortunes claimed" };
+      }
+    }
+  } catch (e) {
+    console.error("[orders:claimFortune] Atomic counter error:", e);
+    // Fall through to non-atomic path
+  }
+
+  const remaining = atomicRemaining ?? order.fortunesRemaining - 1;
+
   const updated: Order = {
     ...order,
-    fortunesRemaining: order.fortunesRemaining - 1,
+    fortunesRemaining: remaining,
     claimedFortunes: [...order.claimedFortunes, fortune],
   };
 

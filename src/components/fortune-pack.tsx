@@ -23,7 +23,8 @@ import { XIcon, GoldDot, OracleSpinner, CopyIcon, LinkIcon } from "@/components/
 
 interface StoredPack {
   orderId: string;
-  secret: string;
+  /** Post-migration: secret lives in HttpOnly cookie. Populated only for pre-migration packs. */
+  secret?: string;
 }
 
 type PackStep =
@@ -93,14 +94,23 @@ function loadPack(): StoredPack | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    // Accept both old format {orderId, secret} and new format {orderId}
+    if (parsed.orderId) return parsed;
+    return null;
   } catch {
     return null;
   }
 }
 
+/**
+ * Save pack reference to localStorage.
+ * Post-migration: only stores orderId (secret lives in HttpOnly cookie).
+ * Backward compat: old packs with secret in localStorage still work.
+ */
 function savePack(pack: StoredPack) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(pack));
+  // Only persist orderId — secret is now in HttpOnly cookie
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ orderId: pack.orderId }));
 }
 
 function clearPack() {
@@ -122,7 +132,7 @@ export function FortunePack() {
     setHasNativeShare(canNativeShare());
   }, []);
 
-  /* ── Restore pack from localStorage on mount ── */
+  /* ── Restore pack from localStorage + HttpOnly cookie on mount ── */
   useEffect(() => {
     if (mountedRef.current) return;
     mountedRef.current = true;
@@ -132,10 +142,14 @@ export function FortunePack() {
 
     setState({ step: "loading" });
 
+    // Server reads secret from HttpOnly cookie; body orderId + optional secret for backward compat
+    const bodyPayload: Record<string, string> = { orderId: stored.orderId };
+    if (stored.secret) bodyPayload.secret = stored.secret; // backward compat: old packs with secret in localStorage
+
     fetch("/api/pack/status", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId: stored.orderId, secret: stored.secret }),
+      body: JSON.stringify(bodyPayload),
     })
       .then((res) => res.json())
       .then((data) => {
@@ -152,7 +166,7 @@ export function FortunePack() {
             setState({
               step: "paid",
               orderId: stored.orderId,
-              secret: stored.secret,
+              secret: stored.secret ?? "",
               fortunesRemaining: data.fortunesRemaining,
               fortunesTotal: data.fortunesTotal,
               txid: data.txid,
@@ -163,7 +177,7 @@ export function FortunePack() {
           setState({
             step: "awaiting-payment",
             orderId: stored.orderId,
-            secret: stored.secret,
+            secret: stored.secret ?? "",
             address: data.address,
             amountSats: data.amountSats,
             expiresAt: data.expiresAt,
@@ -199,10 +213,14 @@ export function FortunePack() {
     if (state.step !== "revealing") return;
     const { orderId, secret, fortunesRemaining, fortunesTotal } = state;
     const timer = setTimeout(() => {
+      // Server reads secret from HttpOnly cookie; body has orderId + optional secret for backward compat
+      const bodyPayload: Record<string, string> = { orderId };
+      if (secret) bodyPayload.secret = secret;
+
       fetch("/api/pack/fortune", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, secret }),
+        body: JSON.stringify(bodyPayload),
       })
         .then((res) => res.json())
         .then((data) => {
@@ -249,11 +267,12 @@ export function FortunePack() {
       const res = await fetch("/api/pack", { method: "POST" });
       if (!res.ok) throw new Error("Failed to create order");
       const data = await res.json();
-      savePack({ orderId: data.orderId, secret: data.secret });
+      // Server sets HttpOnly cookie with secret; we only store orderId
+      savePack({ orderId: data.orderId });
       setState({
         step: "awaiting-payment",
         orderId: data.orderId,
-        secret: data.secret,
+        secret: "", // secret now lives in HttpOnly cookie
         address: data.address,
         amountSats: data.amountSats,
         expiresAt: data.expiresAt,
@@ -287,10 +306,14 @@ export function FortunePack() {
     });
 
     try {
+      // Server reads secret from HttpOnly cookie; body has orderId + optional secret for backward compat
+      const bodyPayload: Record<string, string> = { orderId, txid: trimmed };
+      if (secret) bodyPayload.secret = secret;
+
       const res = await fetch("/api/pack/status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, secret, txid: trimmed }),
+        body: JSON.stringify(bodyPayload),
       });
       const data = await res.json();
 
@@ -546,6 +569,29 @@ export function FortunePack() {
               </div>
             </div>
 
+            {/* Payment instructions */}
+            <div className="rounded-xl border border-gold/8 bg-gold/[0.02] p-4 space-y-2.5">
+              <div className="text-[11px] font-medium text-gold/50">Payment Instructions</div>
+              <ol className="space-y-1.5 text-[10px] text-gold/35 leading-relaxed list-decimal list-inside">
+                <li>Send <span className="text-ember/60 font-mono">{state.amountSats.toLocaleString()} sats</span> ({(state.amountSats / 1e8).toFixed(8)} BTC) to the address above</li>
+                <li>Payment is detected automatically when it appears in the mempool</li>
+                <li>After sending, paste your <span className="text-gold/50">transaction ID</span> below to verify</li>
+              </ol>
+              <p className="text-[9px] text-gold/20 leading-relaxed">
+                Detection usually takes 10&ndash;60 seconds after broadcast.
+                If your wallet doesn&apos;t show a txid, check{" "}
+                <a
+                  href={`https://mempool.space/address/${state.address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-cyan/40 hover:text-cyan/60 underline underline-offset-2 transition-colors"
+                >
+                  mempool.space
+                </a>
+                {" "}for your transaction.
+              </p>
+            </div>
+
             {/* Copy address button */}
             <button
               onClick={() => copyToClipboard(state.address, "address")}
@@ -588,7 +634,21 @@ export function FortunePack() {
                   className="w-full h-10 px-3 rounded-lg bg-[#0c0a0e] border border-gold/10 focus:border-gold/30 focus:outline-none font-mono text-[11px] text-foreground/70 placeholder:text-gold/15 transition-colors"
                 />
                 {txidError && (
-                  <p className="text-[11px] text-lacquer/70">{txidError}</p>
+                  <div className="space-y-1">
+                    <p className="text-[11px] text-lacquer/70">{txidError}</p>
+                    <p className="text-[10px] text-gold/20">
+                      Check{" "}
+                      <a
+                        href={`https://mempool.space/address/${state.step === "awaiting-payment" ? state.address : ""}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-cyan/40 hover:text-cyan/60 underline underline-offset-2 transition-colors"
+                      >
+                        mempool.space
+                      </a>
+                      {" "}to find your transaction ID.
+                    </p>
+                  </div>
                 )}
               </div>
 

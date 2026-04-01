@@ -47,7 +47,7 @@ export function CollectionView() {
 
   useEffect(() => {
     const data = getCollection();
-    setCollection(data);
+    setCollection(data); // eslint-disable-line react-hooks/set-state-in-effect -- localStorage read on mount (SSR-safe pattern)
     setStats(getCollectionStats(data));
     setMounted(true);
   }, []);

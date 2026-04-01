@@ -6,13 +6,15 @@ import {
 import { verifyTxPayment, isTxConfirmed } from "@/lib/mempool";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { getOrCreateDeviceId, attachDeviceCookie, resolveDisplayNameFromReq } from "@/lib/device-id";
-import { recordSatsSpent } from "@/lib/leaderboard";
+import { recordSatsOnce } from "@/lib/idempotency";
+import { resolvePackCredentials } from "@/lib/pack-session";
 
 /**
  * POST /api/pack/status
  *
- * Body: { orderId, secret, txid? }
+ * Body: { orderId?, secret?, txid? }
  *
+ * Credentials come from the HttpOnly fsp cookie (preferred) or the body (backward compat).
  * If txid is provided: verifies that specific tx pays the correct address/amount.
  * If txid is omitted and order is already paid: checks for confirmation upgrade.
  */
@@ -30,14 +32,17 @@ export async function POST(req: Request) {
     );
   }
 
-  const { orderId, secret, txid } = body;
-
-  if (!orderId || !secret) {
+  // Resolve credentials: HttpOnly cookie first, body fallback
+  const creds = resolvePackCredentials(req, body);
+  if (!creds) {
     return Response.json(
       { error: { code: "invalid_params", message: "orderId and secret required" } },
       { status: 400 },
     );
   }
+
+  const { orderId, secret } = creds;
+  const { txid } = body;
 
   try {
     const order = await getOrder(orderId, secret);
@@ -48,7 +53,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // ── Already paid: check for confirmation upgrade ──
+    // -- Already paid: check for confirmation upgrade --
     if (order.status === "mempool" && order.txid) {
       const { confirmed } = await isTxConfirmed(order.txid).catch(() => ({
         confirmed: false,
@@ -87,12 +92,12 @@ export async function POST(req: Request) {
       });
     }
 
-    // ── Pending: user submitted a txid to verify ──
+    // -- Pending: user submitted a txid to verify --
     if (order.status === "pending" && txid) {
       // Validate txid format (64 hex chars)
       if (!/^[a-fA-F0-9]{64}$/.test(txid)) {
         return Response.json(
-          { error: { code: "invalid_txid", message: "Invalid transaction ID format" } },
+          { error: { code: "invalid_txid", message: "Invalid transaction ID format. Must be 64 hex characters." } },
           { status: 400 },
         );
       }
@@ -109,11 +114,10 @@ export async function POST(req: Request) {
       if (result.valid) {
         const updated = await markOrderPaid(orderId, txid, result.amountSats!);
 
-        // Leaderboard: record sats spent at payment confirmation
-        // Must await — serverless freezes after return
+        // Record sats ONCE per order (Redis SET NX — safe on retries)
         const { deviceId, isNew } = getOrCreateDeviceId(req);
         const displayName = resolveDisplayNameFromReq(req, deviceId);
-        await recordSatsSpent(deviceId, displayName, result.amountSats!);
+        await recordSatsOnce(orderId, deviceId, displayName, result.amountSats!);
 
         const res = Response.json({
           status: result.confirmed ? "confirmed" : "mempool",
@@ -128,7 +132,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // ── Pending, no txid submitted ──
+    // -- Pending, no txid submitted --
     const expired = new Date(order.expiresAt) < new Date();
 
     return Response.json({

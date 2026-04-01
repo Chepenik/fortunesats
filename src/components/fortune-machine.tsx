@@ -40,7 +40,7 @@ type FlowState =
 
 /* ─── Component ──────────────────────────────────────────── */
 
-export function FortuneMachine() {
+export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
   const [state, setState] = useState<FlowState>({ step: "idle" });
   const [copied, setCopied] = useState<string | null>(null);
   const [hasNativeShare, setHasNativeShare] = useState(false);
@@ -301,19 +301,27 @@ export function FortuneMachine() {
               onClick={requestFortune}
               className="btn-lacquer w-full h-14 rounded-xl text-sm font-semibold tracking-wide cursor-pointer transition-all active:scale-[0.98] active:translate-y-0"
             >
-              Get Your Fortune
+              {freePromo ? "Get Your Free Fortune" : "Get Your Fortune"}
             </button>
 
             {/* Flow steps */}
-            <div className="flex items-center justify-center gap-4 text-[10px] tracking-[0.15em] uppercase font-mono">
-              <span className="text-lacquer/50">Request</span>
-              <GoldDot />
-              <span className="text-gold/30">Invoice</span>
-              <GoldDot />
-              <span className="text-gold/30">Pay</span>
-              <GoldDot />
-              <span className="text-gold/30">Fortune</span>
-            </div>
+            {freePromo ? (
+              <div className="flex items-center justify-center gap-4 text-[10px] tracking-[0.15em] uppercase font-mono">
+                <span className="text-cyan/50">Request</span>
+                <GoldDot />
+                <span className="text-gold/30">Fortune</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-4 text-[10px] tracking-[0.15em] uppercase font-mono">
+                <span className="text-lacquer/50">Request</span>
+                <GoldDot />
+                <span className="text-gold/30">Invoice</span>
+                <GoldDot />
+                <span className="text-gold/30">Pay</span>
+                <GoldDot />
+                <span className="text-gold/30">Fortune</span>
+              </div>
+            )}
 
             {/* Streak display */}
             {streak && streak.current > 0 && (
@@ -396,16 +404,16 @@ export function FortuneMachine() {
                 </div>
               </button>
 
-              {/* Elapsed indicator */}
-              {waitingSecs > 3 && (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="h-px flex-1 bg-gold/5" />
-                  <span className="font-mono text-[9px] text-gold/20">
-                    {waitingSecs}s
-                  </span>
-                  <div className="h-px flex-1 bg-gold/5" />
-                </div>
-              )}
+              {/* Status indicator */}
+              <div className="flex items-center justify-center gap-2">
+                <div className="h-px flex-1 bg-gold/5" />
+                <span className="font-mono text-[9px] text-gold/20">
+                  {waitingSecs > 3
+                    ? `Waiting ${waitingSecs}s\u2026`
+                    : "Invoice created \u2014 awaiting payment"}
+                </span>
+                <div className="h-px flex-1 bg-gold/5" />
+              </div>
             </div>
 
             {/* Actions */}
@@ -438,22 +446,31 @@ export function FortuneMachine() {
                   {checkMsg}
                 </p>
               )}
+              {waitingSecs > 8 && !checkMsg && (
+                <p className="text-[10px] text-center text-gold/20 leading-relaxed">
+                  Paid already? Tap the button above to check payment status.
+                </p>
+              )}
             </div>
 
             {/* Direct claim fallback — covers webhook propagation delays */}
             {waitingSecs > 15 && (
               <div className="space-y-2">
-                <button
-                  onClick={claimFortune}
-                  className="btn-jade w-full h-10 rounded-xl text-xs font-medium cursor-pointer active:scale-[0.98]"
-                >
-                  Already paid? Claim your fortune
-                </button>
-                <p className="text-[10px] text-center text-gold/20 leading-relaxed">
-                  Lightning confirmations can take a moment to propagate.
-                  <br />
-                  If you&apos;ve paid, tap above to reveal your fortune now.
-                </p>
+                <div className="rounded-xl border border-gold/8 bg-gold/[0.02] p-3 space-y-2">
+                  <p className="text-[11px] text-gold/40 font-medium">
+                    Payment not detected?
+                  </p>
+                  <p className="text-[10px] text-gold/25 leading-relaxed">
+                    Lightning confirmations can take a moment to propagate across nodes.
+                    If your wallet shows the payment as sent, tap below to claim your fortune directly.
+                  </p>
+                  <button
+                    onClick={claimFortune}
+                    className="btn-jade w-full h-10 rounded-xl text-xs font-medium cursor-pointer active:scale-[0.98]"
+                  >
+                    Claim Fortune Directly
+                  </button>
+                </div>
               </div>
             )}
 
@@ -653,7 +670,7 @@ export function FortuneMachine() {
                   </span>
                   <div className="h-px flex-1 bg-gradient-to-r from-gold/10 to-transparent" />
                   <span className="font-mono text-[10px] text-gold/20">
-                    100 sats
+                    {freePromo ? "free" : "100 sats"}
                   </span>
                 </motion.div>
 

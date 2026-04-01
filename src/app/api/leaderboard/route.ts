@@ -1,8 +1,12 @@
 import { getDeviceId } from "@/lib/device-id";
 import { getLeaderboard } from "@/lib/leaderboard";
 import { checkRateLimit } from "@/lib/ratelimit";
+import { getFlags, unavailableResponse } from "@/lib/flags";
 
 export async function GET(req: Request) {
+  const { leaderboardEnabled } = getFlags();
+  if (!leaderboardEnabled) return unavailableResponse("Leaderboard");
+
   const limited = await checkRateLimit(req, { prefix: "leaderboard", limit: 10, window: "1 m" });
   if (limited) return limited;
 
