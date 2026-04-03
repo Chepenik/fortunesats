@@ -67,16 +67,12 @@ function FortuneSuccessInner() {
 
     setState({ step: "delivering" }); // eslint-disable-line react-hooks/set-state-in-effect
 
-    const checkoutId =
-      searchParams.get("checkout_id") ??
-      searchParams.get("checkoutId") ??
-      sessionStorage.getItem("fs_checkout_id");
+    // MDK appends the checkout ID as ?checkout-id=<id> on redirect
+    const checkoutId = searchParams.get("checkout-id");
     if (!checkoutId) {
       setState({ step: "error", message: "Missing checkout reference. Please try again from the homepage." });
       return;
     }
-    // Clear after use so stale IDs don't linger
-    sessionStorage.removeItem("fs_checkout_id");
 
     fetch("/api/fortune/deliver", {
       method: "POST",
