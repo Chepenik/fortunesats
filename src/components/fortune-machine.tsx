@@ -112,10 +112,15 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
         currency: "SAT",
         title: "Fortune",
         description: "One fortune — Fortune Sats",
-        successUrl: "/fortune/success",
       });
 
       if (result.data) {
+        // Extract checkout ID from URL (e.g. "/checkout/abc123" → "abc123")
+        const checkoutId = result.data.checkoutUrl.split("/checkout/")[1]?.split(/[?#]/)[0];
+        if (checkoutId) {
+          // Store checkout ID so the success page can use it for fortune delivery
+          sessionStorage.setItem("fs_checkout_id", checkoutId);
+        }
         window.location.href = result.data.checkoutUrl;
         return;
       }
