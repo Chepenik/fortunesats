@@ -1,4 +1,3 @@
-import { withPayment } from "@moneydevkit/nextjs/server";
 import { getRandomFortune } from "@/lib/fortunes";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { getOrCreateDeviceId, attachDeviceCookie, resolveDisplayNameFromReq } from "@/lib/device-id";
@@ -6,21 +5,31 @@ import { recordFortuneReveal } from "@/lib/leaderboard";
 import { recordActivity } from "@/lib/activity";
 import { getFlags, unavailableResponse } from "@/lib/flags";
 
-const handler = async (req: Request) => {
+/**
+ * Free fortune endpoint (promo mode only).
+ * Paid fortunes now go through the MDK checkout flow:
+ *   createCheckout → /checkout/[id] → /fortune/success → POST /api/fortune/deliver
+ */
+export async function GET(req: Request) {
+  const { fortuneSingleEnabled, freeFortunePromo } = getFlags();
+  if (!fortuneSingleEnabled) return unavailableResponse("Fortunes");
+
+  if (!freeFortunePromo) {
+    return Response.json(
+      { error: { code: "payment_required", message: "Use the checkout flow to purchase a fortune." } },
+      { status: 402 },
+    );
+  }
+
   const limited = await checkRateLimit(req, { prefix: "fortune", limit: 10, window: "1 m" });
   if (limited) return limited;
-
-  const { freeFortunePromo } = getFlags();
-  const sats = freeFortunePromo ? 0 : 100;
 
   const { deviceId, isNew } = getOrCreateDeviceId(req);
   const displayName = resolveDisplayNameFromReq(req, deviceId);
   const fortune = getRandomFortune();
 
-  // Leaderboard + activity feed: record fortune + sats (0 during promo)
-  // Must await — serverless freezes after return
   await Promise.all([
-    recordFortuneReveal(deviceId, displayName, fortune.rarity, sats),
+    recordFortuneReveal(deviceId, displayName, fortune.rarity, 0),
     recordActivity(displayName, fortune.rarity),
   ]);
 
@@ -31,26 +40,4 @@ const handler = async (req: Request) => {
   });
   if (isNew) attachDeviceCookie(res, deviceId);
   return res;
-};
-
-const paidHandler = withPayment({ amount: 100, currency: "SAT" }, handler);
-
-export async function GET(req: Request) {
-  const { fortuneSingleEnabled, freeFortunePromo } = getFlags();
-  if (!fortuneSingleEnabled) return unavailableResponse("Fortunes");
-  if (freeFortunePromo) return handler(req);
-  try {
-    return await paidHandler(req);
-  } catch (e) {
-    // MDK/LDK failures (cold-start sync timeout, node init errors).
-    // Client falls back to /fortune/status + /fortune/claim polling.
-    console.error("[fortune:GET] MDK handler error:", e);
-    return Response.json(
-      { error: { code: "payment_unavailable", message: "Payment processing temporarily unavailable. Please retry shortly." } },
-      { status: 503, headers: { "Retry-After": "5" } },
-    );
-  }
 }
-
-// MDK's LDK node needs time to build + sync on cold start
-export const maxDuration = 60;

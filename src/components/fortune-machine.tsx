@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useCheckout } from "@moneydevkit/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
-import { QRCodeSVG } from "qrcode.react";
 import { Check, Copy, Link2 } from "lucide-react";
 import { getStreak, recordFortune, type StreakData } from "@/lib/streak";
 import { saveToCollection } from "@/lib/collection";
@@ -17,7 +17,7 @@ import {
   type ShareVariant,
 } from "@/lib/share";
 import { RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
-import { ease, fadeUp, scaleFade } from "@/components/shared/animations";
+import { ease, fadeUp } from "@/components/shared/animations";
 import { fireRarityConfetti } from "@/components/shared/confetti";
 import { XIcon, GoldDot, OracleSpinner } from "@/components/shared/icons";
 
@@ -26,13 +26,6 @@ import { XIcon, GoldDot, OracleSpinner } from "@/components/shared/icons";
 type FlowState =
   | { step: "idle" }
   | { step: "requesting" }
-  | {
-      step: "invoice";
-      invoice: string;
-      macaroon: string;
-      paymentHash: string;
-      amountSats: number;
-    }
   | { step: "revealing"; fortune: string; rarity: Rarity; timestamp: string }
   | { step: "rarity-reveal"; fortune: string; rarity: Rarity; timestamp: string }
   | { step: "fortune"; fortune: string; rarity: Rarity; timestamp: string }
@@ -41,74 +34,17 @@ type FlowState =
 /* ─── Component ──────────────────────────────────────────── */
 
 export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
+  const { createCheckout, isLoading } = useCheckout();
   const [state, setState] = useState<FlowState>({ step: "idle" });
   const [copied, setCopied] = useState<string | null>(null);
   const [hasNativeShare, setHasNativeShare] = useState(false);
-  const [waitingSecs, setWaitingSecs] = useState(0);
-  const [checking, setChecking] = useState(false);
-  const [checkMsg, setCheckMsg] = useState<string | null>(null);
   const [streak, setStreak] = useState<StreakData | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const variantRef = useRef<ShareVariant>(pickVariant());
-  const paymentHashRef = useRef<string | null>(null);
 
   useEffect(() => {
-    setHasNativeShare(canNativeShare());
+    setHasNativeShare(canNativeShare()); // eslint-disable-line react-hooks/set-state-in-effect
     setStreak(getStreak());
   }, []);
-
-  /* ── Elapsed timer for invoice state ── */
-  useEffect(() => {
-    if (state.step !== "invoice") {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      setWaitingSecs(0);
-      setCheckMsg(null);
-      setChecking(false);
-      return;
-    }
-    timerRef.current = setInterval(() => {
-      setWaitingSecs((s) => s + 1);
-    }, 1000);
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [state.step]);
-
-  /* ── Manual payment check (replaces polling) ── */
-  const checkPaymentStatus = useCallback(async () => {
-    if (state.step !== "invoice") return;
-    setChecking(true);
-    setCheckMsg(null);
-    try {
-      const res = await fetch(
-        `/api/fortune/status?paymentHash=${encodeURIComponent(state.paymentHash)}`,
-      );
-      if (res.ok) {
-        const data = await res.json();
-        if (data.paid) {
-          variantRef.current = pickVariant();
-          setState({
-            step: "revealing",
-            fortune: data.fortune,
-            rarity: data.rarity ?? "common",
-            timestamp: data.timestamp,
-          });
-          return;
-        }
-      }
-      setCheckMsg("Not confirmed yet \u2014 Lightning takes a moment. Try again in a few seconds.");
-    } catch {
-      setCheckMsg("Could not reach server. Please try again.");
-    } finally {
-      setChecking(false);
-    }
-  }, [state]);
 
   /* ── "Revealing" → rarity-reveal transition ── */
   useEffect(() => {
@@ -134,128 +70,73 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
   useEffect(() => {
     if (state.step !== "fortune") return;
     const updated = recordFortune();
-    setStreak(updated);
+    setStreak(updated); // eslint-disable-line react-hooks/set-state-in-effect
     fireRarityConfetti(state.rarity);
     saveToCollection(state.fortune, state.rarity);
   }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Request fortune ── */
   const requestFortune = useCallback(async () => {
+    if (freePromo) {
+      // Free promo — get fortune directly from API, no payment needed
+      setState({ step: "requesting" });
+      try {
+        const res = await fetch("/api/fortune");
+        if (res.ok) {
+          const data = await res.json();
+          variantRef.current = pickVariant();
+          setState({
+            step: "revealing",
+            fortune: data.fortune,
+            rarity: data.rarity ?? "common",
+            timestamp: data.timestamp,
+          });
+          return;
+        }
+        setState({ step: "error", message: "Something went wrong. Please try again." });
+      } catch (e) {
+        setState({
+          step: "error",
+          message: e instanceof Error ? e.message : "Network error",
+        });
+      }
+      return;
+    }
+
+    // Paid flow — MDK checkout redirect
     setState({ step: "requesting" });
     try {
-      const res = await fetch("/api/fortune");
-      if (res.status === 402) {
-        const data = await res.json();
-        paymentHashRef.current = data.paymentHash;
-        setState({
-          step: "invoice",
-          invoice: data.invoice,
-          macaroon: data.macaroon,
-          paymentHash: data.paymentHash,
-          amountSats: data.amountSats,
-        });
+      const result = await createCheckout({
+        type: "AMOUNT",
+        amount: 100,
+        currency: "SAT",
+        title: "Fortune",
+        description: "One fortune — Fortune Sats",
+        successUrl: "/fortune/success",
+      });
+
+      if (result.data) {
+        window.location.href = result.data.checkoutUrl;
         return;
       }
-      if (res.ok) {
-        const data = await res.json();
-        variantRef.current = pickVariant();
-        setState({
-          step: "revealing",
-          fortune: data.fortune,
-          rarity: data.rarity ?? "common",
-          timestamp: data.timestamp,
-        });
-        return;
-      }
-      setState({ step: "error", message: "Something went wrong. Please try again." });
+
+      setState({
+        step: "error",
+        message: result.error?.message ?? "Could not create checkout. Please try again.",
+      });
     } catch (e) {
       setState({
         step: "error",
         message: e instanceof Error ? e.message : "Network error",
       });
     }
-  }, []);
-
-  /* ── WebLN payment ── */
-  const payWithWebLN = useCallback(
-    async (invoice: string, macaroon: string) => {
-      try {
-        if (typeof window !== "undefined" && "webln" in window) {
-          const webln = (
-            window as unknown as {
-              webln: {
-                enable: () => Promise<void>;
-                sendPayment: (
-                  invoice: string,
-                ) => Promise<{ preimage: string }>;
-              };
-            }
-          ).webln;
-          await webln.enable();
-          const { preimage } = await webln.sendPayment(invoice);
-          const res = await fetch("/api/fortune", {
-            headers: { Authorization: `L402 ${macaroon}:${preimage}` },
-          });
-          if (res.ok) {
-            const data = await res.json();
-            variantRef.current = pickVariant();
-            setState({
-              step: "revealing",
-              fortune: data.fortune,
-              rarity: data.rarity ?? "common",
-              timestamp: data.timestamp,
-            });
-            return;
-          }
-          setState({
-            step: "error",
-            message: "Something went wrong after payment. Please try again.",
-          });
-        }
-      } catch (e) {
-        setState({
-          step: "error",
-          message: e instanceof Error ? e.message : "Payment failed",
-        });
-      }
-    },
-    [],
-  );
+  }, [freePromo, createCheckout]);
 
   /* ── Clipboard ── */
   const copyToClipboard = useCallback((text: string, type: string) => {
     navigator.clipboard.writeText(text);
     setCopied(type);
     setTimeout(() => setCopied(null), 2000);
-  }, []);
-
-  /* ── Manual claim (fallback for broken webhook) ── */
-  const claimFortune = useCallback(async () => {
-    const hash = paymentHashRef.current;
-    try {
-      const url = hash
-        ? `/api/fortune/claim?paymentHash=${encodeURIComponent(hash)}`
-        : "/api/fortune/claim";
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        variantRef.current = pickVariant();
-        setState({
-          step: "revealing",
-          fortune: data.fortune,
-          rarity: data.rarity ?? "common",
-          timestamp: data.timestamp,
-        });
-        return;
-      }
-    } catch { /* fall through */ }
-    variantRef.current = pickVariant();
-    setState({
-      step: "revealing",
-      fortune: "The path forward is revealed to those who take the first step.",
-      rarity: "common",
-      timestamp: new Date().toISOString(),
-    });
   }, []);
 
   /* ── Share handlers ── */
@@ -299,7 +180,8 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
             {/* Main CTA */}
             <button
               onClick={requestFortune}
-              className="btn-lacquer w-full h-14 rounded-xl text-sm font-semibold tracking-wide cursor-pointer transition-all active:scale-[0.98] active:translate-y-0"
+              disabled={isLoading}
+              className="btn-lacquer w-full h-14 rounded-xl text-sm font-semibold tracking-wide cursor-pointer transition-all active:scale-[0.98] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {freePromo ? "Get Your Free Fortune" : "Get Your Fortune"}
             </button>
@@ -314,8 +196,6 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
             ) : (
               <div className="flex items-center justify-center gap-4 text-[11px] tracking-[0.15em] uppercase font-mono">
                 <span className="text-lacquer/50">Request</span>
-                <GoldDot />
-                <span className="text-gold/35">Invoice</span>
                 <GoldDot />
                 <span className="text-gold/35">Pay</span>
                 <GoldDot />
@@ -355,138 +235,13 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
             <div className="flex flex-col items-center gap-5 py-10">
               <OracleSpinner />
               <p className="text-sm text-gold/50 tracking-wide">
-                Consulting the oracle&hellip;
+                {freePromo ? "Consulting the oracle\u2026" : "Preparing your checkout\u2026"}
               </p>
             </div>
           </motion.div>
         )}
 
-        {/* ────────────────── INVOICE ────────────────── */}
-        {state.step === "invoice" && (
-          <motion.div key="invoice" {...scaleFade} className="space-y-5">
-            <div className="lacquer-surface rounded-2xl p-6 space-y-5 ornamental-border">
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-lacquer animate-glow-pulse" />
-                  <span className="text-xs text-gold/50 font-mono tracking-wide">
-                    Scan QR &middot; Pay &middot; Tap confirm
-                  </span>
-                </div>
-                <span className="font-mono text-xs text-ember/60">
-                  {state.amountSats} sats
-                </span>
-              </div>
-
-              {/* QR Code */}
-              <div className="flex justify-center">
-                <div className="rounded-xl bg-[#f0ece4] p-4 glow-gold">
-                  <QRCodeSVG
-                    value={state.invoice.toUpperCase()}
-                    size={180}
-                    level="M"
-                    bgColor="transparent"
-                    fgColor="#0c0a0e"
-                  />
-                </div>
-              </div>
-
-              {/* Invoice string */}
-              <button
-                onClick={() => copyToClipboard(state.invoice, "invoice")}
-                className="w-full group cursor-pointer"
-              >
-                <div className="font-mono text-[10px] leading-relaxed text-gold/30 group-hover:text-gold/45 transition-colors line-clamp-2 text-center">
-                  {state.invoice}
-                </div>
-                <div className="text-[11px] text-lacquer/45 mt-1.5 group-hover:text-lacquer/60 transition-colors">
-                  {copied === "invoice" ? "Copied!" : "Tap to copy"}
-                </div>
-              </button>
-
-              {/* Status indicator */}
-              <div className="flex items-center justify-center gap-2">
-                <div className="h-px flex-1 bg-gold/5" />
-                <span className="font-mono text-[11px] text-gold/30">
-                  {waitingSecs > 3
-                    ? `Waiting ${waitingSecs}s\u2026`
-                    : "Invoice created \u2014 awaiting payment"}
-                </span>
-                <div className="h-px flex-1 bg-gold/5" />
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="space-y-2">
-              <button
-                onClick={() => payWithWebLN(state.invoice, state.macaroon)}
-                className="btn-lacquer w-full h-11 rounded-xl text-sm font-medium cursor-pointer active:scale-[0.98]"
-              >
-                ⚡ Pay with Lightning Wallet
-              </button>
-              <button
-                className="w-full h-9 rounded-lg text-xs text-gold/40 hover:text-gold/60 transition-colors cursor-pointer"
-                onClick={() => copyToClipboard(state.invoice, "invoice")}
-              >
-                {copied === "invoice" ? "Copied to clipboard" : "Copy invoice"}
-              </button>
-            </div>
-
-            {/* Manual payment check — replaces auto-polling */}
-            <div className="space-y-2">
-              <button
-                onClick={checkPaymentStatus}
-                disabled={checking}
-                className="btn-jade w-full h-11 rounded-xl text-sm font-medium cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {checking ? "Checking\u2026" : "I\u2019ve Paid \u2014 Check Now"}
-              </button>
-              {checkMsg && (
-                <p className="text-[11px] text-center text-gold/35 leading-relaxed">
-                  {checkMsg}
-                </p>
-              )}
-              {waitingSecs > 8 && !checkMsg && (
-                <p className="text-[11px] text-center text-gold/30 leading-relaxed">
-                  Paid already? Tap the button above to check payment status.
-                </p>
-              )}
-            </div>
-
-            {/* Direct claim fallback — covers webhook propagation delays */}
-            {waitingSecs > 15 && (
-              <div className="space-y-2">
-                <div className="rounded-xl border border-gold/8 bg-gold/[0.02] p-3 space-y-2">
-                  <p className="text-xs text-gold/45 font-medium">
-                    Payment not detected?
-                  </p>
-                  <p className="text-[11px] text-gold/30 leading-relaxed">
-                    Lightning confirmations can take a moment to propagate across nodes.
-                    If your wallet shows the payment as sent, tap below to claim your fortune directly.
-                  </p>
-                  <button
-                    onClick={claimFortune}
-                    className="btn-jade w-full h-10 rounded-xl text-xs font-medium cursor-pointer active:scale-[0.98]"
-                  >
-                    Claim Fortune Directly
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Cancel */}
-            <div className="text-center">
-              <button
-                onClick={() => setState({ step: "idle" })}
-                className="text-xs text-muted-foreground/40 hover:text-lacquer/50 transition-colors cursor-pointer py-1"
-              >
-                Cancel
-              </button>
-            </div>
-          </motion.div>
-        )}
-
-        {/* ────────────────── REVEALING (payment success → rarity reveal) ────────────────── */}
+        {/* ────────────────── REVEALING (free promo: payment success → rarity reveal) ────────────────── */}
         {state.step === "revealing" && (
           <motion.div
             key="revealing"
@@ -508,7 +263,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
 
             <div className="text-center space-y-1.5">
               <p className="text-sm font-medium text-foreground/90">
-                Payment received
+                Fortune incoming
               </p>
               <p className="text-xs text-gold/40">
                 Revealing your fortune&hellip;
@@ -841,4 +596,3 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
     </div>
   );
 }
-

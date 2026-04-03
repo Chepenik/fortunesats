@@ -150,7 +150,7 @@ export default function Home() {
               </Link>
             )}
             <p className="text-xs tracking-[0.15em] uppercase text-gold/40 font-mono">
-              L402 &middot; Pay per request &middot; Lightning Network
+              Pay per fortune &middot; Lightning Network
             </p>
           </div>
 
