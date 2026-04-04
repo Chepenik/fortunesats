@@ -25,11 +25,14 @@ import Link from "next/link";
 
 type FlowState =
   | { step: "verifying" }
-  | { step: "delivering" }
+  | { step: "delivering"; attempt?: number }
   | { step: "revealing"; fortune: string; rarity: Rarity; timestamp: string }
   | { step: "rarity-reveal"; fortune: string; rarity: Rarity; timestamp: string }
   | { step: "fortune"; fortune: string; rarity: Rarity; timestamp: string }
-  | { step: "error"; message: string };
+  | { step: "error"; message: string; retriable?: boolean; checkoutId?: string };
+
+const MAX_DELIVER_RETRIES = 3;
+const RETRY_DELAYS = [2000, 4000, 8000]; // exponential backoff
 
 export default function FortuneSuccessPage() {
   return (
@@ -60,44 +63,88 @@ function FortuneSuccessInner() {
     setStreak(getStreak());
   }, []);
 
-  // Once MDK confirms payment, deliver the fortune
+  // Once MDK confirms payment, deliver the fortune (with retry for transient failures)
   useEffect(() => {
     if (isCheckoutPaidLoading || !isCheckoutPaid || deliveredRef.current) return;
     deliveredRef.current = true;
 
-    setState({ step: "delivering" }); // eslint-disable-line react-hooks/set-state-in-effect
-
-    // MDK appends the checkout ID as ?checkout-id=<id> on redirect
     const checkoutId = searchParams.get("checkout-id");
     if (!checkoutId) {
-      setState({ step: "error", message: "Missing checkout reference. Please try again from the homepage." });
+      setState({ step: "error", message: "Missing checkout reference. Please try again from the homepage." }); // eslint-disable-line react-hooks/set-state-in-effect
       return;
     }
 
-    fetch("/api/fortune/deliver", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ checkoutId }),
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          const data = await res.json().catch(() => null);
-          throw new Error(data?.error?.message ?? "Failed to deliver fortune");
-        }
-        return res.json();
-      })
-      .then((data) => {
-        variantRef.current = pickVariant();
-        setState({
-          step: "revealing",
-          fortune: data.fortune,
-          rarity: data.rarity ?? "common",
-          timestamp: data.timestamp,
+    let cancelled = false;
+
+    async function attemptDeliver(attempt: number) {
+      if (cancelled) return;
+      setState({ step: "delivering", attempt });
+
+      try {
+        const res = await fetch("/api/fortune/deliver", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ checkoutId }),
         });
-      })
-      .catch((e) => {
-        setState({ step: "error", message: e.message ?? "Something went wrong" });
-      });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (cancelled) return;
+          variantRef.current = pickVariant();
+          setState({
+            step: "revealing",
+            fortune: data.fortune,
+            rarity: data.rarity ?? "common",
+            timestamp: data.timestamp,
+          });
+          return;
+        }
+
+        const data = await res.json().catch(() => null);
+        const retriable = res.status === 503 || res.status === 502 || res.status === 429
+          || data?.error?.retriable === true;
+
+        if (retriable && attempt < MAX_DELIVER_RETRIES) {
+          const delay = RETRY_DELAYS[attempt - 1] ?? 8000;
+          await new Promise((r) => setTimeout(r, delay));
+          await attemptDeliver(attempt + 1);
+          return;
+        }
+
+        // Non-retriable or exhausted retries
+        if (cancelled) return;
+        const message = res.status === 402
+          ? "Payment not confirmed yet. Please wait a moment and refresh."
+          : data?.error?.message ?? "Failed to deliver fortune";
+        setState({
+          step: "error",
+          message: attempt > 1
+            ? `${message} (tried ${attempt} times)`
+            : message,
+          retriable: retriable,
+          checkoutId: checkoutId ?? undefined,
+        });
+      } catch {
+        // Network error — retry if we have attempts left
+        if (attempt < MAX_DELIVER_RETRIES) {
+          const delay = RETRY_DELAYS[attempt - 1] ?? 8000;
+          await new Promise((r) => setTimeout(r, delay));
+          await attemptDeliver(attempt + 1);
+          return;
+        }
+        if (cancelled) return;
+        setState({
+          step: "error",
+          message: `Network error — please check your connection and refresh. (tried ${attempt} times)`,
+          retriable: true,
+          checkoutId: checkoutId ?? undefined,
+        });
+      }
+    }
+
+    attemptDeliver(1);
+
+    return () => { cancelled = true; };
   }, [isCheckoutPaid, isCheckoutPaidLoading, searchParams]);
 
   // Handle payment not confirmed after loading finishes
@@ -196,7 +243,9 @@ function FortuneSuccessInner() {
               <p className="text-sm text-gold/50 tracking-wide">
                 {state.step === "verifying"
                   ? "Verifying payment\u2026"
-                  : "Consulting the oracle\u2026"}
+                  : state.step === "delivering" && (state.attempt ?? 1) > 1
+                    ? `Retrying\u2026 (attempt ${state.attempt}/${MAX_DELIVER_RETRIES})`
+                    : "Consulting the oracle\u2026"}
               </p>
             </motion.div>
           )}
@@ -489,9 +538,22 @@ function FortuneSuccessInner() {
               transition={{ duration: 0.5, ease }}
               className="space-y-4 py-10"
             >
-              <div className="rounded-xl border border-lacquer/20 bg-lacquer/[0.04] p-5">
+              <div className="rounded-xl border border-lacquer/20 bg-lacquer/[0.04] p-5 space-y-2">
                 <p className="text-sm text-lacquer/70">{state.message}</p>
+                {state.retriable && (
+                  <p className="text-xs text-gold/40">
+                    Your payment was received. The lightning node may need a moment to sync.
+                  </p>
+                )}
               </div>
+              {state.retriable && (
+                <button
+                  onClick={() => window.location.reload()}
+                  className="btn-lacquer w-full h-10 rounded-xl text-sm cursor-pointer active:scale-[0.98]"
+                >
+                  Retry
+                </button>
+              )}
               <Link
                 href="/"
                 className="btn-jade block w-full h-10 rounded-xl text-sm text-center leading-10 cursor-pointer active:scale-[0.98]"

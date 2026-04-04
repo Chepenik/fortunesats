@@ -38,10 +38,19 @@ export async function POST(req: Request) {
   try {
     checkout = await getCheckout(checkoutId);
   } catch (e) {
-    console.error("[fortune/deliver:getCheckout]", e);
+    const msg = e instanceof Error ? e.message : String(e);
+    const isTimeout = msg.includes("timeout") || msg.includes("ETIMEDOUT") || msg.includes("sync");
+    console.error(`[fortune/deliver:getCheckout] checkoutId=${checkoutId} error=${msg}`);
     return Response.json(
-      { error: { code: "service_unavailable", message: "Payment verification temporarily unavailable." } },
-      { status: 503 },
+      {
+        error: {
+          code: "service_unavailable",
+          message: "Payment verification temporarily unavailable.",
+          retriable: true,
+          detail: isTimeout ? "sync_timeout" : "checkout_error",
+        },
+      },
+      { status: 503, headers: { "Retry-After": "3" } },
     );
   }
 
@@ -50,8 +59,11 @@ export async function POST(req: Request) {
     (checkout.invoice?.amountSatsReceived ?? 0) > 0;
 
   if (!paid) {
+    console.warn(
+      `[fortune/deliver] Payment not confirmed: checkoutId=${checkoutId} status=${checkout.status} received=${checkout.invoice?.amountSatsReceived ?? 0}`,
+    );
     return Response.json(
-      { error: { code: "payment_required", message: "Payment not confirmed" } },
+      { error: { code: "payment_required", message: "Payment not confirmed yet", retriable: true } },
       { status: 402 },
     );
   }
