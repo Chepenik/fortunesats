@@ -24,6 +24,8 @@ export interface Flags {
   legendaryRateMultiplier: number;
   /** Mix seasonal bonus fortunes into the pool. Default: false */
   seasonalPoolEnabled: boolean;
+  /** Enable paid fortune gifting. Default: true */
+  giftEnabled: boolean;
 }
 
 function envBool(key: string, fallback: boolean): boolean {
@@ -49,6 +51,7 @@ export function getFlags(): Flags {
     freeFortunePromo: envBool("FREE_FORTUNE_PROMO", false),
     legendaryRateMultiplier: envNumber("LEGENDARY_RATE_MULTIPLIER", 1.0, 0.5, 4.0),
     seasonalPoolEnabled: envBool("SEASONAL_POOL_ENABLED", false),
+    giftEnabled: envBool("GIFT_ENABLED", true),
   };
 }
 

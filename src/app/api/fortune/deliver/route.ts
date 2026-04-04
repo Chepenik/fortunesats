@@ -4,6 +4,7 @@ import { getRedis } from "@/lib/redis";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { getOrCreateDeviceId, attachDeviceCookie, resolveDisplayNameFromReq } from "@/lib/device-id";
 import { recordFortuneOnce } from "@/lib/idempotency";
+import { addToServerCollection, recordServerStreak } from "@/lib/collection-sync";
 import { getFlags, unavailableResponse } from "@/lib/flags";
 
 const FORTUNE_TTL = 86_400; // 24 hours
@@ -107,7 +108,11 @@ export async function POST(req: Request) {
   // Record to leaderboard/activity once per checkout (idempotent)
   const { deviceId, isNew } = getOrCreateDeviceId(req);
   const displayName = resolveDisplayNameFromReq(req, deviceId);
-  await recordFortuneOnce(checkoutId, deviceId, displayName, rarity, 100);
+  await Promise.all([
+    recordFortuneOnce(checkoutId, deviceId, displayName, rarity, 100),
+    addToServerCollection(deviceId, fortune, rarity),
+    recordServerStreak(deviceId),
+  ]);
 
   const res = Response.json({ fortune, rarity, timestamp });
   if (isNew) attachDeviceCookie(res, deviceId);

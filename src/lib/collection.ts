@@ -68,6 +68,41 @@ export function saveToCollection(text: string, rarity: Rarity): void {
   }
 }
 
+/**
+ * Two-way merge of two collections (e.g. localStorage + Redis).
+ * - Entries only in local → kept
+ * - Entries only in remote → kept
+ * - Both exist → max pullCount, earliest firstPulled, remote rarity wins
+ * - Result sorted newest-first by firstPulled
+ * No duplicates.
+ */
+export function mergeCollections(
+  local: CollectedFortune[],
+  remote: CollectedFortune[],
+): CollectedFortune[] {
+  const map = new Map<string, CollectedFortune>();
+
+  for (const f of remote) {
+    map.set(f.text, { ...f });
+  }
+
+  for (const f of local) {
+    const existing = map.get(f.text);
+    if (existing) {
+      existing.pullCount = Math.max(existing.pullCount, f.pullCount);
+      if (f.firstPulled < existing.firstPulled) {
+        existing.firstPulled = f.firstPulled;
+      }
+    } else {
+      map.set(f.text, { ...f });
+    }
+  }
+
+  return [...map.values()].sort(
+    (a, b) => new Date(b.firstPulled).getTime() - new Date(a.firstPulled).getTime(),
+  );
+}
+
 /** Compute rarity breakdown stats from the collection. */
 export function getCollectionStats(collection: CollectedFortune[]): CollectionStats {
   return {

@@ -3,6 +3,7 @@ import { checkRateLimit } from "@/lib/ratelimit";
 import { getOrCreateDeviceId, attachDeviceCookie, resolveDisplayNameFromReq } from "@/lib/device-id";
 import { recordFortuneReveal } from "@/lib/leaderboard";
 import { recordActivity } from "@/lib/activity";
+import { addToServerCollection, recordServerStreak } from "@/lib/collection-sync";
 import { getFlags, unavailableResponse } from "@/lib/flags";
 
 /**
@@ -31,6 +32,8 @@ export async function GET(req: Request) {
   await Promise.all([
     recordFortuneReveal(deviceId, displayName, fortune.rarity, 0),
     recordActivity(displayName, fortune.rarity),
+    addToServerCollection(deviceId, fortune.text, fortune.rarity),
+    recordServerStreak(deviceId),
   ]);
 
   const res = Response.json({

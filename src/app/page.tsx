@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { FortuneMachine } from "@/components/fortune-machine";
+import { GiftButton } from "@/components/gift-button";
 import { ActivityFeed } from "@/components/activity-feed";
 import { InitialsEditor } from "@/components/initials-editor";
 import { DragonLoader } from "@/components/dragon/DragonLoader";
@@ -26,7 +27,7 @@ const jsonLd = {
 };
 
 export default function Home() {
-  const { fortuneSingleEnabled, fortunePackEnabled, activityFeedEnabled, freeFortunePromo } = getFlags();
+  const { fortuneSingleEnabled, fortunePackEnabled, activityFeedEnabled, freeFortunePromo, giftEnabled } = getFlags();
 
   return (
     <main className="relative flex-1 flex flex-col items-center justify-center px-6 py-12 overflow-hidden">
@@ -96,6 +97,9 @@ export default function Home() {
             <p className="text-xs text-gold/30">Check back soon.</p>
           </div>
         )}
+
+        {/* Gift CTA */}
+        {giftEnabled && <GiftButton />}
 
         {/* Live activity feed */}
         {activityFeedEnabled && <ActivityFeed />}

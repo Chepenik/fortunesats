@@ -79,6 +79,27 @@ export function recordFortune(): StreakData {
   return streak;
 }
 
+/**
+ * Merge streaks from two sources (e.g. localStorage + Redis).
+ * Most recent lastDate wins for current streak; best and total take max.
+ */
+export function mergeStreaks(
+  local: StreakData,
+  remote: StreakData,
+): StreakData {
+  if (!remote.lastDate) return { ...local };
+  if (!local.lastDate) return { ...remote };
+
+  const localIsNewer = local.lastDate >= remote.lastDate;
+
+  return {
+    current: localIsNewer ? local.current : remote.current,
+    best: Math.max(local.best, remote.best),
+    total: Math.max(local.total, remote.total),
+    lastDate: localIsNewer ? local.lastDate : remote.lastDate,
+  };
+}
+
 function save(data: StreakData): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));

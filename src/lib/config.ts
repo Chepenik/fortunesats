@@ -17,6 +17,7 @@
 
 export interface PricingConfig {
   fortuneSingle: number;
+  fortuneGift: number;
   fortunePack: number;
   packSize: number;
 }
@@ -64,6 +65,7 @@ function envBool(key: string, fallback: boolean): boolean {
 export const config: AppConfig = {
   pricing: {
     fortuneSingle: envInt("FS_FORTUNE_PRICE", 100),
+    fortuneGift: envInt("FS_GIFT_PRICE", 200),
     fortunePack: envInt("FS_PACK_PRICE", 10_000),
     packSize: envInt("FS_PACK_SIZE", 100),
   },

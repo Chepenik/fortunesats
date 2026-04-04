@@ -6,9 +6,11 @@ import Link from "next/link";
 import {
   getCollection,
   getCollectionStats,
+  mergeCollections,
   type CollectedFortune,
   type CollectionStats,
 } from "@/lib/collection";
+import { getStreak, mergeStreaks, type StreakData } from "@/lib/streak";
 import { RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
 import { encodeFortuneSlug } from "@/lib/og";
 
@@ -47,10 +49,49 @@ export function CollectionView() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const data = getCollection();
-    setCollection(data); // eslint-disable-line react-hooks/set-state-in-effect -- localStorage read on mount (SSR-safe pattern)
-    setStats(getCollectionStats(data));
+    // 1. Load local immediately (fast render)
+    const local = getCollection();
+    setCollection(local); // eslint-disable-line react-hooks/set-state-in-effect -- localStorage read on mount (SSR-safe pattern)
+    setStats(getCollectionStats(local));
     setMounted(true);
+
+    // 2. Hydrate from server and merge
+    fetch("/api/collection")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { collection?: CollectedFortune[]; streak?: StreakData } | null) => {
+        if (!data?.collection?.length && !data?.streak) return;
+
+        const serverCol = data.collection ?? [];
+        const freshLocal = getCollection(); // re-read in case reveal happened since mount
+        const merged = mergeCollections(freshLocal, serverCol);
+
+        // Update state + localStorage if anything changed
+        if (merged.length !== freshLocal.length || merged.some((m, i) => m.text !== freshLocal[i]?.text || m.pullCount !== freshLocal[i]?.pullCount)) {
+          setCollection(merged);
+          setStats(getCollectionStats(merged));
+          try { localStorage.setItem("fortunesats:collection", JSON.stringify(merged)); } catch { /* full */ }
+        }
+
+        // Merge streaks into localStorage too
+        if (data.streak?.lastDate) {
+          const localStreak = getStreak();
+          const mergedStreak = mergeStreaks(localStreak, data.streak);
+          try { localStorage.setItem("fortunesats:streak", JSON.stringify(mergedStreak)); } catch { /* full */ }
+        }
+
+        // If local had entries not in server, sync them up
+        const serverTexts = new Set(serverCol.map((f) => f.text));
+        const hasLocalOnly = freshLocal.some((f) => !serverTexts.has(f.text));
+        if (hasLocalOnly) {
+          const localStreak = getStreak();
+          fetch("/api/collection", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ collection: merged, streak: localStreak }),
+          }).catch(() => {}); // non-critical
+        }
+      })
+      .catch(() => {}); // server unavailable — fail silently
   }, []);
 
   const filtered =
@@ -227,11 +268,9 @@ export function CollectionView() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Device disclaimer */}
+      {/* Sync note */}
       <p className="text-[11px] text-center text-muted-foreground/30 leading-relaxed">
-        Your collection is stored locally on this device.
-        <br />
-        Switching browsers or clearing storage resets it.
+        Your collection syncs across sessions automatically.
       </p>
     </div>
   );
