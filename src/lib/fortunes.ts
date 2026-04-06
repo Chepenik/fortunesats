@@ -307,7 +307,7 @@ function inferCategory(text: string, author: string | null): Category {
 
   // Content-based classification
   const sovereigntyKw = [
-    "sats", "money", "bitcoin", "proof of work", "time preference",
+    "sats", " sat ", "money", "bitcoin", "proof of work", "time preference",
     "fix the", "savings", "sound money", "freedom compounds",
     "sovereign", "value for value",
   ];
