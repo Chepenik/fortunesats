@@ -15,15 +15,26 @@ export const metadata: Metadata = {
 
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "WebSite",
-  name: "Fortune Sats",
-  url: "https://fortunesats.com",
-  description:
-    "Pay 100 sats over Lightning, receive a wisdom fortune. A Bitcoin-native fortune oracle with 119 collectible quotes.",
-  potentialAction: {
-    "@type": "SearchAction",
-    target: "https://fortunesats.com/collection",
-  },
+  "@graph": [
+    {
+      "@type": "WebSite",
+      name: "Fortune Sats",
+      url: "https://fortunesats.com",
+      description:
+        "Pay 100 sats over Lightning, receive a wisdom fortune. A Bitcoin-native fortune oracle with 119 collectible quotes.",
+    },
+    {
+      "@type": "Organization",
+      name: "Fortune Sats",
+      url: "https://fortunesats.com",
+      description:
+        "A Bitcoin-native fortune oracle. Pay 100 sats over Lightning, receive wisdom.",
+      sameAs: [
+        "https://github.com/Chepenik/fortunesats",
+        "https://x.com/ConorChepenik",
+      ],
+    },
+  ],
 };
 
 export default function Home() {
