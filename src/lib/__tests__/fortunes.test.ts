@@ -57,6 +57,20 @@ describe("fortune enrichment — author extraction", () => {
       expect(f.author).toBeNull();
     }
   });
+
+  it("extracts multi-word author names", () => {
+    const f = agentFortunes.find((f) => f.text.includes("Fortune favors the bold."));
+    expect(f).toBeDefined();
+    expect(f!.author).toBe("Virgil");
+  });
+
+  it("extracts accented-character author names", () => {
+    const f = agentFortunes.find((f) =>
+      f.text.includes("Perfection is achieved, not when there is nothing more to add"),
+    );
+    expect(f).toBeDefined();
+    expect(f!.author).toBe("Antoine de Saint-Exupéry");
+  });
 });
 
 describe("fortune enrichment — category inference", () => {
@@ -223,5 +237,28 @@ describe("getRandomAgentFortune", () => {
     expect(VALID_CATEGORIES.has(f.category)).toBe(true);
     expect(Array.isArray(f.tags)).toBe(true);
     expect(f.tags.length).toBeGreaterThan(0);
+  });
+});
+
+describe("fortune pool data integrity", () => {
+  it("pool is non-empty", () => {
+    expect(agentFortunes.length).toBeGreaterThan(0);
+  });
+
+  it("pool contains all four rarity tiers", () => {
+    const rarities = new Set(agentFortunes.map((f) => f.rarity));
+    expect(rarities.has("legendary")).toBe(true);
+    expect(rarities.has("epic")).toBe(true);
+    expect(rarities.has("rare")).toBe(true);
+    expect(rarities.has("common")).toBe(true);
+  });
+
+  it("every fortune has at least 2 tags (category + attributed/original)", () => {
+    for (const f of agentFortunes) {
+      expect(
+        f.tags.length,
+        `"${f.text.slice(0, 40)}" has only ${f.tags.length} tag(s)`,
+      ).toBeGreaterThanOrEqual(2);
+    }
   });
 });
