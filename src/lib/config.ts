@@ -85,7 +85,9 @@ export const config: AppConfig = {
     collections: true,
     sharing: true,
     agentApi: envBool("FS_AGENT_API", true),
-    l402: envBool("FS_L402", false),
+    // L402 has been retired as of 2026-04-17. Field kept for type
+    // stability; value is always false so FS_L402 env is ignored.
+    l402: false,
     promos: false,
   },
 };

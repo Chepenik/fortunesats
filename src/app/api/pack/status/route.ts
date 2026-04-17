@@ -2,8 +2,10 @@ import {
   getOrder,
   markOrderPaid,
   markOrderConfirmed,
+  markOrderLightningPaid,
 } from "@/lib/orders";
 import { verifyTxPayment, isTxConfirmed } from "@/lib/mempool";
+import { getStrikeInvoice } from "@/lib/strike";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { getOrCreateDeviceId, attachDeviceCookie, resolveDisplayNameFromReq } from "@/lib/device-id";
 import { recordSatsOnce } from "@/lib/idempotency";
@@ -53,6 +55,60 @@ export async function POST(req: Request) {
       );
     }
 
+    // -- Lightning rail: verify against Strike, never mempool --
+    if (order.rail === "lightning") {
+      let current = order;
+      if (current.status !== "lightning-paid" && current.strikeInvoiceId) {
+        try {
+          const invoice = await getStrikeInvoice(current.strikeInvoiceId);
+          if (invoice.state === "PAID" && invoice.amount?.currency === "BTC") {
+            const updated = await markOrderLightningPaid(orderId);
+            if (updated) current = updated;
+
+            // Record sats once per order (idempotent via Redis NX).
+            const { deviceId, isNew } = getOrCreateDeviceId(req);
+            const displayName = resolveDisplayNameFromReq(req, deviceId);
+            await recordSatsOnce(orderId, deviceId, displayName, current.amountSats);
+
+            const res = Response.json({
+              status: "lightning-paid",
+              rail: "lightning",
+              fortunesRemaining: current.fortunesRemaining,
+              fortunesTotal: current.fortunesTotal,
+              paidAt: current.paidAt,
+            });
+            if (isNew) attachDeviceCookie(res, deviceId);
+            return res;
+          }
+        } catch (e) {
+          console.error("[pack/status:strike] sync failed:", e instanceof Error ? e.message : e);
+          // Fall through to pending response below.
+        }
+      }
+
+      if (current.status === "lightning-paid") {
+        return Response.json({
+          status: "lightning-paid",
+          rail: "lightning",
+          fortunesRemaining: current.fortunesRemaining,
+          fortunesTotal: current.fortunesTotal,
+          paidAt: current.paidAt,
+        });
+      }
+
+      const expired = new Date(current.expiresAt) < new Date();
+      return Response.json({
+        status: "pending",
+        rail: "lightning",
+        amountSats: current.amountSats,
+        checkoutId: current.strikeInvoiceId,
+        checkoutUrl: current.strikeInvoiceId ? `/checkout/${current.strikeInvoiceId}` : undefined,
+        expired,
+        expiresAt: current.expiresAt,
+      });
+    }
+
+    // -- On-chain rail (unchanged below) --
     // -- Already paid: check for confirmation upgrade --
     if (order.status === "mempool" && order.txid) {
       const { confirmed } = await isTxConfirmed(order.txid).catch(() => ({

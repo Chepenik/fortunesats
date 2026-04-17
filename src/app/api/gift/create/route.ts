@@ -1,4 +1,9 @@
-import { getCheckout } from "@moneydevkit/core";
+/* =========================================================================
+ * MDK (archived — Strike-only as of 2026-04-17)
+ * =========================================================================
+ * import { getCheckout } from "@moneydevkit/core";
+ */
+import { getStrikeInvoice } from "@/lib/strike";
 import { getRedis } from "@/lib/redis";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { getOrCreateDeviceId, attachDeviceCookie, resolveDisplayNameFromReq } from "@/lib/device-id";
@@ -32,13 +37,14 @@ export async function POST(req: Request) {
     );
   }
 
-  // Server-side payment verification via MDK
-  let checkout;
+  // Server-side payment verification via Strike.
+  // Never trusts Redis alone — always re-checks the live invoice.
+  let invoice;
   try {
-    checkout = await getCheckout(checkoutId);
+    invoice = await getStrikeInvoice(checkoutId);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    console.error(`[gift/create:getCheckout] checkoutId=${checkoutId} error=${msg}`);
+    console.error(`[gift/create:strike] checkoutId=${checkoutId} error=${msg}`);
     return Response.json(
       {
         error: {
@@ -51,9 +57,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const paid =
-    checkout.status === "PAYMENT_RECEIVED" ||
-    (checkout.invoice?.amountSatsReceived ?? 0) > 0;
+  const paid = invoice.state === "PAID" && invoice.amount?.currency === "BTC";
 
   if (!paid) {
     return Response.json(
@@ -61,6 +65,39 @@ export async function POST(req: Request) {
       { status: 402 },
     );
   }
+
+  /* =========================================================================
+   * MDK (archived — Strike-only as of 2026-04-17)
+   * =========================================================================
+   * let checkout;
+   * try {
+   *   checkout = await getCheckout(checkoutId);
+   * } catch (e) {
+   *   const msg = e instanceof Error ? e.message : String(e);
+   *   console.error(`[gift/create:getCheckout] checkoutId=${checkoutId} error=${msg}`);
+   *   return Response.json(
+   *     {
+   *       error: {
+   *         code: "service_unavailable",
+   *         message: "Payment verification temporarily unavailable.",
+   *         retriable: true,
+   *       },
+   *     },
+   *     { status: 503, headers: { "Retry-After": "3" } },
+   *   );
+   * }
+   *
+   * const paid =
+   *   checkout.status === "PAYMENT_RECEIVED" ||
+   *   (checkout.invoice?.amountSatsReceived ?? 0) > 0;
+   *
+   * if (!paid) {
+   *   return Response.json(
+   *     { error: { code: "payment_required", message: "Payment not confirmed yet", retriable: true } },
+   *     { status: 402 },
+   *   );
+   * }
+   */
 
   const redis = getRedis();
   if (!redis) {

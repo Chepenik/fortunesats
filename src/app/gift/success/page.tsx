@@ -2,7 +2,11 @@
 
 import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { useCheckoutSuccess } from "@moneydevkit/nextjs";
+/* =========================================================================
+ * MDK (archived — Strike-only as of 2026-04-17)
+ * =========================================================================
+ * import { useCheckoutSuccess } from "@moneydevkit/nextjs";
+ */
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Copy, Gift } from "lucide-react";
 import { ease } from "@/components/shared/animations";
@@ -37,14 +41,19 @@ export default function GiftSuccessPage() {
 
 function GiftSuccessInner() {
   const searchParams = useSearchParams();
-  const { isCheckoutPaid, isCheckoutPaidLoading } = useCheckoutSuccess();
+  /* =========================================================================
+   * MDK (archived — Strike-only as of 2026-04-17)
+   * =========================================================================
+   * const { isCheckoutPaid, isCheckoutPaidLoading } = useCheckoutSuccess();
+   */
   const [state, setState] = useState<FlowState>({ step: "verifying" });
   const [copied, setCopied] = useState(false);
   const createdRef = useRef(false);
 
-  // Once MDK confirms payment, create the gift
+  // The /api/gift/create route re-verifies against Strike directly, so the
+  // client just triggers it once per checkoutId and retries on transient failures.
   useEffect(() => {
-    if (isCheckoutPaidLoading || !isCheckoutPaid || createdRef.current) return;
+    if (createdRef.current) return;
     createdRef.current = true;
 
     const checkoutId = searchParams.get("checkout-id");
@@ -113,14 +122,17 @@ function GiftSuccessInner() {
 
     attemptCreate(1);
     return () => { cancelled = true; };
-  }, [isCheckoutPaid, isCheckoutPaidLoading, searchParams]);
+  }, [searchParams]);
 
-  // Payment not confirmed
-  useEffect(() => {
-    if (!isCheckoutPaidLoading && isCheckoutPaid === false) {
-      setState({ step: "error", message: "Payment not confirmed. If you paid, please wait a moment and refresh." }); // eslint-disable-line react-hooks/set-state-in-effect
-    }
-  }, [isCheckoutPaidLoading, isCheckoutPaid]);
+  /* =========================================================================
+   * MDK (archived — Strike-only as of 2026-04-17)
+   * =========================================================================
+   * useEffect(() => {
+   *   if (!isCheckoutPaidLoading && isCheckoutPaid === false) {
+   *     setState({ step: "error", message: "Payment not confirmed. If you paid, please wait a moment and refresh." });
+   *   }
+   * }, [isCheckoutPaidLoading, isCheckoutPaid]);
+   */
 
   const giftUrl = state.step === "ready" ? `${SITE_URL}/gift/${state.token}` : "";
 

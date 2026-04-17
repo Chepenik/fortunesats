@@ -2,7 +2,12 @@
 
 import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { useCheckoutSuccess } from "@moneydevkit/nextjs";
+/* =========================================================================
+ * MDK (archived — Strike-only as of 2026-04-17)
+ * To restore: uncomment this import and the useCheckoutSuccess() block below.
+ * =========================================================================
+ * import { useCheckoutSuccess } from "@moneydevkit/nextjs";
+ */
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Copy, Link2 } from "lucide-react";
 import { getStreak, recordFortune, type StreakData } from "@/lib/streak";
@@ -50,7 +55,13 @@ export default function FortuneSuccessPage() {
 
 function FortuneSuccessInner() {
   const searchParams = useSearchParams();
-  const { isCheckoutPaid, isCheckoutPaidLoading } = useCheckoutSuccess();
+  /* =========================================================================
+   * MDK (archived — Strike-only as of 2026-04-17)
+   * To restore: uncomment these lines and the isCheckoutPaid/isCheckoutPaidLoading
+   * gates + error effect below.
+   * =========================================================================
+   * const { isCheckoutPaid, isCheckoutPaidLoading } = useCheckoutSuccess();
+   */
   const [state, setState] = useState<FlowState>({ step: "verifying" });
   const [copied, setCopied] = useState<string | null>(null);
   const [hasNativeShare, setHasNativeShare] = useState(false);
@@ -63,9 +74,10 @@ function FortuneSuccessInner() {
     setStreak(getStreak());
   }, []);
 
-  // Once MDK confirms payment, deliver the fortune (with retry for transient failures)
+  // Deliver the fortune (server re-verifies against Strike directly — never
+  // trusts Redis or the client alone for entitlement).
   useEffect(() => {
-    if (isCheckoutPaidLoading || !isCheckoutPaid || deliveredRef.current) return;
+    if (deliveredRef.current) return;
     deliveredRef.current = true;
 
     const checkoutId = searchParams.get("checkout-id");
@@ -145,14 +157,19 @@ function FortuneSuccessInner() {
     attemptDeliver(1);
 
     return () => { cancelled = true; };
-  }, [isCheckoutPaid, isCheckoutPaidLoading, searchParams]);
+  }, [searchParams]);
 
-  // Handle payment not confirmed after loading finishes
-  useEffect(() => {
-    if (!isCheckoutPaidLoading && isCheckoutPaid === false) {
-      setState({ step: "error", message: "Payment not confirmed. If you paid, please wait a moment and refresh." }); // eslint-disable-line react-hooks/set-state-in-effect
-    }
-  }, [isCheckoutPaidLoading, isCheckoutPaid]);
+  /* =========================================================================
+   * MDK (archived — Strike-only as of 2026-04-17)
+   * To restore: uncomment this effect along with the useCheckoutSuccess()
+   * import and destructure above.
+   * =========================================================================
+   * useEffect(() => {
+   *   if (!isCheckoutPaidLoading && isCheckoutPaid === false) {
+   *     setState({ step: "error", message: "Payment not confirmed. If you paid, please wait a moment and refresh." });
+   *   }
+   * }, [isCheckoutPaidLoading, isCheckoutPaid]);
+   */
 
   // "Revealing" → rarity-reveal transition
   useEffect(() => {

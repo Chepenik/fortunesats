@@ -119,8 +119,11 @@ function clearPack() {
 
 /* ─── Component ──────────────────────────────────────────── */
 
+type PackRail = "onchain" | "lightning";
+
 export function FortunePack() {
   const [state, setState] = useState<PackStep>({ step: "idle" });
+  const [rail, setRail] = useState<PackRail>("lightning");
   const [copied, setCopied] = useState<string | null>(null);
   const [hasNativeShare, setHasNativeShare] = useState(false);
   const [txidInput, setTxidInput] = useState("");
@@ -158,7 +161,11 @@ export function FortunePack() {
           setState({ step: "idle" });
           return;
         }
-        if (data.status === "mempool" || data.status === "confirmed") {
+        if (
+          data.status === "mempool" ||
+          data.status === "confirmed" ||
+          data.status === "lightning-paid"
+        ) {
           if (data.fortunesRemaining <= 0) {
             clearPack();
             setState({ step: "depleted" });
@@ -169,8 +176,8 @@ export function FortunePack() {
               secret: stored.secret ?? "",
               fortunesRemaining: data.fortunesRemaining,
               fortunesTotal: data.fortunesTotal,
-              txid: data.txid,
-              txStatus: data.status,
+              txid: data.txid ?? "",
+              txStatus: data.status === "confirmed" ? "confirmed" : "mempool",
             });
           }
         } else if (data.status === "pending") {
@@ -264,11 +271,24 @@ export function FortunePack() {
   const buyPack = useCallback(async () => {
     setState({ step: "creating" });
     try {
-      const res = await fetch("/api/pack", { method: "POST" });
+      const res = await fetch("/api/pack", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rail }),
+      });
       if (!res.ok) throw new Error("Failed to create order");
       const data = await res.json();
-      // Server sets HttpOnly cookie with secret; we only store orderId
+
+      // Server sets HttpOnly cookie with secret; we only store orderId.
       savePack({ orderId: data.orderId });
+
+      if (data.rail === "lightning" && data.checkoutUrl) {
+        // Lightning: redirect to Strike checkout. On paid, the client
+        // returns to /pack and the mount-effect sees lightning-paid.
+        window.location.href = data.checkoutUrl;
+        return;
+      }
+
       setState({
         step: "awaiting-payment",
         orderId: data.orderId,
@@ -283,7 +303,7 @@ export function FortunePack() {
         message: e instanceof Error ? e.message : "Network error",
       });
     }
-  }, []);
+  }, [rail]);
 
   /* ── Submit txid for verification ── */
   const submitTxid = useCallback(async () => {
@@ -469,12 +489,52 @@ export function FortunePack() {
                   </div>
                 </div>
                 <div>
-                  <div className="font-mono text-lg text-cyan/70">₿</div>
+                  <div className="font-mono text-lg text-cyan/70">
+                    {rail === "lightning" ? "⚡" : "₿"}
+                  </div>
                   <div className="text-[11px] text-muted-foreground/45 uppercase tracking-wider">
-                    On-chain
+                    {rail === "lightning" ? "Lightning" : "On-chain"}
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Rail toggle */}
+            <div className="space-y-2">
+              <p className="text-[11px] tracking-[0.2em] uppercase text-gold/35 font-mono text-center">
+                Payment rail
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRail("lightning")}
+                  aria-pressed={rail === "lightning"}
+                  className={`h-10 rounded-lg text-xs font-medium cursor-pointer active:scale-[0.98] transition-all ${
+                    rail === "lightning"
+                      ? "btn-lacquer"
+                      : "btn-jade opacity-60 hover:opacity-90"
+                  }`}
+                >
+                  ⚡ Lightning
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRail("onchain")}
+                  aria-pressed={rail === "onchain"}
+                  className={`h-10 rounded-lg text-xs font-medium cursor-pointer active:scale-[0.98] transition-all ${
+                    rail === "onchain"
+                      ? "btn-lacquer"
+                      : "btn-jade opacity-60 hover:opacity-90"
+                  }`}
+                >
+                  ₿ On-chain
+                </button>
+              </div>
+              <p className="text-[11px] text-gold/30 text-center leading-relaxed">
+                {rail === "lightning"
+                  ? "Instant. Pay with any Lightning wallet."
+                  : "Accepted on mempool detection. ~10 min average."}
+              </p>
             </div>
 
             <button
@@ -489,7 +549,9 @@ export function FortunePack() {
               <GoldDot />
               <span className="text-gold/35">Pay</span>
               <GoldDot />
-              <span className="text-gold/35">Paste txid</span>
+              <span className="text-gold/35">
+                {rail === "lightning" ? "Instant" : "Paste txid"}
+              </span>
               <GoldDot />
               <span className="text-gold/35">Fortunes</span>
             </div>

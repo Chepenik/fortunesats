@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useCheckout } from "@moneydevkit/nextjs";
+/* =========================================================================
+ * MDK (archived — Strike-only as of 2026-04-17)
+ * To restore: uncomment this import and the useCheckout() block below.
+ * =========================================================================
+ * import { useCheckout } from "@moneydevkit/nextjs";
+ */
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Copy, Link2 } from "lucide-react";
 import { getStreak, recordFortune, type StreakData } from "@/lib/streak";
@@ -34,7 +39,14 @@ type FlowState =
 /* ─── Component ──────────────────────────────────────────── */
 
 export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
-  const { createCheckout, isLoading } = useCheckout();
+  /* =========================================================================
+   * MDK (archived — Strike-only as of 2026-04-17)
+   * To restore: uncomment this line and re-enable the MDK createCheckout()
+   * branch inside requestFortune below.
+   * =========================================================================
+   * const { createCheckout, isLoading } = useCheckout();
+   */
+  const [isLoading, setIsLoading] = useState(false);
   const [state, setState] = useState<FlowState>({ step: "idle" });
   const [copied, setCopied] = useState<string | null>(null);
   const [hasNativeShare, setHasNativeShare] = useState(false);
@@ -103,34 +115,69 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
       return;
     }
 
-    // Paid flow — MDK checkout redirect
+    // Paid flow — Strike checkout redirect
     setState({ step: "requesting" });
+    setIsLoading(true);
     try {
-      const result = await createCheckout({
-        type: "AMOUNT",
-        amount: 100,
-        currency: "SAT",
-        title: "Fortune",
-        description: "One fortune — Fortune Sats",
-        successUrl: "/fortune/success",
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
       });
-
-      if (result.data) {
-        window.location.href = result.data.checkoutUrl;
+      if (res.ok) {
+        const data = (await res.json()) as { checkoutUrl: string };
+        window.location.href = data.checkoutUrl;
         return;
       }
-
+      const data = (await res.json().catch(() => null)) as
+        | { error?: { message?: string } }
+        | null;
       setState({
         step: "error",
-        message: result.error?.message ?? "Could not create checkout. Please try again.",
+        message: data?.error?.message ?? "Could not create checkout. Please try again.",
       });
     } catch (e) {
       setState({
         step: "error",
         message: e instanceof Error ? e.message : "Network error",
       });
+    } finally {
+      setIsLoading(false);
     }
-  }, [freePromo, createCheckout]);
+
+    /* =========================================================================
+     * MDK (archived — Strike-only as of 2026-04-17)
+     * To restore: uncomment this block, remove the Strike fetch above, and
+     * re-enable the useCheckout() destructure at the top of the component.
+     * =========================================================================
+     * setState({ step: "requesting" });
+     * try {
+     *   const result = await createCheckout({
+     *     type: "AMOUNT",
+     *     amount: 100,
+     *     currency: "SAT",
+     *     title: "Fortune",
+     *     description: "One fortune — Fortune Sats",
+     *     successUrl: "/fortune/success",
+     *   });
+     *
+     *   if (result.data) {
+     *     window.location.href = result.data.checkoutUrl;
+     *     return;
+     *   }
+     *
+     *   setState({
+     *     step: "error",
+     *     message: result.error?.message ?? "Could not create checkout. Please try again.",
+     *   });
+     * } catch (e) {
+     *   setState({
+     *     step: "error",
+     *     message: e instanceof Error ? e.message : "Network error",
+     *   });
+     * }
+     */
+  }, [freePromo]);
 
   /* ── Clipboard ── */
   const copyToClipboard = useCallback((text: string, type: string) => {

@@ -14,14 +14,20 @@ import { randomUUID, randomBytes } from "crypto";
 
 /* ─── Types ──────────────────────────────────────────────── */
 
-export type OrderStatus = "pending" | "mempool" | "confirmed" | "expired";
+export type OrderStatus = "pending" | "mempool" | "confirmed" | "lightning-paid" | "expired";
+
+export type OrderRail = "onchain" | "lightning";
 
 export interface Order {
   id: string;
   /** Secret bearer token the buyer uses to access their pack */
   secret: string;
-  /** Bitcoin address to pay */
+  /** Bitcoin address to pay (on-chain rail only). Empty string for lightning. */
   address: string;
+  /** Payment rail chosen at order creation */
+  rail: OrderRail;
+  /** Strike invoice id for the lightning rail */
+  strikeInvoiceId?: string;
   /** Required payment in sats */
   amountSats: number;
   /** Total fortunes in the pack */
@@ -31,12 +37,12 @@ export interface Order {
   /** Fortunes already revealed (to avoid duplicates) */
   claimedFortunes: string[];
   status: OrderStatus;
-  /** Transaction ID once detected */
+  /** Transaction ID once detected (on-chain rail only) */
   txid?: string;
-  /** Actual sats received */
+  /** Actual sats received (on-chain rail only) */
   txAmountSats?: number;
   createdAt: string;
-  /** When payment was first seen in mempool */
+  /** When payment was first seen (mempool for onchain, PAID for lightning) */
   paidAt?: string;
   /** When tx was confirmed on-chain */
   confirmedAt?: string;
@@ -156,15 +162,25 @@ async function getStore(): Promise<OrderStore> {
 
 /* ─── Public API ─────────────────────────────────────────── */
 
-export async function createOrder(): Promise<Order> {
+export async function createOrder(opts: {
+  rail: OrderRail;
+  strikeInvoiceId?: string;
+} = { rail: "onchain" }): Promise<Order> {
   const store = await getStore();
   const now = new Date();
 
-  const offset = Math.floor(Math.random() * PRICE_OFFSET_MAX) + 1;
+  // Only the on-chain rail uses a random price offset to disambiguate
+  // concurrent payments to the same address. Lightning has unique
+  // invoices per order so it uses the flat base price.
+  const offset =
+    opts.rail === "onchain" ? Math.floor(Math.random() * PRICE_OFFSET_MAX) + 1 : 0;
+
   const order: Order = {
     id: randomUUID(),
     secret: randomBytes(24).toString("base64url"),
-    address: BTC_ADDRESS,
+    address: opts.rail === "onchain" ? BTC_ADDRESS : "",
+    rail: opts.rail,
+    strikeInvoiceId: opts.strikeInvoiceId,
     amountSats: PACK_BASE_PRICE_SATS + offset,
     fortunesTotal: PACK_SIZE,
     fortunesRemaining: PACK_SIZE,
@@ -175,7 +191,9 @@ export async function createOrder(): Promise<Order> {
   };
 
   await store.set(order);
-  await store.addToPending(order.id);
+  if (opts.rail === "onchain") {
+    await store.addToPending(order.id);
+  }
 
   // Initialize atomic claim counter (used by claimFortuneAtomic)
   try {
@@ -244,6 +262,29 @@ export async function markOrderPaid(
   return updated;
 }
 
+/**
+ * Idempotent Lightning-paid transition. Safe to call from both the Strike
+ * webhook and /api/pack/status.
+ */
+export async function markOrderLightningPaid(
+  orderId: string,
+): Promise<Order | null> {
+  const store = await getStore();
+  const order = await store.get(orderId);
+  if (!order) return null;
+  if (order.rail !== "lightning") return order;
+  if (order.status === "lightning-paid") return order;
+  if (order.status === "confirmed") return order;
+
+  const updated: Order = {
+    ...order,
+    status: "lightning-paid",
+    paidAt: order.paidAt ?? new Date().toISOString(),
+  };
+  await store.set(updated);
+  return updated;
+}
+
 export async function markOrderConfirmed(
   orderId: string,
 ): Promise<Order | null> {
@@ -273,6 +314,31 @@ export async function getPendingOrdersList(): Promise<string[]> {
   return store.getPendingOrderIds();
 }
 
+/**
+ * Map a Strike invoice id to a pack order id so the webhook can find the
+ * order without scanning. Uses the shared Redis client.
+ */
+export async function setStrikeInvoiceOrderMapping(
+  strikeInvoiceId: string,
+  orderId: string,
+): Promise<void> {
+  const { getRedis } = await import("@/lib/redis");
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.set(`strike-order:${strikeInvoiceId}`, orderId, {
+    ex: REDIS_TTL_SECONDS,
+  });
+}
+
+export async function getOrderIdByStrikeInvoice(
+  strikeInvoiceId: string,
+): Promise<string | null> {
+  const { getRedis } = await import("@/lib/redis");
+  const redis = getRedis();
+  if (!redis) return null;
+  return (await redis.get<string>(`strike-order:${strikeInvoiceId}`)) ?? null;
+}
+
 export async function claimFortune(
   orderId: string,
   secret: string,
@@ -285,7 +351,11 @@ export async function claimFortune(
     return { success: false, fortunesRemaining: 0, error: "Invalid order" };
   }
 
-  if (order.status !== "mempool" && order.status !== "confirmed") {
+  const isPaid =
+    order.status === "mempool" ||
+    order.status === "confirmed" ||
+    order.status === "lightning-paid";
+  if (!isPaid) {
     return {
       success: false,
       fortunesRemaining: order.fortunesRemaining,
