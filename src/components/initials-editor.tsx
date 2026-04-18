@@ -137,7 +137,11 @@ export function InitialsEditor() {
             className="space-y-2"
           >
             <div className="flex items-center gap-2">
+              <label htmlFor="initials-input" className="sr-only">
+                Your initials (2–4 letters, shown on leaderboard)
+              </label>
               <input
+                id="initials-input"
                 type="text"
                 value={initials}
                 onChange={(e) => {
