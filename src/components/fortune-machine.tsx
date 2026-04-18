@@ -1,12 +1,6 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-/* =========================================================================
- * MDK (archived — Strike-only as of 2026-04-17)
- * To restore: uncomment this import and the useCheckout() block below.
- * =========================================================================
- * import { useCheckout } from "@moneydevkit/nextjs";
- */
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Copy, Link2 } from "lucide-react";
 import { getStreak, recordFortune, type StreakData } from "@/lib/streak";
@@ -39,13 +33,6 @@ type FlowState =
 /* ─── Component ──────────────────────────────────────────── */
 
 export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
-  /* =========================================================================
-   * MDK (archived — Strike-only as of 2026-04-17)
-   * To restore: uncomment this line and re-enable the MDK createCheckout()
-   * branch inside requestFortune below.
-   * =========================================================================
-   * const { createCheckout, isLoading } = useCheckout();
-   */
   const [isLoading, setIsLoading] = useState(false);
   const [state, setState] = useState<FlowState>({ step: "idle" });
   const [copied, setCopied] = useState<string | null>(null);
@@ -144,39 +131,6 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
     } finally {
       setIsLoading(false);
     }
-
-    /* =========================================================================
-     * MDK (archived — Strike-only as of 2026-04-17)
-     * To restore: uncomment this block, remove the Strike fetch above, and
-     * re-enable the useCheckout() destructure at the top of the component.
-     * =========================================================================
-     * setState({ step: "requesting" });
-     * try {
-     *   const result = await createCheckout({
-     *     type: "AMOUNT",
-     *     amount: 100,
-     *     currency: "SAT",
-     *     title: "Fortune",
-     *     description: "One fortune — Fortune Sats",
-     *     successUrl: "/fortune/success",
-     *   });
-     *
-     *   if (result.data) {
-     *     window.location.href = result.data.checkoutUrl;
-     *     return;
-     *   }
-     *
-     *   setState({
-     *     step: "error",
-     *     message: result.error?.message ?? "Could not create checkout. Please try again.",
-     *   });
-     * } catch (e) {
-     *   setState({
-     *     step: "error",
-     *     message: e instanceof Error ? e.message : "Network error",
-     *   });
-     * }
-     */
   }, [freePromo]);
 
   /* ── Clipboard ── */

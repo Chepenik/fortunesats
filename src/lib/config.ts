@@ -10,7 +10,6 @@
  *   FS_PACK_PRICE         — pack base price in sats (default: 10000)
  *   FS_PACK_SIZE          — fortunes per pack (default: 100)
  *   FS_AGENT_API          — enable agent API ("true"/"false", default: "true")
- *   FS_L402               — enable L402 gating ("true"/"false", default: "false")
  */
 
 /* ─── Types ────────────────────────────────────────────────── */
@@ -35,7 +34,6 @@ export interface FeatureFlags {
   collections: boolean;
   sharing: boolean;
   agentApi: boolean;
-  l402: boolean;
   promos: boolean;
 }
 
@@ -85,9 +83,6 @@ export const config: AppConfig = {
     collections: true,
     sharing: true,
     agentApi: envBool("FS_AGENT_API", true),
-    // L402 has been retired as of 2026-04-17. Field kept for type
-    // stability; value is always false so FS_L402 env is ignored.
-    l402: false,
     promos: false,
   },
 };

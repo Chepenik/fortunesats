@@ -1,13 +1,9 @@
 /**
  * Health check endpoint.
  *
- * Called periodically by Vercel Cron. On Hobby plan this runs every 12h
- * (minimum allowed). On Pro plan, change schedule to every 5 min for true warm-keeping.
- *
- * Note: this does NOT warm the LDK node itself — that only happens when
- * /api/mdk receives an actual webhook. The value here is keeping the
- * Vercel compute instance warm so subsequent MDK requests avoid a
- * full container cold start.
+ * Called periodically by Vercel Cron. Keeps the Vercel compute instance
+ * warm so Strike checkout creation and webhook verification avoid a full
+ * container cold start.
  *
  * Usage: curl https://fortunesats.com/api/health
  */

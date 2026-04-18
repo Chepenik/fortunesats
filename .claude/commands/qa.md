@@ -25,14 +25,14 @@ Audit Redis command usage across all endpoints. For each endpoint, count the num
 - Missing or ineffective caching (data re-fetched on every request)
 - Unnecessary writes (writing unchanged data)
 
-Key files: `src/lib/leaderboard.ts`, `src/lib/activity.ts`, `src/lib/payment-store.ts`, `src/app/api/leaderboard/route.ts`
+Key files: `src/lib/leaderboard.ts`, `src/lib/activity.ts`, `src/lib/strike.ts`, `src/app/api/leaderboard/route.ts`
 
 ### 3. Reliability Hardening
 Look for failure modes that could break the user experience:
-- MDK webhook reliability (what happens if /api/mdk never fires?)
+- Strike webhook reliability (what happens if /api/strike/webhook never fires? polling should still drive payment detection)
 - Redis connection failures (does every path degrade gracefully?)
-- Race conditions in payment state (concurrent requests to /api/fortune/status)
-- Memory leaks in module-level Maps/Sets (localFortuneCache, recordedHashes, etc.)
+- Race conditions in payment state (concurrent pollers of /api/checkout-status for the same invoice)
+- Memory leaks in module-level Maps/Sets (ratelimit ephemeralCache, syncedHashes, etc.)
 
 ### 4. Code Simplification
 Find opportunities to reduce complexity:

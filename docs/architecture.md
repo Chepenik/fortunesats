@@ -10,8 +10,8 @@ FortuneSats is a four-layer cake. Each layer has one job and talks to the others
   |       Agent Interface Layer             |  /api/agent/* endpoints, OpenAPI
   |       "Make it parseable"               |  Structured JSON, stable IDs, filters
   +-----------------------------------------+
-  |       Access / Payment Layer            |  L402 gating, rate limits, device auth
-  |       "Make them pay (fairly)"          |  MoneyDevKit, withAgentPayment wrapper
+  |       Access / Payment Layer            |  Strike (Lightning), rate limits, device auth
+  |       "Make them pay (fairly)"          |  /api/checkout, /api/strike/webhook
   +-----------------------------------------+
   |       Shared Domain Layer               |  Fortunes, rarity, config, Redis state
   |       "The source of truth"             |  Leaderboard, activity, collections
@@ -60,23 +60,26 @@ This layer serves machines. Structured, filterable, documented JSON.
 This layer decides who gets in and how they pay.
 
 **Key files:**
-- `src/lib/l402.ts` -- L402 payment gate for agent endpoints
+- `src/lib/strike.ts` -- Strike API client, HMAC webhook verification, Redis record helpers
+- `src/app/api/checkout/route.ts` -- Creates Strike invoices for fortunes and gifts
+- `src/app/api/strike/webhook/route.ts` -- Receives `invoice.updated` events
+- `src/lib/agent-payment.ts` -- Pass-through wrapper (agent API is currently free)
 - `src/lib/ratelimit.ts` -- Per-endpoint rate limiting (Upstash)
 - `src/lib/device-id.ts` -- Cookie-based device identity
-- `src/lib/payment-store.ts` -- Lightning payment state (Redis-backed MDK sync)
 - `src/lib/config.ts` -- Central config including feature flags
 
 **Payment methods:**
 
 | Method | Who | Price | Speed |
 |--------|-----|-------|-------|
-| Lightning (MDK) | Humans | 100 sats/fortune | Instant |
-| On-chain Bitcoin | Humans | ~10,000 sats/100 fortunes | ~10 min confirmation |
-| L402 (when enabled) | Agents | 100 sats/fortune | Instant |
+| Lightning (Strike) | Humans | 100 sats/fortune, 200 sats/gift | Instant |
+| Lightning (Strike) | Humans | 10,000 sats/pack | Instant |
+| On-chain Bitcoin | Humans | ~10,000 sats/pack | ~10 min confirmation |
+| Agent API | Machines | Free | Instant |
 
 **Rules of this layer:**
 - Payment is value exchange, not a paywall
-- L402 is opt-in -- the agent API works without it during development
+- The Strike webhook is authoritative but optional — client polling against `getStrikeInvoice` provides the same guarantee if the webhook is unregistered
 - Rate limiting is defense-in-depth, not revenue protection
 
 ---
@@ -120,7 +123,7 @@ Activity Feed (Redis list)
 | Framework | Next.js 16 (App Router) | Server Components, streaming, edge-ready |
 | Hosting | Vercel (Fluid Compute) | Zero-config deploys, global edge |
 | Database | Upstash Redis | Sorted sets, hashes, lists -- perfect for leaderboards |
-| Lightning | MoneyDevKit (L402/LDK) | Best DX for Lightning integration |
+| Lightning | Strike API | Custodial Lightning with clean webhook semantics |
 | On-chain | mempool.space API | Real-time transaction verification |
 | Styling | Tailwind CSS v4 + shadcn/ui | Utility-first + accessible components |
 | 3D | Three.js via React Three Fiber | Declarative 3D for the dragon guardian |
@@ -139,7 +142,6 @@ All runtime config lives in `src/lib/config.ts` with environment variable overri
 | `FS_PACK_PRICE` | `10000` | Pack base price (sats) |
 | `FS_PACK_SIZE` | `100` | Fortunes per pack |
 | `FS_AGENT_API` | `true` | Enable agent API endpoints |
-| `FS_L402` | `false` | Enable L402 payment gating |
 
 ---
 
@@ -150,7 +152,7 @@ Some things we'd love to build (PRs welcome):
 - **MCP server** -- Expose fortunes as an MCP resource for AI agent ecosystems
 - **Telegram bot** -- Chat SDK integration for fortune delivery via Telegram
 - **Edge Config feature flags** -- Move flags to Vercel Edge Config for instant toggling
-- **Full L402 activation** -- Wire up MoneyDevKit for production agent payments
+- **Agent billing** -- Wire paid Strike invoices into the agent API when demand warrants
 - **Durable workflows** -- Workflow DevKit for multi-step agent interactions
 - **Fortune submissions** -- Let the community contribute wisdom
 
@@ -159,5 +161,4 @@ Some things we'd love to build (PRs welcome):
 ## Related Docs
 
 - [Agent Integration Guide](./agent.md) -- API reference for machines
-- [L402 Payment Protocol](./l402.md) -- How machine payments work
 - [Product Principles](./product-principles.md) -- Design guardrails

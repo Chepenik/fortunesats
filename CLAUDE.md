@@ -53,7 +53,7 @@ FortuneSats is a Bitcoin fortune oracle — pay 100 sats, get a fortune. Four-la
 
 2. **Agent Interface** (`src/app/api/agent/`) — Structured JSON API for machines. `GET /api/agent/fortune` with optional `?category=`, `?rarity=`, `?meta=true` filters. OpenAPI spec at `/api/openapi`.
 
-3. **Access/Payment** (`src/lib/ratelimit.ts`, `src/lib/device-id.ts`) — Lightning via MoneyDevKit checkout flow (human) or L402 (agents, off by default: `FS_L402=false`), on-chain packs via mempool.space. Rate limiting uses Upstash with `ephemeralCache` to reduce Redis calls.
+3. **Access/Payment** (`src/lib/strike.ts`, `src/lib/ratelimit.ts`, `src/lib/device-id.ts`) — Lightning via Strike for fortunes, gifts, and packs (pack users can also choose on-chain via mempool.space). Agent endpoints are currently free (`src/lib/agent-payment.ts` is a pass-through wrapper). Rate limiting uses Upstash with `ephemeralCache` to reduce Redis calls.
 
 4. **Shared Domain** (`src/lib/`) — Fortune pool (170 fortunes, weighted rarity in `fortunes.ts`), config/pricing (`config.ts`), feature flags (`flags.ts`), Redis-backed leaderboard/activity, client-side collections/streaks in localStorage.
 
@@ -61,7 +61,7 @@ FortuneSats is a Bitcoin fortune oracle — pay 100 sats, get a fortune. Four-la
 
 - **Idempotency**: All payment-triggered side effects (leaderboard writes, activity recording) use Redis `SET NX` flags (`src/lib/idempotency.ts`) to prevent duplicates in distributed serverless. Always use `recordFortuneOnce()` / `recordSatsOnce()`, never call `recordFortuneReveal()` directly from endpoints.
 
-- **Payment flows**: Lightning fortunes use the MDK checkout flow: `useCheckout().createCheckout()` → `/checkout/[id]` (MDK `<Checkout>` component) → `/fortune/success` (verifies via `getCheckout()`, delivers fortune via `POST /api/fortune/deliver`). Free promo fortunes go directly through `GET /api/fortune`. On-chain packs: order creation at `/api/pack`, mempool polling at `/api/pack/status`, per-fortune claim at `/api/pack/fortune`.
+- **Payment flows**: Lightning fortunes/gifts use the Strike checkout flow: `POST /api/checkout { purpose }` → `/checkout/[id]` (`<StrikeCheckoutClient>` polls + renders QR) → success page (`/fortune/success` or `/gift/success`) → verification route re-checks Strike via `getStrikeInvoice()` and delivers fortune. Free promo fortunes go directly through `GET /api/fortune`. Packs: `/api/pack` with `{ rail: "lightning" | "onchain" }` — Lightning path creates a Strike invoice + Order; on-chain path uses mempool.space polling. Both rails share the same post-payment claim route `/api/pack/fortune`.
 
 - **Device identity**: HttpOnly cookie `fsd` (UUID), optional initials cookie `fsi` (2-4 letters, blocklist filtered). Display names: `{initials}-{hex}` or `{adjective}-{noun}-{hex}`.
 
@@ -73,7 +73,7 @@ FortuneSats is a Bitcoin fortune oracle — pay 100 sats, get a fortune. Four-la
 
 ## Tech Stack
 
-Next.js 16 (App Router, React 19), Upstash Redis, MoneyDevKit (Lightning/L402), mempool.space (on-chain), Tailwind CSS v4 + shadcn/ui, React Three Fiber (3D), Vitest. Path alias: `@/*` → `./src/*`. Hosted on Vercel.
+Next.js 16 (App Router, React 19), Upstash Redis, Strike (Lightning), mempool.space (on-chain pack payments), Tailwind CSS v4 + shadcn/ui, React Three Fiber (3D), Vitest. Path alias: `@/*` → `./src/*`. Hosted on Vercel.
 
 ## Testing
 
@@ -81,4 +81,4 @@ Tests live in `src/lib/__tests__/`. They mock Redis via `vi.mock("@/lib/redis")`
 
 ## Next.js Config
 
-`next.config.ts` wraps with MoneyDevKit's `withMdkCheckout` plugin. Security headers configured (X-Frame-Options, HSTS, etc.).
+`next.config.ts` sets security headers (X-Frame-Options, HSTS, Content-Security-Policy adjacencies). No third-party Next.js plugin wrap.

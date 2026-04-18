@@ -64,7 +64,7 @@ FortuneSats is open source. Fork it, remix it, run your own oracle.
 
 - [Node.js](https://nodejs.org/) 20+
 - An [Upstash Redis](https://upstash.com/) instance (free tier works)
-- A [MoneyDevKit](https://moneydevkit.com/) account (for Lightning payments)
+- A [Strike](https://strike.me/) API key with invoice + webhook scopes (for Lightning payments)
 - A Bitcoin address (for on-chain pack payments)
 
 ### Setup
@@ -87,8 +87,9 @@ Fill in your `.env.local` with the following:
 
 | Variable | What It Does |
 |----------|-------------|
-| `MDK_ACCESS_TOKEN` | MoneyDevKit access token (Lightning payments) |
-| `MDK_MNEMONIC` | MoneyDevKit wallet mnemonic |
+| `STRIKE_API_KEY` | Strike API key (Lightning invoices + webhook management) |
+| `STRIKE_API_BASE_URL` | Usually `https://api.strike.me/v1` |
+| `STRIKE_WEBHOOK_SECRET` | HMAC-SHA256 secret you picked at webhook registration |
 | `BTC_ADDRESS` | Your Bitcoin address (on-chain pack payments) |
 | `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL |
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token |
@@ -134,8 +135,7 @@ curl https://fortunesats.com/api/agent/fortune
   },
   "pricing": {
     "amount": 100,
-    "currency": "SAT",
-    "l402_enabled": false
+    "currency": "SAT"
   }
 }
 ```
@@ -159,7 +159,7 @@ curl "https://fortunesats.com/api/agent/fortune?meta=true"
 curl https://fortunesats.com/api/openapi
 ```
 
-Full details: **[Agent Integration Guide](docs/agent.md)** | **[L402 Payment Protocol](docs/l402.md)**
+Full details: **[Agent Integration Guide](docs/agent.md)**
 
 ---
 
@@ -171,7 +171,7 @@ Full details: **[Agent Integration Guide](docs/agent.md)** | **[L402 Payment Pro
   +-----------------------------------------+
   |       Agent Interface Layer             |  /api/agent/*, OpenAPI spec, JSON
   +-----------------------------------------+
-  |       Access / Payment Layer            |  L402, rate limits, device auth
+  |       Access / Payment Layer            |  Strike (Lightning), rate limits, device auth
   +-----------------------------------------+
   |       Shared Domain Layer               |  Fortunes, rarity, config, Redis
   +-----------------------------------------+
@@ -188,7 +188,7 @@ Full breakdown: **[Architecture](docs/architecture.md)**
 | Framework | [Next.js 16](https://nextjs.org/) (App Router) |
 | Hosting | [Vercel](https://vercel.com/) |
 | Database | [Upstash Redis](https://upstash.com/) |
-| Lightning | [MoneyDevKit](https://moneydevkit.com/) (L402) |
+| Lightning | [Strike](https://strike.me/) |
 | On-chain | [mempool.space](https://mempool.space/) API |
 | UI | [Tailwind CSS v4](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) |
 | 3D | [React Three Fiber](https://docs.pmnd.rs/react-three-fiber/) |

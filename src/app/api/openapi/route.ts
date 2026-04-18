@@ -1,5 +1,3 @@
-import { config } from "@/lib/config";
-
 /**
  * OpenAPI 3.1 specification for FortuneSats.
  *
@@ -14,7 +12,7 @@ export async function GET() {
       title: "FortuneSats API",
       version: "0.1.0",
       description:
-        "Pay sats, receive wisdom. FortuneSats is a human-centered fortune oracle with agent-ready infrastructure and L402 payment gating.",
+        "Pay sats, receive wisdom. FortuneSats is a human-centered fortune oracle with agent-ready infrastructure. Lightning payments are powered by Strike.",
       contact: {
         name: "FortuneSats",
         url: "https://fortunesats.com",
@@ -35,7 +33,7 @@ export async function GET() {
           operationId: "getAgentFortune",
           summary: "Get a fortune (agent-facing)",
           description:
-            "Returns a structured fortune with full metadata. Supports filtering by category, rarity, or fetching by ID. When L402 is enabled, requires Lightning payment.",
+            "Returns a structured fortune with full metadata. Supports filtering by category, rarity, or fetching by ID. Currently free; pricing metadata is included for future billing.",
           tags: ["Agent", "Fortune"],
           parameters: [
             {
@@ -91,64 +89,54 @@ export async function GET() {
               },
             },
             "400": { description: "Invalid query parameter." },
-            "402": {
-              description: "Payment required (L402). Pay the Lightning invoice to access.",
-            },
             "404": { description: "Fortune not found (when using ?id=)." },
             "429": { description: "Rate limited. Retry after the specified delay." },
             "503": { description: "Agent API disabled or temporarily unavailable." },
           },
-          security: config.features.l402 ? [{ l402: [] }] : [],
         },
       },
-      "/api/fortune": {
-        get: {
-          operationId: "getFortune",
-          summary: "Get a fortune (human-facing, L402 required)",
+      "/api/checkout": {
+        post: {
+          operationId: "createCheckout",
+          summary: "Create a Strike Lightning checkout",
           description:
-            "The primary fortune endpoint. Requires a 100 sat Lightning payment via MoneyDevKit L402. Returns fortune text and rarity.",
+            "Creates a Strike invoice and quote for a fortune or gift purchase. Returns a checkout URL the client navigates to.",
           tags: ["Human", "Fortune"],
-          responses: {
-            "200": {
-              description: "Fortune delivered after payment.",
-              content: {
-                "application/json": {
-                  schema: {
-                    type: "object",
-                    properties: {
-                      fortune: { type: "string" },
-                      rarity: { type: "string", enum: ["legendary", "epic", "rare", "common"] },
-                      timestamp: { type: "string", format: "date-time" },
+          requestBody: {
+            required: false,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    purpose: {
+                      type: "string",
+                      enum: ["fortune", "gift"],
+                      description: "Default 'fortune'.",
                     },
                   },
                 },
               },
             },
-            "402": { description: "Payment required." },
-            "429": { description: "Rate limited." },
           },
-          security: [{ l402: [] }],
-        },
-      },
-      "/api/fortune/status": {
-        get: {
-          operationId: "getFortuneStatus",
-          summary: "Check payment status",
-          description: "Poll whether a Lightning payment has been received. Returns the fortune if paid.",
-          tags: ["Human", "Fortune"],
-          parameters: [
-            {
-              name: "paymentHash",
-              in: "query",
-              required: true,
-              schema: { type: "string" },
-              description: "The payment hash from the invoice.",
-            },
-          ],
           responses: {
-            "200": { description: "Payment status (paid: true/false, fortune if paid)." },
-            "400": { description: "Missing or invalid paymentHash." },
+            "200": {
+              description: "Checkout created.",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      checkoutId: { type: "string" },
+                      checkoutUrl: { type: "string" },
+                      purpose: { type: "string" },
+                    },
+                  },
+                },
+              },
+            },
             "429": { description: "Rate limited." },
+            "503": { description: "Strike temporarily unavailable." },
           },
         },
       },
@@ -229,7 +217,6 @@ export async function GET() {
           properties: {
             amount: { type: "integer", description: "Price in satoshis." },
             currency: { type: "string", enum: ["SAT"] },
-            l402_enabled: { type: "boolean", description: "Whether L402 payment gating is active." },
           },
         },
         PoolMeta: {
@@ -245,14 +232,6 @@ export async function GET() {
               additionalProperties: { type: "integer" },
             },
           },
-        },
-      },
-      securitySchemes: {
-        l402: {
-          type: "http",
-          scheme: "L402",
-          description:
-            "L402 payment authentication. Send a Lightning payment, then authenticate with Authorization: L402 <macaroon>:<preimage>.",
         },
       },
     },

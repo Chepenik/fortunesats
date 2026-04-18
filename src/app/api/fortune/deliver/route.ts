@@ -1,10 +1,3 @@
-/* =========================================================================
- * MDK (archived — Strike-only as of 2026-04-17)
- * To restore: uncomment this import and the getCheckout() verification
- * block below.
- * =========================================================================
- * import { getCheckout } from "@moneydevkit/core";
- */
 import { getStrikeInvoice } from "@/lib/strike";
 import { getRandomFortune } from "@/lib/fortunes";
 import { getRedis } from "@/lib/redis";
@@ -74,45 +67,6 @@ export async function POST(req: Request) {
       { status: 402 },
     );
   }
-
-  /* =========================================================================
-   * MDK (archived — Strike-only as of 2026-04-17)
-   * To restore: uncomment this block and remove the Strike verification above.
-   * =========================================================================
-   * let checkout;
-   * try {
-   *   checkout = await getCheckout(checkoutId);
-   * } catch (e) {
-   *   const msg = e instanceof Error ? e.message : String(e);
-   *   const isTimeout = msg.includes("timeout") || msg.includes("ETIMEDOUT") || msg.includes("sync");
-   *   console.error(`[fortune/deliver:getCheckout] checkoutId=${checkoutId} error=${msg}`);
-   *   return Response.json(
-   *     {
-   *       error: {
-   *         code: "service_unavailable",
-   *         message: "Payment verification temporarily unavailable.",
-   *         retriable: true,
-   *         detail: isTimeout ? "sync_timeout" : "checkout_error",
-   *       },
-   *     },
-   *     { status: 503, headers: { "Retry-After": "3" } },
-   *   );
-   * }
-   *
-   * const paid =
-   *   checkout.status === "PAYMENT_RECEIVED" ||
-   *   (checkout.invoice?.amountSatsReceived ?? 0) > 0;
-   *
-   * if (!paid) {
-   *   console.warn(
-   *     `[fortune/deliver] Payment not confirmed: checkoutId=${checkoutId} status=${checkout.status} received=${checkout.invoice?.amountSatsReceived ?? 0}`,
-   *   );
-   *   return Response.json(
-   *     { error: { code: "payment_required", message: "Payment not confirmed yet", retriable: true } },
-   *     { status: 402 },
-   *   );
-   * }
-   */
 
   // Generate or retrieve cached fortune for this checkout
   const redis = getRedis();

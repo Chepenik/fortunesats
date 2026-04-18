@@ -8,8 +8,8 @@ import { getFlags, unavailableResponse } from "@/lib/flags";
 
 /**
  * Free fortune endpoint (promo mode only).
- * Paid fortunes now go through the MDK checkout flow:
- *   createCheckout → /checkout/[id] → /fortune/success → POST /api/fortune/deliver
+ * Paid fortunes go through the Strike checkout flow:
+ *   POST /api/checkout → /checkout/[id] → /fortune/success → POST /api/fortune/deliver
  */
 export async function GET(req: Request) {
   const { fortuneSingleEnabled, freeFortunePromo } = getFlags();

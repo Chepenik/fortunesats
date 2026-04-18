@@ -108,11 +108,11 @@ export default function TwitterImage() {
             textTransform: "uppercase",
           }}
         >
-          <span>L402</span>
+          <span>Strike</span>
           <span style={{ color: "rgba(196,30,58,0.3)" }}>&#x2022;</span>
           <span>Lightning Network</span>
           <span style={{ color: "rgba(196,30,58,0.3)" }}>&#x2022;</span>
-          <span>Pay per request</span>
+          <span>100 sats per fortune</span>
         </div>
 
         {/* Bottom ornamental line */}

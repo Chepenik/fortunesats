@@ -10,7 +10,7 @@
  */
 
 export interface Flags {
-  /** Gate the L402 single-fortune flow. Default: true */
+  /** Gate the single-fortune Lightning flow. Default: true */
   fortuneSingleEnabled: boolean;
   /** Gate new on-chain pack order creation. Existing packs remain claimable. Default: true */
   fortunePackEnabled: boolean;
@@ -18,7 +18,7 @@ export interface Flags {
   leaderboardEnabled: boolean;
   /** Show/hide the live activity feed on the homepage. Default: true */
   activityFeedEnabled: boolean;
-  /** Skip L402 payment — give fortunes free. Records 0 sats to leaderboard. Default: false */
+  /** Skip payment — give fortunes free. Records 0 sats to leaderboard. Default: false */
   freeFortunePromo: boolean;
   /** Scale the 5% legendary base rate. Clamped to [0.5, 4.0]. Default: 1.0 */
   legendaryRateMultiplier: number;

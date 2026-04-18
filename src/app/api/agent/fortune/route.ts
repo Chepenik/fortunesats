@@ -1,13 +1,12 @@
 import { getRandomAgentFortune, agentFortunes, agentFortuneById } from "@/lib/fortunes";
 import { checkRateLimit } from "@/lib/ratelimit";
-import { withAgentPayment, agentError } from "@/lib/l402";
+import { withAgentPayment, agentError } from "@/lib/agent-payment";
 import { config } from "@/lib/config";
 
 /**
  * Agent-facing fortune endpoint.
  *
  * Returns structured JSON designed for machine consumption.
- * Optionally gated by L402 when config.features.l402 is enabled.
  *
  * Query parameters:
  *   ?id=<fortune_id>       — fetch a specific fortune by ID
@@ -79,7 +78,6 @@ const handler = async (req: Request): Promise<Response> => {
     pricing: {
       amount: config.pricing.fortuneSingle,
       currency: "SAT",
-      l402_enabled: config.features.l402,
     },
     ...(includeMeta && { meta: poolMeta() }),
   });

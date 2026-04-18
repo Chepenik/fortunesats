@@ -1,21 +1,10 @@
 "use client";
 
 import { useState, useCallback } from "react";
-/* =========================================================================
- * MDK (archived — Strike-only as of 2026-04-17)
- * To restore: uncomment this import and the useCheckout() block below.
- * =========================================================================
- * import { useCheckout } from "@moneydevkit/nextjs";
- */
 import { config } from "@/lib/config";
 import { OracleSpinner } from "@/components/shared/icons";
 
 export function GiftButton() {
-  /* =========================================================================
-   * MDK (archived — Strike-only as of 2026-04-17)
-   * =========================================================================
-   * const { createCheckout, isLoading } = useCheckout();
-   */
   const [error, setError] = useState<string | null>(null);
   const [requesting, setRequesting] = useState(false);
 
@@ -42,32 +31,6 @@ export function GiftButton() {
     } finally {
       setRequesting(false);
     }
-
-    /* =========================================================================
-     * MDK (archived — Strike-only as of 2026-04-17)
-     * =========================================================================
-     * try {
-     *   const result = await createCheckout({
-     *     type: "AMOUNT",
-     *     amount: config.pricing.fortuneGift,
-     *     currency: "SAT",
-     *     title: "Fortune Gift",
-     *     description: "Send a fortune gift — Fortune Sats",
-     *     successUrl: "/gift/success",
-     *   });
-     *
-     *   if (result.data) {
-     *     window.location.href = result.data.checkoutUrl;
-     *     return;
-     *   }
-     *
-     *   setError(result.error?.message ?? "Could not create checkout.");
-     * } catch (e) {
-     *   setError(e instanceof Error ? e.message : "Network error");
-     * } finally {
-     *   setRequesting(false);
-     * }
-     */
   }, []);
 
   return (

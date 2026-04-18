@@ -565,38 +565,3 @@
   100% { background-position: 0% 50%; }
 }
 
-/* ── MDK Checkout theme overrides ─────────────────────────── */
-
-.mdk-theme-override .mdk-checkout .bg-gray-800 {
-  background-color: #0c0a0e !important;
-  border: 1px solid rgba(212, 162, 87, 0.08) !important;
-}
-
-.mdk-theme-override .mdk-checkout .bg-gradient-to-br {
-  background: #050507 !important;
-}
-
-.mdk-theme-override .mdk-checkout .text-gray-500 {
-  color: rgba(212, 162, 87, 0.2) !important;
-}
-
-.mdk-theme-override .mdk-checkout .text-gray-400 {
-  color: rgba(212, 162, 87, 0.3) !important;
-}
-
-.mdk-theme-override .mdk-checkout .text-gray-300 {
-  color: rgba(240, 236, 228, 0.6) !important;
-}
-
-.mdk-theme-override .mdk-checkout .bg-white {
-  background: linear-gradient(135deg, #c41e3a, #9a1830) !important;
-  color: white !important;
-}
-
-.mdk-theme-override .mdk-checkout .bg-white:hover {
-  background: linear-gradient(135deg, #d42240, #b01e38) !important;
-}
-
-.mdk-theme-override .mdk-checkout .hover\:bg-gray-100:hover {
-  background: linear-gradient(135deg, #d42240, #b01e38) !important;
-}
