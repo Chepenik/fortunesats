@@ -9,6 +9,20 @@ export const metadata: Metadata = {
   description:
     "Buy a Fortune Pack: 100 wisdom fortunes for 10,000 sats. Pay on-chain Bitcoin, accepted instantly on mempool detection.",
   alternates: { canonical: "https://fortunesats.com/pack" },
+  openGraph: {
+    title: "Fortune Pack — 100 Bitcoin Fortunes for 10,000 Sats",
+    description:
+      "Buy a Fortune Pack: 100 wisdom fortunes for 10,000 sats. Pay on-chain Bitcoin, accepted instantly on mempool detection.",
+    url: "https://fortunesats.com/pack",
+    siteName: "Fortune Sats",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Fortune Pack — 100 Bitcoin Fortunes for 10,000 Sats",
+    description:
+      "Buy a Fortune Pack: 100 wisdom fortunes for 10,000 sats. Pay on-chain Bitcoin, accepted instantly on mempool detection.",
+  },
 };
 
 export default function PackPage() {
