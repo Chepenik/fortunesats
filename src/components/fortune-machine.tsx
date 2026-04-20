@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Copy, Link2 } from "lucide-react";
+import { track } from "@vercel/analytics";
 import { getStreak, recordFortune, type StreakData } from "@/lib/streak";
 import { saveToCollection } from "@/lib/collection";
 import {
@@ -43,7 +44,8 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
   useEffect(() => {
     setHasNativeShare(canNativeShare()); // eslint-disable-line react-hooks/set-state-in-effect
     setStreak(getStreak());
-  }, []);
+    track("fortune_hero_view", { freePromo });
+  }, [freePromo]);
 
   /* ── "Revealing" → rarity-reveal transition ── */
   useEffect(() => {
@@ -72,10 +74,12 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
     setStreak(updated); // eslint-disable-line react-hooks/set-state-in-effect
     fireRarityConfetti(state.rarity);
     saveToCollection(state.fortune, state.rarity);
+    track("fortune_revealed", { rarity: state.rarity, freePromo });
   }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Request fortune ── */
   const requestFortune = useCallback(async () => {
+    track("fortune_pay_click", { freePromo });
     if (freePromo) {
       // Free promo — get fortune directly from API, no payment needed
       setState({ step: "requesting" });
@@ -113,6 +117,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
       });
       if (res.ok) {
         const data = (await res.json()) as { checkoutUrl: string };
+        track("fortune_checkout_open");
         window.location.href = data.checkoutUrl;
         return;
       }

@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Copy, Link2 } from "lucide-react";
+import { track } from "@vercel/analytics";
 import { getStreak, recordFortune, type StreakData } from "@/lib/streak";
 import { saveToCollection } from "@/lib/collection";
 import {
@@ -90,6 +91,7 @@ function FortuneSuccessInner() {
           const data = await res.json();
           if (cancelled) return;
           variantRef.current = pickVariant();
+          track("fortune_paid", { rarity: data.rarity ?? "common" });
           setState({
             step: "revealing",
             fortune: data.fortune,
@@ -173,6 +175,7 @@ function FortuneSuccessInner() {
     setStreak(updated); // eslint-disable-line react-hooks/set-state-in-effect
     fireRarityConfetti(state.rarity);
     saveToCollection(state.fortune, state.rarity);
+    track("fortune_revealed", { rarity: state.rarity, freePromo: false });
   }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const copyToClipboard = useCallback((text: string, type: string) => {
