@@ -19,7 +19,7 @@ const jsonLd = {
   name: "Fortune Sats",
   url: "https://fortunesats.com",
   description:
-    "Pay 100 sats over Lightning, receive a wisdom fortune. A Bitcoin-native fortune oracle with 119 collectible quotes.",
+    "Pay 100 sats over Lightning, receive a wisdom fortune. A Bitcoin-native fortune oracle with 124 collectible quotes.",
   potentialAction: {
     "@type": "SearchAction",
     target: "https://fortunesats.com/collection",
