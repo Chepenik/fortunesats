@@ -22,14 +22,14 @@ export const metadata: Metadata = {
     template: "%s | Fortune Sats",
   },
   description:
-    "Pay 100 sats over Lightning, receive a wisdom fortune. A Bitcoin-native fortune oracle with 119 collectible quotes across 4 rarity tiers.",
+    "Pay 100 sats over Lightning, receive a wisdom fortune. A Bitcoin-native fortune oracle with 124 collectible quotes across 4 rarity tiers.",
   icons: {
     icon: "/icon.svg",
   },
   openGraph: {
     title: "Fortune Sats — Bitcoin Fortune Oracle",
     description:
-      "Pay 100 sats over Lightning, receive a wisdom fortune. 119 collectible quotes across 4 rarity tiers.",
+      "Pay 100 sats over Lightning, receive a wisdom fortune. 124 collectible quotes across 4 rarity tiers.",
     siteName: "Fortune Sats",
     type: "website",
     locale: "en_US",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Fortune Sats — Bitcoin Fortune Oracle",
     description:
-      "Pay 100 sats over Lightning, receive a wisdom fortune. 119 collectible quotes across 4 rarity tiers.",
+      "Pay 100 sats over Lightning, receive a wisdom fortune. 124 collectible quotes across 4 rarity tiers.",
   },
   alternates: {
     canonical: "https://fortunesats.com",
