@@ -39,6 +39,7 @@ export const metadata: Metadata = {
     title: "Fortune Sats — Bitcoin Fortune Oracle",
     description:
       "Pay 100 sats over Lightning, receive a wisdom fortune. 119 collectible quotes across 4 rarity tiers.",
+    site: "@ConorChepenik",
   },
   alternates: {
     canonical: "https://fortunesats.com",

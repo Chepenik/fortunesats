@@ -24,6 +24,10 @@ const jsonLd = {
     "@type": "SearchAction",
     target: "https://fortunesats.com/collection",
   },
+  sameAs: [
+    "https://github.com/Chepenik/fortunesats",
+    "https://x.com/ConorChepenik",
+  ],
 };
 
 export default function Home() {
