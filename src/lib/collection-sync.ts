@@ -127,7 +127,11 @@ export async function recordServerStreak(deviceId: string): Promise<void> {
 
   try {
     const key = `${STREAK_PREFIX}${deviceId}`;
-    const streak = await getServerStreak(deviceId);
+    // Direct GET instead of delegating to getServerStreak(), which swallows its own
+    // errors and returns EMPTY_STREAK — causing recordServerStreak to overwrite real
+    // streak data with zeros when Redis is flaky.
+    const existing = await redis.get<StreakData>(key);
+    const streak = existing ?? { ...EMPTY_STREAK };
     const t = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
     if (streak.lastDate === t) {
