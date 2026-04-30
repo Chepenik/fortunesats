@@ -83,10 +83,18 @@ export function LeaderboardView() {
   return (
     <div className="space-y-6">
       {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-xl bg-background/40 border border-gold/[0.06]">
+      <div
+        role="tablist"
+        aria-label="Leaderboard categories"
+        className="flex gap-1 p-1 rounded-xl bg-background/40 border border-gold/[0.06]"
+      >
         {TABS.map((t) => (
           <button
             key={t.key}
+            role="tab"
+            id={`lb-tab-${t.key}`}
+            aria-selected={tab === t.key}
+            aria-controls={`lb-panel-${t.key}`}
             onClick={() => setTab(t.key)}
             className={`flex-1 px-2 py-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
               tab === t.key
@@ -103,6 +111,9 @@ export function LeaderboardView() {
       <AnimatePresence mode="wait">
         <motion.div
           key={tab}
+          role="tabpanel"
+          id={`lb-panel-${tab}`}
+          aria-labelledby={`lb-tab-${tab}`}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
