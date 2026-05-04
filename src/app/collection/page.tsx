@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Fortune Collection — Track Your Bitcoin Wisdom Fortunes",
-  description: "Browse and track every wisdom fortune you have revealed. 119 collectible quotes across Legendary, Epic, Rare, and Common rarity tiers.",
+  description: "Browse and track every wisdom fortune you have revealed. 124 collectible quotes across Legendary, Epic, Rare, and Common rarity tiers.",
   alternates: { canonical: "https://fortunesats.com/collection" },
 };
 
