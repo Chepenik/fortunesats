@@ -157,6 +157,8 @@ export function InitialsEditor() {
                 placeholder="AA"
                 maxLength={4}
                 autoFocus
+                aria-label="Your initials (2–4 letters, shown on leaderboard)"
+                aria-describedby="initials-hint"
                 className="flex-1 bg-foreground/[0.04] border border-gold/10 rounded-md px-3 py-1.5
                            text-center text-sm font-mono uppercase tracking-widest text-foreground/80
                            placeholder:text-gold/15 focus:outline-none focus:border-gold/25
@@ -187,7 +189,7 @@ export function InitialsEditor() {
 
             {/* Help text + clear */}
             <div className="flex items-center justify-between px-1">
-              <span className="text-[11px] text-gold/25 font-mono">
+              <span id="initials-hint" className="text-[11px] text-gold/25 font-mono">
                 2-4 letters. Shows on leaderboard.
               </span>
               {saved && (
@@ -207,6 +209,7 @@ export function InitialsEditor() {
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
+                role="alert"
                 className="text-xs text-red-400/80 text-center font-mono"
               >
                 {error}
