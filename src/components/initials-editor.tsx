@@ -111,6 +111,7 @@ export function InitialsEditor() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2, ease }}
             onClick={() => setEditing(true)}
+            aria-label={saved ? `Edit display tag: ${displayName ?? saved}` : "Set your initials tag"}
             className="w-full group flex items-center justify-center gap-2 py-2 px-4 rounded-lg
                        hover:bg-foreground/[0.03] transition-colors cursor-pointer"
           >
@@ -123,7 +124,7 @@ export function InitialsEditor() {
                 Set your initials
               </span>
             )}
-            <span className="text-[10px] text-gold/20 group-hover:text-gold/40 transition-colors">
+            <span aria-hidden="true" className="text-[10px] text-gold/60 group-hover:text-gold/80 transition-colors">
               edit
             </span>
           </motion.button>
@@ -154,6 +155,7 @@ export function InitialsEditor() {
                     setError(null);
                   }
                 }}
+                aria-label="Your initials (2 to 4 letters)"
                 placeholder="AA"
                 maxLength={4}
                 autoFocus
@@ -178,6 +180,7 @@ export function InitialsEditor() {
                   setEditing(false);
                   setError(null);
                 }}
+                aria-label="Cancel editing"
                 className="px-2 py-1.5 text-[11px] font-mono text-foreground/30
                            hover:text-foreground/60 transition-colors"
               >
@@ -194,6 +197,7 @@ export function InitialsEditor() {
                 <button
                   onClick={handleClear}
                   disabled={saving}
+                  aria-label="Clear saved initials"
                   className="text-[11px] text-foreground/30 hover:text-foreground/50
                              font-mono transition-colors disabled:opacity-40"
                 >
