@@ -121,7 +121,7 @@ describe("category inference", () => {
     expect(sovereignty.length).toBeGreaterThan(0);
     // These keywords mirror inferCategory's sovereigntyKw list exactly
     const sovereigntyKw = [
-      "sats", "money", "bitcoin", "proof of work", "time preference",
+      "sats", " sat ", "money", "bitcoin", "proof of work", "time preference",
       "fix the", "savings", "sound money", "freedom compounds",
       "sovereign", "value for value",
     ];
@@ -130,6 +130,11 @@ describe("category inference", () => {
       const hasSovereigntyKw = sovereigntyKw.some((kw) => lower.includes(kw));
       expect(hasSovereigntyKw, `"${f.text}" classified as sovereignty but matched no keyword`).toBe(true);
     }
+  });
+
+  it("classifies singular sat references as sovereignty", () => {
+    const satFortune = agentFortunes.find((f) => f.text === "Every sat tells a story.");
+    expect(satFortune?.category).toBe("sovereignty");
   });
 
   it("classifies Nietzsche as philosophy", () => {
