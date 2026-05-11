@@ -10,7 +10,7 @@
  */
 
 import { getRedis } from "@/lib/redis";
-import { getRandomFortune, type Rarity } from "@/lib/fortunes";
+import { getRandomFortune, withLuckyPrimeNumbers, type Rarity } from "@/lib/fortunes";
 
 /* ─── Types ──────────────────────────────────────────────── */
 
@@ -20,6 +20,7 @@ export interface Gift {
   token: string;
   fortune: string;
   rarity: Rarity;
+  luckyNumbers: number[];
   status: GiftStatus;
   senderDeviceId: string;
   claimerDeviceId?: string;
@@ -59,12 +60,13 @@ export async function createGift(
   crypto.getRandomValues(bytes);
   const token = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
   const now = new Date();
-  const f = getRandomFortune();
+  const f = withLuckyPrimeNumbers(getRandomFortune(), `${checkoutId}:${token}`);
 
   const gift: Gift = {
     token,
     fortune: f.text,
     rarity: f.rarity,
+    luckyNumbers: f.luckyNumbers,
     status: "paid",
     senderDeviceId,
     checkoutId,

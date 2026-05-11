@@ -34,16 +34,17 @@ FortuneSats is a fortune oracle built on Bitcoin. Think fortune cookies meeting 
 
 | Rarity | Drop Rate | How It Feels |
 |--------|-----------|-------------|
-| **Legendary** | 5% | You just found a golden ticket |
-| **Epic** | 15% | Tell your friends about this one |
-| **Rare** | 30% | Scarce signal |
-| **Common** | 50% | Wisdom is wisdom, no shame |
+| **Legendary** | 8% | The oracle does not say this often |
+| **Epic** | 17% | Keep this one close |
+| **Rare** | 35% | Scarce signal |
+| **Common** | 40% | Common does not mean disposable |
 
 ---
 
 ## Features
 
 - **119 core fortunes** across 7 categories and 4 rarity tiers
+- **Lucky prime numbers** attached to every reveal
 - **Lightning payments**: 100 sats, settled in seconds
 - **Bitcoin fortune packs**: 100 prepaid fortunes for 10,000 sats via Lightning or on-chain Bitcoin
 - **Personal collection**: track every fortune you reveal
@@ -131,6 +132,7 @@ curl https://fortunesats.com/api/agent/fortune
     "author": "Nick Szabo",
     "rarity": "legendary",
     "category": "sovereignty",
+    "luckyNumbers": [13, 233, 887],
     "tags": ["sovereignty", "attributed"]
   },
   "pricing": {

@@ -1,4 +1,4 @@
-import { getRandomFortune } from "@/lib/fortunes";
+import { getRandomFortune, withLuckyPrimeNumbers } from "@/lib/fortunes";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { getOrCreateDeviceId, attachDeviceCookie, resolveDisplayNameFromReq } from "@/lib/device-id";
 import { recordFortuneReveal } from "@/lib/leaderboard";
@@ -27,7 +27,8 @@ export async function GET(req: Request) {
 
   const { deviceId, isNew } = getOrCreateDeviceId(req);
   const displayName = resolveDisplayNameFromReq(req, deviceId);
-  const fortune = getRandomFortune();
+  const timestamp = new Date().toISOString();
+  const fortune = withLuckyPrimeNumbers(getRandomFortune(), `${deviceId}:${timestamp}`);
 
   await Promise.all([
     recordFortuneReveal(deviceId, displayName, fortune.rarity, 0),
@@ -39,7 +40,8 @@ export async function GET(req: Request) {
   const res = Response.json({
     fortune: fortune.text,
     rarity: fortune.rarity,
-    timestamp: new Date().toISOString(),
+    timestamp,
+    luckyNumbers: fortune.luckyNumbers,
   });
   if (isNew) attachDeviceCookie(res, deviceId);
   return res;

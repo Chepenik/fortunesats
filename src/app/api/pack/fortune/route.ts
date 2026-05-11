@@ -1,5 +1,5 @@
 import { getOrder, claimFortune } from "@/lib/orders";
-import { getUniqueRandomFortune } from "@/lib/fortunes";
+import { getUniqueRandomFortune, withLuckyPrimeNumbers } from "@/lib/fortunes";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { getOrCreateDeviceId, attachDeviceCookie, resolveDisplayNameFromReq } from "@/lib/device-id";
 import { recordFortuneReveal } from "@/lib/leaderboard";
@@ -64,7 +64,10 @@ export async function POST(req: Request) {
     }
 
     // Pick a fortune the buyer hasn't seen yet
-    const fortune = getUniqueRandomFortune(order.claimedFortunes);
+    const fortune = withLuckyPrimeNumbers(
+      getUniqueRandomFortune(order.claimedFortunes),
+      `${orderId}:${order.fortunesTotal - order.fortunesRemaining + 1}`,
+    );
 
     // Atomic claim: Redis DECR prevents over-claiming across concurrent requests
     const result = await claimFortune(orderId, secret, fortune.text);
@@ -95,6 +98,7 @@ export async function POST(req: Request) {
     const res = Response.json({
       fortune: fortune.text,
       rarity: fortune.rarity,
+      luckyNumbers: fortune.luckyNumbers,
       timestamp: new Date().toISOString(),
       fortunesRemaining: result.fortunesRemaining,
       fortunesTotal: order.fortunesTotal,

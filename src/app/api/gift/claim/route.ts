@@ -1,6 +1,7 @@
 import { checkRateLimit } from "@/lib/ratelimit";
 import { getOrCreateDeviceId, attachDeviceCookie } from "@/lib/device-id";
 import { claimGift } from "@/lib/gift";
+import { getLuckyPrimeNumbers } from "@/lib/fortunes";
 import { getFlags, unavailableResponse } from "@/lib/flags";
 
 export async function POST(req: Request) {
@@ -42,6 +43,7 @@ export async function POST(req: Request) {
   const res = Response.json({
     fortune: gift.fortune,
     rarity: gift.rarity,
+    luckyNumbers: gift.luckyNumbers ?? getLuckyPrimeNumbers(`${gift.fortune}:${gift.token}`),
     claimedAt: gift.claimedAt,
   });
   if (isNew) attachDeviceCookie(res, deviceId);

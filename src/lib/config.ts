@@ -70,10 +70,10 @@ export const config: AppConfig = {
 
   rarity: {
     weights: {
-      legendary: 0.05,
-      epic: 0.15,
-      rare: 0.30,
-      common: 0.50,
+      legendary: 0.08,
+      epic: 0.17,
+      rare: 0.35,
+      common: 0.40,
     },
   },
 

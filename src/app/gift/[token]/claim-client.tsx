@@ -2,19 +2,21 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
+import { getLuckyPrimeNumbers, RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
+import { parseFortune } from "@/lib/og";
 import { saveToCollection } from "@/lib/collection";
 import { ease } from "@/components/shared/animations";
 import { fireRarityConfetti } from "@/components/shared/confetti";
 import { OracleSpinner } from "@/components/shared/icons";
+import { LuckyPrimeRow } from "@/components/shared/lucky-primes";
 import Link from "next/link";
 
 type FlowState =
   | { step: "sealed" }
   | { step: "claiming" }
-  | { step: "revealing"; fortune: string; rarity: Rarity }
-  | { step: "rarity-reveal"; fortune: string; rarity: Rarity }
-  | { step: "fortune"; fortune: string; rarity: Rarity }
+  | { step: "revealing"; fortune: string; rarity: Rarity; luckyNumbers: number[] }
+  | { step: "rarity-reveal"; fortune: string; rarity: Rarity; luckyNumbers: number[] }
+  | { step: "fortune"; fortune: string; rarity: Rarity; luckyNumbers: number[] }
   | { step: "error"; message: string };
 
 export function GiftClaimClient({
@@ -29,9 +31,9 @@ export function GiftClaimClient({
   // "Revealing" → rarity-reveal transition
   useEffect(() => {
     if (state.step !== "revealing") return;
-    const { fortune, rarity } = state;
+    const { fortune, rarity, luckyNumbers } = state;
     const timer = setTimeout(() => {
-      setState({ step: "rarity-reveal", fortune, rarity });
+      setState({ step: "rarity-reveal", fortune, rarity, luckyNumbers });
     }, 800);
     return () => clearTimeout(timer);
   }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -39,9 +41,9 @@ export function GiftClaimClient({
   // "Rarity-reveal" → fortune transition
   useEffect(() => {
     if (state.step !== "rarity-reveal") return;
-    const { fortune, rarity } = state;
+    const { fortune, rarity, luckyNumbers } = state;
     const timer = setTimeout(() => {
-      setState({ step: "fortune", fortune, rarity });
+      setState({ step: "fortune", fortune, rarity, luckyNumbers });
     }, 1500);
     return () => clearTimeout(timer);
   }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -68,6 +70,7 @@ export function GiftClaimClient({
           step: "revealing",
           fortune: data.fortune,
           rarity: data.rarity ?? "common",
+          luckyNumbers: data.luckyNumbers ?? getLuckyPrimeNumbers(data.fortune),
         });
         return;
       }
@@ -85,6 +88,7 @@ export function GiftClaimClient({
   const rarityConfig = (state.step === "fortune" || state.step === "rarity-reveal")
     ? RARITY_CONFIG[state.rarity]
     : null;
+  const fortuneParts = state.step === "fortune" ? parseFortune(state.fortune) : null;
 
   const sealedRarityConfig = RARITY_CONFIG[giftRarity];
 
@@ -258,7 +262,7 @@ export function GiftClaimClient({
                 transition={{ delay: 0.5, duration: 0.4 }}
                 className="text-xs text-gold/30 font-mono"
               >
-                Cracking open&hellip;
+                {rarityConfig?.revealCopy}
               </motion.p>
             </motion.div>
           )}
@@ -323,9 +327,24 @@ export function GiftClaimClient({
                     }`}
                   >
                     {state.rarity !== "legendary" && <span className="text-gold/60">&ldquo;</span>}
-                    {state.rarity === "legendary" ? `\u201C${state.fortune}\u201D` : state.fortune}
+                    {state.rarity === "legendary"
+                      ? `\u201C${fortuneParts?.quote ?? state.fortune}\u201D`
+                      : (fortuneParts?.quote ?? state.fortune)}
                     {state.rarity !== "legendary" && <span className="text-gold/60">&rdquo;</span>}
                   </motion.blockquote>
+
+                  {fortuneParts?.author && (
+                    <motion.p
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5, duration: 0.4, ease }}
+                      className="text-sm text-gold/40 italic"
+                    >
+                      - {fortuneParts.author}
+                    </motion.p>
+                  )}
+
+                  <LuckyPrimeRow numbers={state.luckyNumbers} />
 
                   {/* Meta */}
                   <motion.div

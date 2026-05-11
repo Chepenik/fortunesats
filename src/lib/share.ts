@@ -1,5 +1,5 @@
 import type { Rarity } from "@/lib/fortunes";
-import { encodeFortuneSlug } from "@/lib/og";
+import { encodeFortuneSlug, parseFortune } from "@/lib/og";
 
 export const SITE_URL = "https://fortunesats.com";
 
@@ -32,6 +32,11 @@ function rarityPrefix(rarity: Rarity): string {
   return label ? `[${label}] ` : "";
 }
 
+function quoteForShare(fortune: string): string {
+  const { quote, author } = parseFortune(fortune);
+  return author ? `"${quote}"\n- ${author}` : `"${quote}"`;
+}
+
 /* ─── Share copy variants (A/B testable) ───────────────── */
 
 export interface ShareVariant {
@@ -45,25 +50,25 @@ export const SHARE_VARIANTS: ShareVariant[] = [
     id: 0,
     label: "classic",
     template: (f, r) =>
-      `🥠 ${rarityPrefix(r ?? "common")}100 sats sent. Fortune received:\n\n"${f}"\n\nOpen your own: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
+      `🥠 ${rarityPrefix(r ?? "common")}100 sats sent. Fortune received:\n\n${quoteForShare(f)}\n\nOpen your own: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
   },
   {
     id: 1,
     label: "punchy",
     template: (f, r) =>
-      `100 sats. One fortune.${r && r !== "common" ? ` ${RARITY_LABELS[r]}.` : ""} Lightning ritual.\n\n"${f}"\n\nReveal yours: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
+      `100 sats. One fortune.${r && r !== "common" ? ` ${RARITY_LABELS[r]}.` : ""} Lightning ritual.\n\n${quoteForShare(f)}\n\nReveal yours: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
   },
   {
     id: 2,
     label: "storyteller",
     template: (f, r) =>
-      `FortuneSats surfaced this${r && r !== "common" ? ` ${RARITY_LABELS[r]}` : ""} signal for 100 sats:\n\n"${f}"\n\nRequest one: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
+      `FortuneSats surfaced this${r && r !== "common" ? ` ${RARITY_LABELS[r]}` : ""} signal for 100 sats:\n\n${quoteForShare(f)}\n\nRequest one: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
   },
   {
     id: 3,
     label: "direct",
     template: (f, r) =>
-      `Fortune revealed:${r && r !== "common" ? ` [${RARITY_LABELS[r]}]` : ""}\n100 sats over Lightning.\n\n"${f}"\n\nOpen yours: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
+      `Fortune revealed:${r && r !== "common" ? ` [${RARITY_LABELS[r]}]` : ""}\n100 sats over Lightning.\n\n${quoteForShare(f)}\n\nOpen yours: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
   },
 ];
 
@@ -72,25 +77,25 @@ export const PACK_SHARE_VARIANTS: ShareVariant[] = [
     id: 0,
     label: "classic",
     template: (f, r) =>
-      `🥠 ${rarityPrefix(r ?? "common")}Fortune Pack opened. This signal surfaced:\n\n"${f}"\n\nOpen yours: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
+      `🥠 ${rarityPrefix(r ?? "common")}Fortune Pack opened. This signal surfaced:\n\n${quoteForShare(f)}\n\nOpen yours: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
   },
   {
     id: 1,
     label: "punchy",
     template: (f, r) =>
-      `10,000 sats. 100 prepaid fortunes.${r && r !== "common" ? ` ${RARITY_LABELS[r]}.` : ""}\n\n"${f}"\n\nOpen a pack: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
+      `10,000 sats. 100 prepaid fortunes.${r && r !== "common" ? ` ${RARITY_LABELS[r]}.` : ""}\n\n${quoteForShare(f)}\n\nOpen a pack: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
   },
   {
     id: 2,
     label: "storyteller",
     template: (f, r) =>
-      `A FortuneSats pack gave me this${r && r !== "common" ? ` ${RARITY_LABELS[r]}` : ""}:\n\n"${f}"\n\nRequest signal: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
+      `A FortuneSats pack gave me this${r && r !== "common" ? ` ${RARITY_LABELS[r]}` : ""}:\n\n${quoteForShare(f)}\n\nRequest signal: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
   },
   {
     id: 3,
     label: "direct",
     template: (f, r) =>
-      `Fortune Pack reveal:${r && r !== "common" ? ` [${RARITY_LABELS[r]}]` : ""}\n10,000 sats. 100 fortunes.\n\n"${f}"\n\nOpen a pack: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
+      `Fortune Pack reveal:${r && r !== "common" ? ` [${RARITY_LABELS[r]}]` : ""}\n10,000 sats. 100 fortunes.\n\n${quoteForShare(f)}\n\nOpen a pack: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
   },
 ];
 

@@ -14,10 +14,12 @@ import { getStreak, mergeStreaks, type StreakData } from "@/lib/streak";
 import {
   FORTUNE_POOL_TOTAL,
   FORTUNE_POOL_TOTALS,
+  getLuckyPrimeNumbers,
   RARITY_CONFIG,
   type Rarity,
 } from "@/lib/fortunes";
-import { encodeFortuneSlug } from "@/lib/og";
+import { encodeFortuneSlug, parseFortune } from "@/lib/og";
+import { LuckyPrimeRow } from "@/components/shared/lucky-primes";
 
 /* ─── Constants ─────────────────────────────────────────── */
 
@@ -286,6 +288,8 @@ export function CollectionView() {
 
 function FortuneCard({ fortune }: { fortune: CollectedFortune }) {
   const cfg = RARITY_CONFIG[fortune.rarity];
+  const { quote, author } = parseFortune(fortune.text);
+  const luckyNumbers = getLuckyPrimeNumbers(fortune.text);
   const date = new Date(fortune.firstPulled);
   const dateStr = date.toLocaleDateString("en-US", {
     month: "short",
@@ -310,8 +314,13 @@ function FortuneCard({ fortune }: { fortune: CollectedFortune }) {
       <div className="relative space-y-2">
         {/* Fortune text */}
         <p className="text-sm leading-relaxed text-foreground/80 italic">
-          &ldquo;{fortune.text}&rdquo;
+          &ldquo;{quote}&rdquo;
         </p>
+        {author && (
+          <p className="text-xs text-gold/35 italic">- {author}</p>
+        )}
+
+        <LuckyPrimeRow numbers={luckyNumbers} />
 
         {/* Meta row */}
         <div className="flex items-center justify-between">

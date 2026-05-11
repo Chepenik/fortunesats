@@ -13,11 +13,13 @@ import {
   trackShare,
   type ShareVariant,
 } from "@/lib/share";
-import { RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
+import { getLuckyPrimeNumbers, RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
+import { parseFortune } from "@/lib/og";
 import { saveToCollection } from "@/lib/collection";
 import { ease, fadeUp, scaleFade } from "@/components/shared/animations";
 import { fireConfetti, firePackRarityConfetti } from "@/components/shared/confetti";
 import { XIcon, GoldDot, OracleSpinner, CopyIcon, LinkIcon } from "@/components/shared/icons";
+import { LuckyPrimeRow } from "@/components/shared/lucky-primes";
 
 /* ─── Types ──────────────────────────────────────────────── */
 
@@ -78,6 +80,7 @@ type PackStep =
       secret: string;
       fortune: string;
       rarity: Rarity;
+      luckyNumbers: number[];
       timestamp: string;
       fortunesRemaining: number;
       fortunesTotal: number;
@@ -247,6 +250,7 @@ export function FortunePack() {
             secret,
             fortune: data.fortune,
             rarity: data.rarity ?? "common",
+            luckyNumbers: data.luckyNumbers ?? getLuckyPrimeNumbers(data.fortune),
             timestamp: data.timestamp,
             fortunesRemaining: data.fortunesRemaining,
             fortunesTotal: data.fortunesTotal ?? fortunesTotal,
@@ -446,6 +450,8 @@ export function FortunePack() {
     trackShare("native_share", v.id);
     await nativeShare(fortune, v, rarity);
   }, []);
+
+  const fortuneParts = state.step === "fortune" ? parseFortune(state.fortune) : null;
 
   return (
     <div className="w-full">
@@ -1025,9 +1031,24 @@ export function FortunePack() {
                   }`}
                 >
                   {state.rarity !== "legendary" && <span className="text-gold/60">&ldquo;</span>}
-                  {state.rarity === "legendary" ? `\u201C${state.fortune}\u201D` : state.fortune}
+                  {state.rarity === "legendary"
+                    ? `\u201C${fortuneParts?.quote ?? state.fortune}\u201D`
+                    : (fortuneParts?.quote ?? state.fortune)}
                   {state.rarity !== "legendary" && <span className="text-gold/60">&rdquo;</span>}
                 </motion.blockquote>
+
+                {fortuneParts?.author && (
+                  <motion.p
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.42, duration: 0.3, ease }}
+                    className="text-sm text-gold/40 italic"
+                  >
+                    - {fortuneParts.author}
+                  </motion.p>
+                )}
+
+                <LuckyPrimeRow numbers={state.luckyNumbers} />
 
                 <motion.div
                   initial={{ opacity: 0 }}

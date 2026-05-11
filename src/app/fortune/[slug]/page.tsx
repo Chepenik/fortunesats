@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { decodeFortuneSlug, encodeFortuneSlug, parseFortune } from "@/lib/og";
-import { RARITY_CONFIG, fortunes, type Rarity } from "@/lib/fortunes";
+import { getLuckyPrimeNumbers, RARITY_CONFIG, fortunes, type Rarity } from "@/lib/fortunes";
+import { LuckyPrimeRow } from "@/components/shared/lucky-primes";
 
 /* ─── Static generation ────────────────────────────────── */
 
@@ -76,6 +77,7 @@ export default async function FortunePage({ params }: Props) {
 
   const { text, rarity } = decoded;
   const { quote, author } = parseFortune(text);
+  const luckyNumbers = getLuckyPrimeNumbers(text);
   const config = RARITY_CONFIG[rarity];
 
   const jsonLd = {
@@ -161,6 +163,8 @@ export default async function FortunePage({ params }: Props) {
                 - {author}
               </p>
             )}
+
+            <LuckyPrimeRow numbers={luckyNumbers} />
 
             {/* Ornamental divider */}
             <div className="dragon-line w-full" />

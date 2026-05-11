@@ -1,5 +1,5 @@
 import { getStrikeInvoice } from "@/lib/strike";
-import { getRandomFortune } from "@/lib/fortunes";
+import { getLuckyPrimeNumbers, getRandomFortune, withLuckyPrimeNumbers } from "@/lib/fortunes";
 import { getRedis } from "@/lib/redis";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { getOrCreateDeviceId, attachDeviceCookie, resolveDisplayNameFromReq } from "@/lib/device-id";
@@ -73,34 +73,39 @@ export async function POST(req: Request) {
   let fortune: string;
   let rarity: import("@/lib/fortunes").Rarity;
   let timestamp: string;
+  let luckyNumbers: number[];
 
   const cacheKey = `fortune:checkout:${checkoutId}`;
 
   if (redis) {
     try {
-      const cached = await redis.get<{ fortune: string; rarity?: string; timestamp: string }>(cacheKey);
+      const cached = await redis.get<{ fortune: string; rarity?: string; timestamp: string; luckyNumbers?: number[] }>(cacheKey);
       if (cached) {
         fortune = cached.fortune;
         rarity = (cached.rarity as import("@/lib/fortunes").Rarity) ?? "common";
         timestamp = cached.timestamp;
+        luckyNumbers = cached.luckyNumbers ?? getLuckyPrimeNumbers(`${fortune}:${checkoutId}`);
       } else {
-        const f = getRandomFortune();
+        const f = withLuckyPrimeNumbers(getRandomFortune(), checkoutId);
         fortune = f.text;
         rarity = f.rarity;
+        luckyNumbers = f.luckyNumbers;
         timestamp = new Date().toISOString();
-        await redis.set(cacheKey, { fortune, rarity, timestamp }, { ex: FORTUNE_TTL });
+        await redis.set(cacheKey, { fortune, rarity, timestamp, luckyNumbers }, { ex: FORTUNE_TTL });
       }
     } catch (e) {
       console.error("[fortune/deliver:cache]", e);
-      const f = getRandomFortune();
+      const f = withLuckyPrimeNumbers(getRandomFortune(), checkoutId);
       fortune = f.text;
       rarity = f.rarity;
+      luckyNumbers = f.luckyNumbers;
       timestamp = new Date().toISOString();
     }
   } else {
-    const f = getRandomFortune();
+    const f = withLuckyPrimeNumbers(getRandomFortune(), checkoutId);
     fortune = f.text;
     rarity = f.rarity;
+    luckyNumbers = f.luckyNumbers;
     timestamp = new Date().toISOString();
   }
 
@@ -113,7 +118,7 @@ export async function POST(req: Request) {
     recordServerStreak(deviceId),
   ]);
 
-  const res = Response.json({ fortune, rarity, timestamp });
+  const res = Response.json({ fortune, rarity, timestamp, luckyNumbers });
   if (isNew) attachDeviceCookie(res, deviceId);
   return res;
 }

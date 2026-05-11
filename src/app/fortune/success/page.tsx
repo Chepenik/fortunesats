@@ -17,18 +17,20 @@ import {
   trackShare,
   type ShareVariant,
 } from "@/lib/share";
-import { RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
+import { getLuckyPrimeNumbers, RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
+import { parseFortune } from "@/lib/og";
 import { ease } from "@/components/shared/animations";
 import { fireRarityConfetti } from "@/components/shared/confetti";
 import { XIcon, OracleSpinner } from "@/components/shared/icons";
+import { LuckyPrimeRow } from "@/components/shared/lucky-primes";
 import Link from "next/link";
 
 type FlowState =
   | { step: "verifying" }
   | { step: "delivering"; attempt?: number }
-  | { step: "revealing"; fortune: string; rarity: Rarity; timestamp: string }
-  | { step: "rarity-reveal"; fortune: string; rarity: Rarity; timestamp: string }
-  | { step: "fortune"; fortune: string; rarity: Rarity; timestamp: string }
+  | { step: "revealing"; fortune: string; rarity: Rarity; timestamp: string; luckyNumbers: number[] }
+  | { step: "rarity-reveal"; fortune: string; rarity: Rarity; timestamp: string; luckyNumbers: number[] }
+  | { step: "fortune"; fortune: string; rarity: Rarity; timestamp: string; luckyNumbers: number[] }
   | { step: "error"; message: string; retriable?: boolean; checkoutId?: string };
 
 const MAX_DELIVER_RETRIES = 3;
@@ -97,6 +99,7 @@ function FortuneSuccessInner() {
             fortune: data.fortune,
             rarity: data.rarity ?? "common",
             timestamp: data.timestamp,
+            luckyNumbers: data.luckyNumbers ?? getLuckyPrimeNumbers(data.fortune),
           });
           return;
         }
@@ -151,9 +154,9 @@ function FortuneSuccessInner() {
   // "Revealing" → rarity-reveal transition
   useEffect(() => {
     if (state.step !== "revealing") return;
-    const { fortune, rarity, timestamp } = state;
+    const { fortune, rarity, timestamp, luckyNumbers } = state;
     const timer = setTimeout(() => {
-      setState({ step: "rarity-reveal", fortune, rarity, timestamp });
+      setState({ step: "rarity-reveal", fortune, rarity, timestamp, luckyNumbers });
     }, 800);
     return () => clearTimeout(timer);
   }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -161,9 +164,9 @@ function FortuneSuccessInner() {
   // "Rarity-reveal" → fortune transition
   useEffect(() => {
     if (state.step !== "rarity-reveal") return;
-    const { fortune, rarity, timestamp } = state;
+    const { fortune, rarity, timestamp, luckyNumbers } = state;
     const timer = setTimeout(() => {
-      setState({ step: "fortune", fortune, rarity, timestamp });
+      setState({ step: "fortune", fortune, rarity, timestamp, luckyNumbers });
     }, 1500);
     return () => clearTimeout(timer);
   }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -213,6 +216,7 @@ function FortuneSuccessInner() {
   const rarityConfig = (state.step === "fortune" || state.step === "rarity-reveal")
     ? RARITY_CONFIG[state.rarity]
     : null;
+  const fortuneParts = state.step === "fortune" ? parseFortune(state.fortune) : null;
 
   return (
     <main className="relative flex-1 flex flex-col items-center justify-center px-6 py-12 overflow-hidden">
@@ -318,7 +322,7 @@ function FortuneSuccessInner() {
                 transition={{ delay: 0.5, duration: 0.4 }}
                 className="text-xs text-gold/30 font-mono"
               >
-                Cracking open&hellip;
+                {rarityConfig?.revealCopy}
               </motion.p>
             </motion.div>
           )}
@@ -380,9 +384,24 @@ function FortuneSuccessInner() {
                     }`}
                   >
                     {state.rarity !== "legendary" && <span className="text-gold/60">&ldquo;</span>}
-                    {state.rarity === "legendary" ? `\u201C${state.fortune}\u201D` : state.fortune}
+                    {state.rarity === "legendary"
+                      ? `\u201C${fortuneParts?.quote ?? state.fortune}\u201D`
+                      : (fortuneParts?.quote ?? state.fortune)}
                     {state.rarity !== "legendary" && <span className="text-gold/60">&rdquo;</span>}
                   </motion.blockquote>
+
+                  {fortuneParts?.author && (
+                    <motion.p
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5, duration: 0.4, ease }}
+                      className="text-sm text-gold/40 italic"
+                    >
+                      - {fortuneParts.author}
+                    </motion.p>
+                  )}
+
+                  <LuckyPrimeRow numbers={state.luckyNumbers} />
 
                   <motion.div
                     initial={{ opacity: 0 }}

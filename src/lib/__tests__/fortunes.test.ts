@@ -2,10 +2,20 @@ import { describe, it, expect } from "vitest";
 import {
   FORTUNE_POOL_TOTAL,
   FORTUNE_POOL_TOTALS,
+  BASE_RARITY_WEIGHTS,
+  LUCKY_PRIME_COUNT_MAX,
+  LUCKY_PRIME_COUNT_MIN,
+  LUCKY_PRIME_MAX,
+  LUCKY_PRIME_MIN,
   fortunes,
+  seasonalFortunes,
   agentFortunes,
   agentFortuneById,
+  getLuckyPrimeNumbers,
+  getRarityWeights,
   getUniqueRandomFortune,
+  isPrimeNumber,
+  selectRarity,
 } from "@/lib/fortunes";
 
 describe("agentFortunes enrichment", () => {
@@ -17,6 +27,8 @@ describe("agentFortunes enrichment", () => {
       expect(f.text.length).toBeGreaterThan(0);
       expect(["legendary", "epic", "rare", "common"]).toContain(f.rarity);
       expect(["stoicism", "philosophy", "eastern", "sovereignty", "growth", "fortune", "wit"]).toContain(f.category);
+      expect(f.luckyNumbers.length).toBeGreaterThanOrEqual(LUCKY_PRIME_COUNT_MIN);
+      expect(f.luckyNumbers.length).toBeLessThanOrEqual(LUCKY_PRIME_COUNT_MAX);
       expect(Array.isArray(f.tags)).toBe(true);
       expect(f.tags.length).toBeGreaterThan(0);
       // author is string or null
@@ -39,6 +51,17 @@ describe("agentFortunes enrichment", () => {
     expect(
       Object.values(FORTUNE_POOL_TOTALS).reduce((sum, count) => sum + count, 0),
     ).toBe(FORTUNE_POOL_TOTAL);
+  });
+
+  it("keeps every core and seasonal fortune explicitly attributed", () => {
+    const all = [...agentFortunes, ...seasonalFortunes.map((f) => ({
+      text: f.text,
+      author: f.text.match(/\s+[—–-]\s+([A-Z][^—–-]{0,59})$/)?.[1] ?? null,
+    }))];
+
+    for (const f of all) {
+      expect(f.author, `"${f.text}" has no attribution`).toBeTruthy();
+    }
   });
 
   it("generates stable IDs — same text always produces same ID", () => {
@@ -77,7 +100,7 @@ describe("agentFortuneById map", () => {
 describe("author extraction", () => {
   it("extracts author from 'text - Author' format", () => {
     const stoic = agentFortunes.find((f) => f.text.includes("Marcus Aurelius"));
-    expect(stoic?.author).toBe("Marcus Aurelius");
+    expect(stoic?.author).toBe("Inspired by Marcus Aurelius");
   });
 
   it("extracts multi-word authors correctly", () => {
@@ -85,16 +108,15 @@ describe("author extraction", () => {
     expect(satoshi?.author).toBe("Satoshi Nakamoto");
   });
 
-  it("keeps legacy dash attribution support", () => {
-    const seneca = agentFortunes.find((f) => f.text.includes("- Seneca"));
-    expect(seneca?.author).toBe("Seneca");
+  it("keeps dash attribution support", () => {
+    const satoshi = agentFortunes.find((f) => f.text.includes("- Satoshi Nakamoto"));
+    expect(satoshi?.author).toBe("Satoshi Nakamoto");
   });
 
-  it("returns null for fortunes without attribution", () => {
-    const unattributed = agentFortunes.find((f) => f.text === "Proof of work is truth without permission.");
-    if (unattributed) {
-      expect(unattributed.author).toBeNull();
-    }
+  it("labels inspired fortunes without treating them as direct quotes", () => {
+    const inspired = agentFortunes.find((f) => f.author?.startsWith("Inspired by "));
+    expect(inspired).toBeDefined();
+    expect(inspired?.tags).toContain("inspired");
   });
 
   it("extracts Nick Szabo as author", () => {
@@ -105,7 +127,7 @@ describe("author extraction", () => {
 
 describe("category inference", () => {
   it("classifies Marcus Aurelius fortunes as stoicism", () => {
-    const stoic = agentFortunes.filter((f) => f.author === "Marcus Aurelius");
+    const stoic = agentFortunes.filter((f) => f.author?.includes("Marcus Aurelius"));
     expect(stoic.length).toBeGreaterThan(0);
     for (const f of stoic) {
       expect(f.category).toBe("stoicism");
@@ -113,7 +135,7 @@ describe("category inference", () => {
   });
 
   it("classifies Seneca fortunes as stoicism", () => {
-    const senecaFortunes = agentFortunes.filter((f) => f.author === "Seneca");
+    const senecaFortunes = agentFortunes.filter((f) => f.author?.includes("Seneca"));
     expect(senecaFortunes.length).toBeGreaterThan(0);
     for (const f of senecaFortunes) {
       expect(f.category).toBe("stoicism");
@@ -121,7 +143,7 @@ describe("category inference", () => {
   });
 
   it("classifies Lao Tzu fortunes as eastern", () => {
-    const laoTzu = agentFortunes.filter((f) => f.author === "Lao Tzu");
+    const laoTzu = agentFortunes.filter((f) => f.author?.includes("Lao Tzu"));
     expect(laoTzu.length).toBeGreaterThan(0);
     for (const f of laoTzu) {
       expect(f.category).toBe("eastern");
@@ -129,7 +151,7 @@ describe("category inference", () => {
   });
 
   it("classifies Buddha fortunes as eastern", () => {
-    const buddha = agentFortunes.filter((f) => f.author === "Buddha");
+    const buddha = agentFortunes.filter((f) => f.author?.includes("Buddha"));
     expect(buddha.length).toBeGreaterThan(0);
     for (const f of buddha) {
       expect(f.category).toBe("eastern");
@@ -161,7 +183,7 @@ describe("category inference", () => {
   });
 
   it("classifies singular sat references as sovereignty", () => {
-    const satFortune = agentFortunes.find((f) => f.text === "Every sat tells a story.");
+    const satFortune = agentFortunes.find((f) => f.text.includes("Every sat tells a story."));
     expect(satFortune?.category).toBe("sovereignty");
   });
 
@@ -188,10 +210,12 @@ describe("tag inference", () => {
     }
   });
 
-  it("tags unattributed fortunes with 'original'", () => {
-    const original = agentFortunes.filter((f) => f.author === null);
-    for (const f of original) {
-      expect(f.tags).toContain("original");
+  it("tags oracle-authored fortunes", () => {
+    const oracle = agentFortunes.filter((f) => f.author === "FortuneSats Oracle");
+    expect(oracle.length).toBeGreaterThan(0);
+    for (const f of oracle) {
+      expect(f.tags).toContain("oracle");
+      expect(f.tags).toContain("attributed");
     }
   });
 
@@ -204,6 +228,56 @@ describe("tag inference", () => {
     for (const f of wisdomFortunes) {
       expect(f.tags).toContain("wisdom");
     }
+  });
+});
+
+describe("lucky prime numbers", () => {
+  it("generates deterministic lucky prime numbers", () => {
+    expect(getLuckyPrimeNumbers("same-seed")).toEqual(getLuckyPrimeNumbers("same-seed"));
+    expect(getLuckyPrimeNumbers("same-seed")).not.toEqual(getLuckyPrimeNumbers("different-seed"));
+  });
+
+  it("keeps lucky numbers prime, unique, and within range", () => {
+    for (const f of agentFortunes) {
+      const unique = new Set(f.luckyNumbers);
+      expect(unique.size).toBe(f.luckyNumbers.length);
+      expect(f.luckyNumbers.length).toBeGreaterThanOrEqual(LUCKY_PRIME_COUNT_MIN);
+      expect(f.luckyNumbers.length).toBeLessThanOrEqual(LUCKY_PRIME_COUNT_MAX);
+      for (const n of f.luckyNumbers) {
+        expect(n).toBeGreaterThanOrEqual(LUCKY_PRIME_MIN);
+        expect(n).toBeLessThanOrEqual(LUCKY_PRIME_MAX);
+        expect(isPrimeNumber(n), `${n} is not prime`).toBe(true);
+      }
+    }
+  });
+});
+
+describe("rarity weighting", () => {
+  it("uses the production reveal weights", () => {
+    expect(BASE_RARITY_WEIGHTS).toEqual({
+      legendary: 0.08,
+      epic: 0.17,
+      rare: 0.35,
+      common: 0.40,
+    });
+  });
+
+  it("selects rarity by threshold", () => {
+    expect(selectRarity(0)).toBe("legendary");
+    expect(selectRarity(0.079)).toBe("legendary");
+    expect(selectRarity(0.08)).toBe("epic");
+    expect(selectRarity(0.249)).toBe("epic");
+    expect(selectRarity(0.25)).toBe("rare");
+    expect(selectRarity(0.599)).toBe("rare");
+    expect(selectRarity(0.60)).toBe("common");
+    expect(selectRarity(0.999)).toBe("common");
+  });
+
+  it("scales legendary without changing total probability", () => {
+    const weights = getRarityWeights(2);
+    expect(weights.legendary).toBeCloseTo(0.16);
+    expect(Object.values(weights).reduce((sum, weight) => sum + weight, 0)).toBeCloseTo(1);
+    expect(weights.common).toBeLessThan(BASE_RARITY_WEIGHTS.common);
   });
 });
 

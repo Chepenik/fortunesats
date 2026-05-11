@@ -16,19 +16,21 @@ import {
   trackShare,
   type ShareVariant,
 } from "@/lib/share";
-import { RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
+import { getLuckyPrimeNumbers, RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
+import { parseFortune } from "@/lib/og";
 import { ease, fadeUp } from "@/components/shared/animations";
 import { fireRarityConfetti } from "@/components/shared/confetti";
 import { XIcon, GoldDot, OracleSpinner } from "@/components/shared/icons";
+import { LuckyPrimeRow } from "@/components/shared/lucky-primes";
 
 /* ─── Types ──────────────────────────────────────────────── */
 
 type FlowState =
   | { step: "idle" }
   | { step: "requesting" }
-  | { step: "revealing"; fortune: string; rarity: Rarity; timestamp: string }
-  | { step: "rarity-reveal"; fortune: string; rarity: Rarity; timestamp: string }
-  | { step: "fortune"; fortune: string; rarity: Rarity; timestamp: string }
+  | { step: "revealing"; fortune: string; rarity: Rarity; timestamp: string; luckyNumbers: number[] }
+  | { step: "rarity-reveal"; fortune: string; rarity: Rarity; timestamp: string; luckyNumbers: number[] }
+  | { step: "fortune"; fortune: string; rarity: Rarity; timestamp: string; luckyNumbers: number[] }
   | { step: "error"; message: string };
 
 /* ─── Component ──────────────────────────────────────────── */
@@ -42,7 +44,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
   const variantRef = useRef<ShareVariant>(pickVariant());
 
   useEffect(() => {
-    setHasNativeShare(canNativeShare()); // eslint-disable-line react-hooks/set-state-in-effect
+    setHasNativeShare(canNativeShare());
     setStreak(getStreak());
     track("fortune_hero_view", { freePromo });
   }, [freePromo]);
@@ -50,9 +52,9 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
   /* ── "Revealing" → rarity-reveal transition ── */
   useEffect(() => {
     if (state.step !== "revealing") return;
-    const { fortune, rarity, timestamp } = state;
+    const { fortune, rarity, timestamp, luckyNumbers } = state;
     const timer = setTimeout(() => {
-      setState({ step: "rarity-reveal", fortune, rarity, timestamp });
+      setState({ step: "rarity-reveal", fortune, rarity, timestamp, luckyNumbers });
     }, 800);
     return () => clearTimeout(timer);
   }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -60,9 +62,9 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
   /* ── "Rarity-reveal" → fortune transition (1.5s dramatic pause) ── */
   useEffect(() => {
     if (state.step !== "rarity-reveal") return;
-    const { fortune, rarity, timestamp } = state;
+    const { fortune, rarity, timestamp, luckyNumbers } = state;
     const timer = setTimeout(() => {
-      setState({ step: "fortune", fortune, rarity, timestamp });
+      setState({ step: "fortune", fortune, rarity, timestamp, luckyNumbers });
     }, 1500);
     return () => clearTimeout(timer);
   }, [state.step]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -71,7 +73,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
   useEffect(() => {
     if (state.step !== "fortune") return;
     const updated = recordFortune();
-    setStreak(updated); // eslint-disable-line react-hooks/set-state-in-effect
+    setStreak(updated);
     fireRarityConfetti(state.rarity);
     saveToCollection(state.fortune, state.rarity);
     track("fortune_revealed", { rarity: state.rarity, freePromo });
@@ -93,6 +95,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
             fortune: data.fortune,
             rarity: data.rarity ?? "common",
             timestamp: data.timestamp,
+            luckyNumbers: data.luckyNumbers ?? getLuckyPrimeNumbers(data.fortune),
           });
           return;
         }
@@ -176,6 +179,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
   const rarityConfig = (state.step === "fortune" || state.step === "rarity-reveal")
     ? RARITY_CONFIG[state.rarity]
     : null;
+  const fortuneParts = state.step === "fortune" ? parseFortune(state.fortune) : null;
 
   return (
     <div className="w-full">
@@ -343,7 +347,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
               transition={{ delay: 0.5, duration: 0.4 }}
               className="text-xs text-gold/30 font-mono"
             >
-              Cracking open&hellip;
+              {rarityConfig?.revealCopy}
             </motion.p>
           </motion.div>
         )}
@@ -413,9 +417,24 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
                   }`}
                 >
                   {state.rarity !== "legendary" && <span className="text-gold/60">&ldquo;</span>}
-                  {state.rarity === "legendary" ? `\u201C${state.fortune}\u201D` : state.fortune}
+                  {state.rarity === "legendary"
+                    ? `\u201C${fortuneParts?.quote ?? state.fortune}\u201D`
+                    : (fortuneParts?.quote ?? state.fortune)}
                   {state.rarity !== "legendary" && <span className="text-gold/60">&rdquo;</span>}
                 </motion.blockquote>
+
+                {fortuneParts?.author && (
+                  <motion.p
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 0.4, ease }}
+                    className="text-sm text-gold/40 italic"
+                  >
+                    - {fortuneParts.author}
+                  </motion.p>
+                )}
+
+                <LuckyPrimeRow numbers={state.luckyNumbers} />
 
                 {/* Meta line */}
                 <motion.div

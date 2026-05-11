@@ -32,6 +32,7 @@ curl https://fortunesats.com/api/agent/fortune
     "author": "Nick Szabo",
     "rarity": "legendary",
     "category": "sovereignty",
+    "luckyNumbers": [13, 233, 887],
     "tags": ["sovereignty", "attributed"]
   },
   "pricing": {
@@ -76,9 +77,9 @@ curl "https://fortunesats.com/api/agent/fortune?meta=true"
   "meta": {
     "total": 119,
     "categories": {
-      "sovereignty": 34,
-      "growth": 57,
-      "fortune": 10,
+      "sovereignty": 39,
+      "growth": 60,
+      "fortune": 2,
       "stoicism": 6,
       "philosophy": 6,
       "eastern": 5,
@@ -104,19 +105,20 @@ Every fortune comes with:
 |-------|------|-------------|
 | `id` | string | Stable content-derived ID (7-char base36 hash) -- won't change between deploys |
 | `text` | string | Full fortune text, including attribution |
-| `author` | string \| null | Author name, or `null` for original/anonymous quotes |
+| `author` | string \| null | Explicit attribution, including `Inspired by ...` labels for non-direct quotes |
 | `rarity` | string | `legendary`, `epic`, `rare`, or `common` |
 | `category` | string | Content category (see below) |
+| `luckyNumbers` | number[] | 3-5 deterministic lucky prime numbers between 2 and 997 |
 | `tags` | string[] | Auto-derived content tags for filtering and context |
 
 ### Rarity Tiers
 
 | Tier | Drop Rate | Pool Size | Vibe |
 |------|-----------|-----------|------|
-| Legendary | 5% | 8 | Scarce signal |
-| Epic | 15% | 18 | Strong medicine |
-| Rare | 30% | 38 | Good proof |
-| Common | 50% | 55 | Still wise, still yours |
+| Legendary | 8% | 8 | Scarce signal |
+| Epic | 17% | 18 | Strong medicine |
+| Rare | 35% | 38 | Good proof |
+| Common | 40% | 55 | Still wise, still yours |
 
 ### Categories
 

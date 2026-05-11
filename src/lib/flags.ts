@@ -20,7 +20,7 @@ export interface Flags {
   activityFeedEnabled: boolean;
   /** Skip payment — give fortunes free. Records 0 sats to leaderboard. Default: false */
   freeFortunePromo: boolean;
-  /** Scale the 5% legendary base rate. Clamped to [0.5, 4.0]. Default: 1.0 */
+  /** Scale the 8% legendary base rate. Clamped to [0.5, 4.0]. Default: 1.0 */
   legendaryRateMultiplier: number;
   /** Mix seasonal bonus fortunes into the pool. Default: false */
   seasonalPoolEnabled: boolean;

@@ -193,12 +193,19 @@ export async function GET() {
             text: { type: "string", description: "The fortune text, including attribution if present." },
             author: {
               type: ["string", "null"],
-              description: "Attributed author, or null for original fortunes.",
+              description: "Explicit attribution, including 'Inspired by ...' labels for non-direct quotes.",
             },
             rarity: {
               type: "string",
               enum: ["legendary", "epic", "rare", "common"],
-              description: "Rarity tier. Legendary (5%), Epic (15%), Rare (30%), Common (50%).",
+              description: "Rarity tier. Legendary (8%), Epic (17%), Rare (35%), Common (40%).",
+            },
+            luckyNumbers: {
+              type: "array",
+              items: { type: "integer", minimum: 2, maximum: 997 },
+              minItems: 3,
+              maxItems: 5,
+              description: "Deterministic lucky prime numbers for the revealed fortune.",
             },
             category: {
               type: "string",
@@ -210,7 +217,7 @@ export async function GET() {
               description: "Auto-derived content tags.",
             },
           },
-          required: ["id", "text", "rarity", "category", "tags"],
+          required: ["id", "text", "rarity", "category", "luckyNumbers", "tags"],
         },
         Pricing: {
           type: "object",
