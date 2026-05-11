@@ -246,4 +246,16 @@ describe("server streak", () => {
     // Should not throw
     await expect(recordServerStreak("dev-9")).resolves.toBeUndefined();
   });
+
+  it("does not overwrite streak data when Redis GET fails", async () => {
+    // Seed a real streak so there is data to potentially corrupt.
+    await setServerStreak("dev-integrity", { current: 5, best: 10, total: 20, lastDate: "2025-03-01" });
+    vi.clearAllMocks();
+
+    mockRedisInstance.get.mockRejectedValueOnce(new Error("Redis down"));
+    await recordServerStreak("dev-integrity");
+
+    // SET must not have been called — a failed GET must abort the write.
+    expect(mockRedisInstance.set).not.toHaveBeenCalled();
+  });
 });
