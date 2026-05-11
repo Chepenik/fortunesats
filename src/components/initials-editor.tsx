@@ -159,11 +159,9 @@ export function InitialsEditor() {
                     setError(null);
                   }
                 }}
-                aria-label="Your initials (2 to 4 letters)"
                 placeholder="AA"
                 maxLength={4}
                 autoFocus
-                aria-label="Your initials (2–4 letters, shown on leaderboard)"
                 aria-describedby="initials-hint"
                 className="flex-1 bg-foreground/[0.04] border border-gold/10 rounded-md px-3 py-1.5
                            text-center text-sm font-mono uppercase tracking-widest text-foreground/80
