@@ -20,6 +20,10 @@ const jsonLd = {
   url: "https://fortunesats.com",
   description:
     "Pay 100 sats over Lightning, receive a wisdom fortune. A Bitcoin-native fortune oracle with 119 collectible quotes.",
+  sameAs: [
+    "https://github.com/Chepenik/fortunesats",
+    "https://x.com/ConorChepenik",
+  ],
 };
 
 export default function Home() {
