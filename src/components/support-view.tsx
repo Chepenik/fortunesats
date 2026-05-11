@@ -100,7 +100,7 @@ export function SupportView() {
 
         <div className="grid grid-cols-3 gap-3">
           {[
-            { icon: "🛠", label: "Development" },
+            { icon: "🛠", label: "Maintenance" },
             { icon: "⚡", label: "Hosting" },
             { icon: "🥠", label: "New fortunes" },
           ].map((item) => (
@@ -119,9 +119,9 @@ export function SupportView() {
 
       {/* Disclaimer */}
       <p className="text-[11px] text-center text-muted-foreground/30 leading-relaxed">
-        FortuneSats is open source and community-funded.
+        No token. No ads. No account.
         <br />
-        No accounts. No ads. Just sats and wisdom.
+        Just sats keeping the signal alive.
       </p>
     </div>
   );

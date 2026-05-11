@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "Fortune Sats — 100 sats. One fortune.";
+export const alt = "Fortune Sats - 100 sats. One fortune.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -112,7 +112,7 @@ export default function OGImage() {
           <span style={{ color: "rgba(196,30,58,0.3)" }}>&#x2022;</span>
           <span>Lightning Network</span>
           <span style={{ color: "rgba(196,30,58,0.3)" }}>&#x2022;</span>
-          <span>100 sats per fortune</span>
+          <span>100 sats per reveal</span>
         </div>
 
         {/* Bottom ornamental line */}

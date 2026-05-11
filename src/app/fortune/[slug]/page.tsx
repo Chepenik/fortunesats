@@ -38,10 +38,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Title: use the quote itself (truncated) for unique, indexable titles
   const titleQuote = quote.length > 60 ? quote.slice(0, 57) + "\u2026" : quote;
   const title = author
-    ? `${titleQuote} \u2014 ${author}`
+    ? `${titleQuote} - ${author}`
     : titleQuote;
 
-  const description = `${rarityLabel} fortune: \u201C${truncatedQuote}\u201D${author ? ` \u2014 ${author}` : ""} | Collect wisdom fortunes on Fortune Sats.`;
+  const description = `${rarityLabel} fortune: \u201C${truncatedQuote}\u201D${author ? ` - ${author}` : ""} | Collect Bitcoin wisdom on Fortune Sats.`;
 
   const canonicalUrl = `https://fortunesats.com/fortune/${slug}`;
 
@@ -158,7 +158,7 @@ export default async function FortunePage({ params }: Props) {
             {/* Author */}
             {author && (
               <p className="text-sm text-gold/40 italic">
-                &mdash; {author}
+                - {author}
               </p>
             )}
 
@@ -173,14 +173,14 @@ export default async function FortunePage({ params }: Props) {
             href="/"
             className="btn-lacquer inline-flex items-center justify-center w-full h-14 rounded-xl text-sm font-semibold tracking-wide transition-all active:scale-[0.98]"
           >
-            Get Your Own Fortune
+            Request your own fortune
           </Link>
 
           <Link
             href="/collection"
             className="inline-block text-xs text-gold/40 hover:text-gold/60 transition-colors"
           >
-            View your collection &rarr;
+            View your collection
           </Link>
 
           <p className="text-xs text-gold/30 leading-relaxed">
@@ -193,7 +193,7 @@ export default async function FortunePage({ params }: Props) {
             <span className="text-lacquer/30">&middot;</span>
             <span>Lightning Network</span>
             <span className="text-lacquer/30">&middot;</span>
-            <span>100 sats per fortune</span>
+            <span>100 sats per reveal</span>
           </div>
         </div>
       </div>
@@ -235,7 +235,7 @@ function InvalidFortune() {
           href="/"
           className="btn-lacquer inline-flex items-center justify-center w-full h-12 rounded-xl text-sm font-semibold tracking-wide transition-all active:scale-[0.98]"
         >
-          Get Your Own Fortune
+            Request your own fortune
         </Link>
       </div>
     </main>

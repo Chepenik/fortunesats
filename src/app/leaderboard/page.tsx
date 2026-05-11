@@ -5,20 +5,20 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Hall of Fortunes — Bitcoin Fortune Leaderboard",
-  description: "Global leaderboard for Fortune Sats. See who has revealed the most fortunes, earned the most sats, and collected the rarest wisdom.",
+  title: "Hall of Fortunes - Bitcoin Fortune Leaderboard",
+  description: "Global FortuneSats rankings by reveals, sats sent, legendary finds, and streaks.",
   alternates: { canonical: "https://fortunesats.com/leaderboard" },
   openGraph: {
-    title: "Hall of Fortunes — Bitcoin Fortune Leaderboard",
-    description: "Global leaderboard for Fortune Sats. See who has revealed the most fortunes, earned the most sats, and collected the rarest wisdom.",
+    title: "Hall of Fortunes - Bitcoin Fortune Leaderboard",
+    description: "Global FortuneSats rankings by reveals, sats sent, legendary finds, and streaks.",
     url: "https://fortunesats.com/leaderboard",
     siteName: "Fortune Sats",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Hall of Fortunes — Bitcoin Fortune Leaderboard",
-    description: "Global leaderboard for Fortune Sats. See who has revealed the most fortunes, earned the most sats, and collected the rarest wisdom.",
+    title: "Hall of Fortunes - Bitcoin Fortune Leaderboard",
+    description: "Global FortuneSats rankings by reveals, sats sent, legendary finds, and streaks.",
   },
 };
 
@@ -49,7 +49,7 @@ export default function LeaderboardPage() {
               Hall of Fortunes
             </h1>
             <p className="text-sm text-muted-foreground/60">
-              The seekers who returned most often.
+              Proof-of-work for seekers: reveals, sats, streaks, and rare finds.
             </p>
           </div>
         </header>
@@ -61,7 +61,7 @@ export default function LeaderboardPage() {
           <div className="text-center py-8 space-y-3">
             <p className="text-sm text-muted-foreground/60">The leaderboard is temporarily hidden.</p>
             <Link href="/" className="inline-block text-xs text-gold/50 hover:text-gold/70 transition-colors mt-2">
-              &larr; Back to Fortune Sats
+              Back to Fortune Sats
             </Link>
           </div>
         )}

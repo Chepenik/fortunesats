@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!gift || gift.status === "expired") {
     return {
       title: "Gift Not Found",
-      description: "This gift fortune link may have expired or been claimed.",
+      description: "This sealed fortune link may have expired or already been claimed.",
       robots: { index: false },
     };
   }
@@ -27,11 +27,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = isClaimed
     ? "Gift Fortune Claimed | Fortune Sats"
-    : "You Received a Fortune Gift! | Fortune Sats";
+    : "A Sealed Fortune Awaits | Fortune Sats";
 
   const description = isClaimed
-    ? `This ${rarityLabel} gift fortune has already been claimed.`
-    : `Someone sent you a ${rarityLabel} fortune gift! Open it to reveal your wisdom.`;
+    ? `This ${rarityLabel} gift fortune has already been opened.`
+    : `Someone sent you a sealed ${rarityLabel} FortuneSats reveal. Open it once and keep the wisdom.`;
 
   return {
     title,
@@ -69,7 +69,7 @@ export default async function GiftClaimPage({ params }: Props) {
     return <GiftAlreadyClaimed rarity={gift.rarity} />;
   }
 
-  // Gift is "paid" — show sealed card for recipient to claim
+  // Gift is "paid": show sealed card for recipient to claim.
   return <GiftClaimClient token={token} rarity={gift.rarity} />;
 }
 
@@ -83,14 +83,14 @@ function GiftNotFound() {
         <div className="space-y-2">
           <h1 className="text-xl font-semibold text-foreground/80">Gift not found</h1>
           <p className="text-sm text-muted-foreground/50">
-            This gift link may have expired or is invalid.
+            This sealed fortune link may have expired or never existed.
           </p>
         </div>
         <Link
           href="/"
           className="btn-lacquer inline-flex items-center justify-center w-full h-12 rounded-xl text-sm font-semibold tracking-wide transition-all active:scale-[0.98]"
         >
-          Get Your Own Fortune
+          Request your own fortune
         </Link>
       </div>
     </main>
@@ -105,14 +105,14 @@ function GiftExpired() {
         <div className="space-y-2">
           <h1 className="text-xl font-semibold text-foreground/80">Gift expired</h1>
           <p className="text-sm text-muted-foreground/50">
-            This fortune gift has expired. Gift fortunes are claimable for 30 days.
+            This sealed fortune expired. Gift links stay open for 30 days.
           </p>
         </div>
         <Link
           href="/"
           className="btn-lacquer inline-flex items-center justify-center w-full h-12 rounded-xl text-sm font-semibold tracking-wide transition-all active:scale-[0.98]"
         >
-          Get Your Own Fortune
+          Request your own fortune
         </Link>
       </div>
     </main>
@@ -128,14 +128,14 @@ function GiftAlreadyClaimed({ rarity }: { rarity: string }) {
         <div className="space-y-2">
           <h1 className="text-xl font-semibold text-foreground/80">Already claimed</h1>
           <p className="text-sm text-muted-foreground/50">
-            This <span style={{ color: config?.color }}>{config?.label}</span> gift fortune has already been opened.
+            This <span style={{ color: config?.color }}>{config?.label}</span> fortune has already been opened.
           </p>
         </div>
         <Link
           href="/"
           className="btn-lacquer inline-flex items-center justify-center w-full h-12 rounded-xl text-sm font-semibold tracking-wide transition-all active:scale-[0.98]"
         >
-          Get Your Own Fortune
+          Request your own fortune
         </Link>
       </div>
     </main>

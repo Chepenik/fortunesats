@@ -12,7 +12,7 @@ export async function GET() {
       title: "FortuneSats API",
       version: "0.1.0",
       description:
-        "Pay sats, receive wisdom. FortuneSats is a human-centered fortune oracle with agent-ready infrastructure. Lightning payments are powered by Strike.",
+        "Request a fortune, pay sats, receive Bitcoin-native wisdom. FortuneSats is a Lightning-powered oracle with agent-ready infrastructure.",
       contact: {
         name: "FortuneSats",
         url: "https://fortunesats.com",
@@ -33,7 +33,7 @@ export async function GET() {
           operationId: "getAgentFortune",
           summary: "Get a fortune (agent-facing)",
           description:
-            "Returns a structured fortune with full metadata. Supports filtering by category, rarity, or fetching by ID. Currently free; pricing metadata is included for future billing.",
+            "Returns a structured fortune with metadata. Supports filtering by category, rarity, or ID. Pricing metadata is included for future billing.",
           tags: ["Agent", "Fortune"],
           parameters: [
             {
@@ -100,7 +100,7 @@ export async function GET() {
           operationId: "createCheckout",
           summary: "Create a Strike Lightning checkout",
           description:
-            "Creates a Strike invoice and quote for a fortune or gift purchase. Returns a checkout URL the client navigates to.",
+            "Creates a Strike invoice and quote for a fortune or sealed gift. Returns a checkout URL the client navigates to.",
           tags: ["Human", "Fortune"],
           requestBody: {
             required: false,
@@ -145,7 +145,7 @@ export async function GET() {
           operationId: "getLeaderboard",
           summary: "Get leaderboard rankings",
           description:
-            "Returns top entries across four dimensions: fortunes revealed, sats spent, legendary pulls, and streak.",
+            "Returns top entries across four dimensions: fortunes revealed, sats sent, legendary finds, and streak.",
           tags: ["Public"],
           responses: {
             "200": { description: "Leaderboard data with four ranked lists." },

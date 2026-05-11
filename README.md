@@ -1,6 +1,6 @@
 <p align="center">
   <img src="https://img.shields.io/badge/sats-100%20per%20fortune-orange?style=for-the-badge&logo=bitcoin" alt="100 sats per fortune" />
-  <img src="https://img.shields.io/badge/fortunes-170-blueviolet?style=for-the-badge" alt="170 fortunes" />
+  <img src="https://img.shields.io/badge/fortunes-119-blueviolet?style=for-the-badge" alt="119 core fortunes" />
   <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="MIT License" />
   <img src="https://img.shields.io/github/stars/Chepenik/fortunesats?style=for-the-badge" alt="GitHub Stars" />
 </p>
@@ -9,7 +9,7 @@
 
 **Pay sats. Receive wisdom.**
 
-Drop 100 sats into the machine. Pull the lever. A fortune appears — maybe common, maybe legendary. Collect them all, climb the leaderboard, keep your streak alive.
+Request a fortune, pay 100 sats over Lightning, and reveal a piece of collectible Bitcoin wisdom. Maybe common, maybe legendary. The ritual is small, strange, and real.
 
 It's a ritual, not a transaction.
 
@@ -19,11 +19,11 @@ It's a ritual, not a transaction.
 
 ## What Is This?
 
-FortuneSats is a fortune oracle built on Bitcoin. Think fortune cookies meets the Lightning Network. 170 handpicked fortunes spanning stoicism, philosophy, eastern wisdom, Bitcoin sovereignty, growth, classic fortune-cookie vibes, and sharp wit — each assigned a rarity tier that makes every pull feel like opening a loot box (except the loot is wisdom, and you pay in sats).
+FortuneSats is a fortune oracle built on Bitcoin. Think fortune cookies meeting the Lightning Network: 119 core fortunes across stoicism, philosophy, eastern wisdom, Bitcoin sovereignty, growth, fate, and wit, each assigned a rarity tier for collection.
 
 ### The Experience
 
-1. Visit the app
+1. Request a fortune
 2. Pay 100 sats via Lightning (instant, global, no account needed)
 3. Watch the reveal animation
 4. Discover your fortune's rarity
@@ -36,23 +36,23 @@ FortuneSats is a fortune oracle built on Bitcoin. Think fortune cookies meets th
 |--------|-----------|-------------|
 | **Legendary** | 5% | You just found a golden ticket |
 | **Epic** | 15% | Tell your friends about this one |
-| **Rare** | 30% | A solid pull, respect |
+| **Rare** | 30% | Scarce signal |
 | **Common** | 50% | Wisdom is wisdom, no shame |
 
 ---
 
 ## Features
 
-- **170 curated fortunes** across 7 categories and 4 rarity tiers
-- **Lightning payments** — 100 sats, settled in seconds
-- **On-chain Bitcoin packs** — 100 fortunes for ~10,000 sats (for the committed)
-- **Personal collection** — track every fortune you've pulled
-- **Streak system** — consecutive daily pulls, don't break the chain
-- **Global leaderboard** — ranked by fortunes revealed, sats spent, legendary count, and streaks
-- **Live activity feed** — watch fortunes get pulled in real time
+- **119 core fortunes** across 7 categories and 4 rarity tiers
+- **Lightning payments**: 100 sats, settled in seconds
+- **Bitcoin fortune packs**: 100 prepaid fortunes for 10,000 sats via Lightning or on-chain Bitcoin
+- **Personal collection**: track every fortune you reveal
+- **Streak system**: consecutive daily reveals
+- **Global leaderboard**: ranked by fortunes revealed, sats sent, legendary count, and streaks
+- **Live activity feed**: watch fortunes open in real time
 - **Shareable fortune cards** with auto-generated OG images
-- **3D dragon** — because every oracle needs a guardian
-- **Agent API** — machines can pull fortunes too (and pay for them)
+- **3D dragon** because every oracle needs a guardian
+- **Agent API** for structured fortune retrieval
 
 ---
 
@@ -100,7 +100,7 @@ Fill in your `.env.local` with the following:
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and start pulling fortunes.
+Open [http://localhost:3000](http://localhost:3000) and start revealing fortunes.
 
 ### Other Commands
 
@@ -115,7 +115,7 @@ npm run test     # Run tests
 
 ## For Agents and Bots
 
-FortuneSats has a structured API designed for AI agents, bots, and automated systems. Machines get the same fortunes humans do — structured, filterable, and documented.
+FortuneSats has a structured API designed for AI agents, bots, and automated systems. Machines get the same fortunes humans do: structured, filterable, and documented.
 
 ### Quick Example
 
@@ -127,11 +127,11 @@ curl https://fortunesats.com/api/agent/fortune
 {
   "fortune": {
     "id": "0a3f2k1",
-    "text": "The obstacle is the way. -- Marcus Aurelius",
-    "author": "Marcus Aurelius",
+    "text": "Trusted third parties are security holes. - Nick Szabo",
+    "author": "Nick Szabo",
     "rarity": "legendary",
-    "category": "stoicism",
-    "tags": ["stoicism", "attributed", "strength"]
+    "category": "sovereignty",
+    "tags": ["sovereignty", "attributed"]
   },
   "pricing": {
     "amount": 100,
@@ -212,7 +212,7 @@ Tune the oracle via environment variables:
 
 ## L402: Machine Payments
 
-When L402 is enabled, agents pay sats for fortunes just like humans do — no accounts, no API keys, no subscriptions. Just Lightning.
+When L402 is enabled, agents pay sats for fortunes just like humans do: no accounts, no API keys, no subscriptions. Just Lightning.
 
 1. Agent requests a fortune
 2. Server responds `402 Payment Required` with a Lightning invoice

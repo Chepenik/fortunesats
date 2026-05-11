@@ -1,22 +1,23 @@
 import { CollectionView } from "@/components/collection-view";
+import { FORTUNE_POOL_TOTAL } from "@/lib/fortunes";
 
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Fortune Collection — Track Your Bitcoin Wisdom Fortunes",
-  description: "Browse and track every wisdom fortune you have revealed. 119 collectible quotes across Legendary, Epic, Rare, and Common rarity tiers.",
+  title: "Fortune Collection - Track Your Bitcoin Wisdom",
+  description: `Track every FortuneSats reveal in a ${FORTUNE_POOL_TOTAL}-fortune Bitcoin wisdom set across Legendary, Epic, Rare, and Common tiers.`,
   alternates: { canonical: "https://fortunesats.com/collection" },
   openGraph: {
-    title: "Fortune Collection — Track Your Bitcoin Wisdom Fortunes",
-    description: "Browse and track every wisdom fortune you have revealed. 119 collectible quotes across Legendary, Epic, Rare, and Common rarity tiers.",
+    title: "Fortune Collection - Track Your Bitcoin Wisdom",
+    description: `Track every FortuneSats reveal in a ${FORTUNE_POOL_TOTAL}-fortune Bitcoin wisdom set across Legendary, Epic, Rare, and Common tiers.`,
     url: "https://fortunesats.com/collection",
     siteName: "Fortune Sats",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Fortune Collection — Track Your Bitcoin Wisdom Fortunes",
-    description: "Browse and track every wisdom fortune you have revealed. 119 collectible quotes across Legendary, Epic, Rare, and Common rarity tiers.",
+    title: "Fortune Collection - Track Your Bitcoin Wisdom",
+    description: `Track every FortuneSats reveal in a ${FORTUNE_POOL_TOTAL}-fortune Bitcoin wisdom set across Legendary, Epic, Rare, and Common tiers.`,
   },
 };
 
@@ -42,10 +43,10 @@ export default function CollectionPage() {
 
           <div className="space-y-2">
             <h1 className="text-2xl font-bold tracking-tight neon-text text-foreground">
-              My Collection
+              Your Collection
             </h1>
             <p className="text-sm text-muted-foreground/60">
-              Every fortune you have revealed, preserved.
+              Every revealed fortune, preserved as signal.
             </p>
           </div>
         </header>

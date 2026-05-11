@@ -3,7 +3,7 @@ import { getGift } from "@/lib/gift";
 import { OG_RARITY_COLORS, RARITY_LABELS } from "@/lib/og";
 
 export const runtime = "edge";
-export const alt = "Fortune Sats — You received a fortune gift!";
+export const alt = "Fortune Sats - a sealed fortune gift";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -129,7 +129,7 @@ export default async function OGImage({
             marginBottom: 12,
           }}
         >
-          {isClaimed ? "Gift Fortune Claimed" : "You Received a Fortune Gift!"}
+          {isClaimed ? "Gift fortune claimed" : "A sealed fortune awaits"}
         </div>
 
         {/* Subtitle */}
@@ -142,7 +142,7 @@ export default async function OGImage({
         >
           {isClaimed
             ? "This fortune has already been opened."
-            : "Tap to reveal your wisdom fortune."}
+            : "Open once. Keep the wisdom."}
         </div>
 
         {/* Divider */}
@@ -170,7 +170,7 @@ export default async function OGImage({
         >
           <span style={{ color: "rgba(240,236,228,0.35)" }}>Fortune Sats</span>
           <span style={{ color: "rgba(196,30,58,0.25)" }}>{"\u2022"}</span>
-          <span style={{ color: "rgba(212,162,87,0.2)" }}>Gift Fortune</span>
+          <span style={{ color: "rgba(212,162,87,0.2)" }}>Sealed gift</span>
           <span style={{ color: "rgba(196,30,58,0.25)" }}>{"\u2022"}</span>
           <span style={{ color: "rgba(212,162,87,0.2)" }}>Lightning</span>
         </div>
@@ -235,7 +235,7 @@ function fallbackImage() {
           Fortune Sats
         </div>
         <div style={{ fontSize: 26, display: "flex", gap: 12 }}>
-          <span style={{ color: "#d4a257" }}>Gift Fortune</span>
+          <span style={{ color: "#d4a257" }}>Sealed gift</span>
           <span style={{ color: "rgba(240,236,228,0.5)" }}>Not found</span>
         </div>
       </div>

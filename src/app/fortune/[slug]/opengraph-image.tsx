@@ -8,7 +8,7 @@ import {
 } from "@/lib/og";
 
 export const runtime = "edge";
-export const alt = "Fortune Sats — A Lightning-powered fortune";
+export const alt = "Fortune Sats - A Lightning-powered fortune";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -182,7 +182,7 @@ export default async function OGImage({
                 letterSpacing: "0.02em",
               }}
             >
-              {`\u2014 ${author}`}
+              {`- ${author}`}
             </div>
           )}
         </div>
@@ -236,7 +236,7 @@ export default async function OGImage({
   );
 }
 
-/** Fallback for invalid/corrupted slugs — render the generic card */
+/** Fallback for invalid/corrupted slugs: render the generic card. */
 function fallbackImage() {
   return new ImageResponse(
     (

@@ -3,20 +3,20 @@ import { SupportView } from "@/components/support-view";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Support the Oracle — Donate Bitcoin to Fortune Sats",
-  description: "Support FortuneSats with an on-chain Bitcoin donation. Every sat helps keep the fortune oracle alive and open source.",
+  title: "Fund the Oracle - Donate Bitcoin to Fortune Sats",
+  description: "Support FortuneSats with an on-chain Bitcoin donation. Every sat helps keep the oracle online, open source, and weird.",
   alternates: { canonical: "https://fortunesats.com/support" },
   openGraph: {
-    title: "Support the Oracle — Donate Bitcoin to Fortune Sats",
-    description: "Support FortuneSats with an on-chain Bitcoin donation. Every sat helps keep the fortune oracle alive and open source.",
+    title: "Fund the Oracle - Donate Bitcoin to Fortune Sats",
+    description: "Support FortuneSats with an on-chain Bitcoin donation. Every sat helps keep the oracle online, open source, and weird.",
     url: "https://fortunesats.com/support",
     siteName: "Fortune Sats",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Support the Oracle — Donate Bitcoin to Fortune Sats",
-    description: "Support FortuneSats with an on-chain Bitcoin donation. Every sat helps keep the fortune oracle alive and open source.",
+    title: "Fund the Oracle - Donate Bitcoin to Fortune Sats",
+    description: "Support FortuneSats with an on-chain Bitcoin donation. Every sat helps keep the oracle online, open source, and weird.",
   },
 };
 
@@ -44,11 +44,11 @@ export default function SupportPage() {
 
           <div className="space-y-2">
             <h1 className="text-2xl font-bold tracking-tight neon-text text-foreground">
-              Support the Oracle
+              Fund the Oracle
             </h1>
             <p className="text-sm text-muted-foreground/60 leading-relaxed max-w-xs mx-auto">
-              FortuneSats is free to build, open source, and powered by sats.
-              Every contribution helps keep the fortunes flowing.
+              FortuneSats is open source and powered by sats.
+              Contributions keep the ritual online.
             </p>
           </div>
         </header>

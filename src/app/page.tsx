@@ -5,7 +5,7 @@ import { ActivityFeed } from "@/components/activity-feed";
 import { InitialsEditor } from "@/components/initials-editor";
 import { DragonLoader } from "@/components/dragon/DragonLoader";
 import { getFlags } from "@/lib/flags";
-import { fortunes } from "@/lib/fortunes";
+import { FORTUNE_POOL_TOTAL, fortunes } from "@/lib/fortunes";
 import { encodeFortuneSlug, parseFortune } from "@/lib/og";
 import Link from "next/link";
 
@@ -19,7 +19,7 @@ const jsonLd = {
   name: "Fortune Sats",
   url: "https://fortunesats.com",
   description:
-    "Pay 100 sats over Lightning, receive a wisdom fortune. A Bitcoin-native fortune oracle with 119 collectible quotes.",
+    `Request a fortune, pay 100 sats over Lightning, and reveal collectible Bitcoin wisdom from ${FORTUNE_POOL_TOTAL} core fortunes.`,
   sameAs: [
     "https://github.com/Chepenik/fortunesats",
     "https://x.com/ConorChepenik",
@@ -82,7 +82,7 @@ export default function Home() {
               )}
               <br />
               <span className="text-muted-foreground/70 text-base">
-                A ritual powered by Lightning.
+                Request. Pay Lightning. Reveal wisdom.
               </span>
             </p>
           </div>
@@ -110,7 +110,7 @@ export default function Home() {
         {/* Featured wisdom — internal links for SEO */}
         <nav className="space-y-3" aria-label="Featured fortunes">
           <p className="text-[11px] tracking-[0.2em] uppercase text-gold/35 font-mono text-center">
-            Featured wisdom
+            Featured signal
           </p>
           <div className="space-y-1.5">
             {fortunes
@@ -125,17 +125,17 @@ export default function Home() {
                     href={`/fortune/${encodeFortuneSlug(f.text, f.rarity)}`}
                     className="block px-3 py-2.5 rounded-lg text-xs text-muted-foreground/45 hover:text-gold/60 hover:bg-gold/[0.03] transition-colors leading-relaxed"
                   >
-                    &ldquo;{shortQuote}&rdquo;{author ? ` \u2014 ${author}` : ""}
+                    &ldquo;{shortQuote}&rdquo;{author ? ` - ${author}` : ""}
                   </Link>
                 );
               })}
           </div>
           <div className="flex justify-center gap-4 text-xs">
             <Link href="/collection" className="text-gold/45 hover:text-gold/65 transition-colors">
-              View collection &rarr;
+              View collection
             </Link>
             <Link href="/leaderboard" className="text-gold/45 hover:text-gold/65 transition-colors">
-              Leaderboard &rarr;
+              Leaderboard
             </Link>
           </div>
         </nav>
@@ -150,11 +150,11 @@ export default function Home() {
                 href="/pack"
                 className="inline-block text-xs text-gold/50 hover:text-gold/70 transition-colors"
               >
-                Fortune Pack &rarr; 100 fortunes for 10,000 sats (on-chain)
+                Fortune Pack: 100 prepaid reveals for 10,000 sats
               </Link>
             )}
             <p className="text-xs tracking-[0.15em] uppercase text-gold/40 font-mono">
-              Pay per fortune &middot; Lightning Network
+              100 sats &middot; Lightning &middot; Collectible wisdom
             </p>
           </div>
 

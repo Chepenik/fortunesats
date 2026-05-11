@@ -96,11 +96,11 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
           });
           return;
         }
-        setState({ step: "error", message: "Something went wrong. Please try again." });
+        setState({ step: "error", message: "The oracle lost the signal. Try again." });
       } catch (e) {
         setState({
           step: "error",
-          message: e instanceof Error ? e.message : "Network error",
+          message: e instanceof Error ? e.message : "Network error. Try again.",
         });
       }
       return;
@@ -126,12 +126,12 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
         | null;
       setState({
         step: "error",
-        message: data?.error?.message ?? "Could not create checkout. Please try again.",
+        message: data?.error?.message ?? "Could not create the Lightning checkout. Try again.",
       });
     } catch (e) {
       setState({
         step: "error",
-        message: e instanceof Error ? e.message : "Network error",
+        message: e instanceof Error ? e.message : "Network error. Try again.",
       });
     } finally {
       setIsLoading(false);
@@ -189,23 +189,25 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
               disabled={isLoading}
               className="btn-lacquer w-full h-14 rounded-xl text-sm font-semibold tracking-wide cursor-pointer transition-all active:scale-[0.98] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {freePromo ? "Get Your Free Fortune" : "Get Your Fortune"}
+              {freePromo ? "Request Free Fortune" : "Request a Fortune"}
             </button>
 
             {/* Flow steps */}
             {freePromo ? (
-              <div className="flex items-center justify-center gap-4 text-[11px] tracking-[0.15em] uppercase font-mono">
+              <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] tracking-[0.15em] uppercase font-mono">
                 <span className="text-cyan/50">Request</span>
                 <GoldDot />
                 <span className="text-gold/35">Fortune</span>
               </div>
             ) : (
-              <div className="flex items-center justify-center gap-4 text-[11px] tracking-[0.15em] uppercase font-mono">
+              <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] tracking-[0.15em] uppercase font-mono">
                 <span className="text-lacquer/50">Request</span>
                 <GoldDot />
-                <span className="text-gold/35">Pay</span>
+                <span className="text-gold/35">Pay 100 sats</span>
                 <GoldDot />
-                <span className="text-gold/35">Fortune</span>
+                <span className="text-gold/35">Reveal</span>
+                <GoldDot />
+                <span className="text-gold/35">Collect</span>
               </div>
             )}
 
@@ -228,7 +230,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/8 to-transparent" />
                 </div>
                 <p className="text-[11px] text-center text-gold/25 leading-relaxed">
-                  Your streak lives on this device &mdash; a personal ritual, just for you.
+                  This streak lives on this device. A private ritual, just for you.
                 </p>
               </div>
             )}
@@ -241,7 +243,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
             <div className="flex flex-col items-center gap-5 py-10">
               <OracleSpinner />
               <p className="text-sm text-gold/50 tracking-wide">
-                {freePromo ? "Consulting the oracle\u2026" : "Preparing your checkout\u2026"}
+                {freePromo ? "Consulting the oracle\u2026" : "Preparing your Lightning invoice\u2026"}
               </p>
             </div>
           </motion.div>
@@ -269,7 +271,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
 
             <div className="text-center space-y-1.5">
               <p className="text-sm font-medium text-foreground/90">
-                Fortune incoming
+                Signal received
               </p>
               <p className="text-xs text-gold/40">
                 Revealing your fortune&hellip;
@@ -478,7 +480,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
               <div className="flex items-center gap-3">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/10 to-transparent" />
                 <span className="text-[11px] tracking-[0.2em] uppercase text-gold/30 font-mono">
-                  Share your fortune
+                  Share the signal
                 </span>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/10 to-transparent" />
               </div>
@@ -562,7 +564,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
                     className="w-full h-9 rounded-lg text-xs text-gold/30 hover:text-gold/45 transition-colors cursor-pointer"
                     onClick={() => handleNativeShare(state.fortune, state.rarity)}
                   >
-                    More sharing options&hellip;
+                    More share options&hellip;
                   </button>
                 </motion.div>
               )}
@@ -578,7 +580,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
                 onClick={() => setState({ step: "idle" })}
                 className="w-full h-11 rounded-xl text-sm text-muted-foreground/40 hover:text-gold/50 transition-colors cursor-pointer"
               >
-                Another Fortune
+                Another fortune
               </button>
             </motion.div>
           </motion.div>
@@ -594,7 +596,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
               onClick={() => setState({ step: "idle" })}
               className="btn-jade w-full h-10 rounded-xl text-sm cursor-pointer active:scale-[0.98]"
             >
-              Try Again
+              Try again
             </button>
           </motion.div>
         )}

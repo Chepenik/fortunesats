@@ -45,25 +45,25 @@ export const SHARE_VARIANTS: ShareVariant[] = [
     id: 0,
     label: "classic",
     template: (f, r) =>
-      `🥠 ${rarityPrefix(r ?? "common")}I paid 100 sats for a fortune:\n\n"${f}"\n\nGet yours → ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
+      `🥠 ${rarityPrefix(r ?? "common")}100 sats sent. Fortune received:\n\n"${f}"\n\nOpen your own: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
   },
   {
     id: 1,
     label: "punchy",
     template: (f, r) =>
-      `100 sats. One fortune.${r && r !== "common" ? ` ${RARITY_LABELS[r]}.` : ""} Worth it.\n\n"${f}"\n\nGet your own → ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
+      `100 sats. One fortune.${r && r !== "common" ? ` ${RARITY_LABELS[r]}.` : ""} Lightning ritual.\n\n"${f}"\n\nReveal yours: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
   },
   {
     id: 2,
     label: "storyteller",
     template: (f, r) =>
-      `I spent 100 sats on FortuneSats and got this${r && r !== "common" ? ` ${RARITY_LABELS[r]}` : ""}:\n\n"${f}"\n\nTry it → ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
+      `FortuneSats surfaced this${r && r !== "common" ? ` ${RARITY_LABELS[r]}` : ""} signal for 100 sats:\n\n"${f}"\n\nRequest one: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
   },
   {
     id: 3,
     label: "direct",
     template: (f, r) =>
-      `Paid 100 sats for a fortune:${r && r !== "common" ? ` [${RARITY_LABELS[r]}]` : ""}\n\n"${f}"\n\nGet yours → ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
+      `Fortune revealed:${r && r !== "common" ? ` [${RARITY_LABELS[r]}]` : ""}\n100 sats over Lightning.\n\n"${f}"\n\nOpen yours: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
   },
 ];
 
@@ -72,25 +72,25 @@ export const PACK_SHARE_VARIANTS: ShareVariant[] = [
     id: 0,
     label: "classic",
     template: (f, r) =>
-      `🥠 ${rarityPrefix(r ?? "common")}I bought the Fortune Pack (100 fortunes for 10k sats) and got this gem:\n\n"${f}"\n\nGet yours → ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
+      `🥠 ${rarityPrefix(r ?? "common")}Fortune Pack opened. This signal surfaced:\n\n"${f}"\n\nOpen yours: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
   },
   {
     id: 1,
     label: "punchy",
     template: (f, r) =>
-      `10,000 sats. 100 fortunes.${r && r !== "common" ? ` Got a ${RARITY_LABELS[r]}.` : ""} Worth every sat.\n\n"${f}"\n\nGet the Fortune Pack → ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
+      `10,000 sats. 100 prepaid fortunes.${r && r !== "common" ? ` ${RARITY_LABELS[r]}.` : ""}\n\n"${f}"\n\nOpen a pack: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
   },
   {
     id: 2,
     label: "storyteller",
     template: (f, r) =>
-      `I spent 10k sats on a Fortune Pack from FortuneSats and got this${r && r !== "common" ? ` ${RARITY_LABELS[r]}` : ""}:\n\n"${f}"\n\nTry it → ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
+      `A FortuneSats pack gave me this${r && r !== "common" ? ` ${RARITY_LABELS[r]}` : ""}:\n\n"${f}"\n\nRequest signal: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
   },
   {
     id: 3,
     label: "direct",
     template: (f, r) =>
-      `Paid 10k sats for 100 fortunes on FortuneSats:${r && r !== "common" ? ` [${RARITY_LABELS[r]}]` : ""}\n\n"${f}"\n\nGet the Fortune Pack → ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
+      `Fortune Pack reveal:${r && r !== "common" ? ` [${RARITY_LABELS[r]}]` : ""}\n10,000 sats. 100 fortunes.\n\n"${f}"\n\nOpen a pack: ${r ? buildFortuneUrl(f, r) : SITE_URL}`,
   },
 ];
 
@@ -103,7 +103,7 @@ export function pickVariant(isPack = false): ShareVariant {
 
 /**
  * Truncate fortune to fit X's ~280 char limit.
- * Accounts for t.co URL shortening (all URLs → 23 chars).
+ * Accounts for t.co URL shortening (all URLs become 23 chars).
  */
 export function truncateForX(
   fortune: string,

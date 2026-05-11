@@ -276,7 +276,7 @@ export function FortunePack() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rail }),
       });
-      if (!res.ok) throw new Error("Failed to create order");
+      if (!res.ok) throw new Error("Failed to create the pack order");
       const data = await res.json();
 
       // Server sets HttpOnly cookie with secret; we only store orderId.
@@ -300,7 +300,7 @@ export function FortunePack() {
     } catch (e) {
       setState({
         step: "error",
-        message: e instanceof Error ? e.message : "Network error",
+        message: e instanceof Error ? e.message : "Network error. Try again.",
       });
     }
   }, [rail]);
@@ -310,7 +310,7 @@ export function FortunePack() {
     if (state.step !== "awaiting-payment") return;
     const trimmed = txidInput.trim();
     if (!/^[a-fA-F0-9]{64}$/.test(trimmed)) {
-      setTxidError("Please paste a valid 64-character transaction ID.");
+      setTxidError("Paste a valid 64-character Bitcoin transaction ID.");
       return;
     }
     setTxidError(null);
@@ -361,7 +361,7 @@ export function FortunePack() {
           txStatus: data.status,
         });
       } else {
-        setTxidError("Transaction not yet detected. Try again in a moment.");
+        setTxidError("Transaction not detected yet. Try again in a moment.");
         setState({
           step: "awaiting-payment",
           orderId,
@@ -372,7 +372,7 @@ export function FortunePack() {
         });
       }
     } catch {
-      setTxidError("Network error. Please try again.");
+      setTxidError("Network error. Try again.");
       setState({
         step: "awaiting-payment",
         orderId,
@@ -467,10 +467,10 @@ export function FortunePack() {
                   🥠 &times;100
                 </div>
                 <p className="text-sm text-foreground/70 leading-relaxed">
-                  One hundred fortunes, unlocked instantly.
+                  One hundred 100-sat rituals, prepaid.
                   <br />
                   <span className="text-gold/40 text-xs">
-                    Paid on-chain. Accepted on mempool detection.
+                    Lightning opens instantly. On-chain opens after mempool proof.
                   </span>
                 </p>
               </div>
@@ -532,8 +532,8 @@ export function FortunePack() {
               </div>
               <p className="text-[11px] text-gold/30 text-center leading-relaxed">
                 {rail === "lightning"
-                  ? "Instant. Pay with any Lightning wallet."
-                  : "Accepted on mempool detection. ~10 min average."}
+                  ? "Fastest path. Pay with any Lightning wallet."
+                  : "Broadcast on-chain, then paste the txid for verification."}
               </p>
             </div>
 
@@ -576,7 +576,7 @@ export function FortunePack() {
             <div className="flex flex-col items-center gap-5 py-10">
               <OracleSpinner />
               <p className="text-sm text-gold/50 tracking-wide">
-                Creating your order&hellip;
+                Preparing the pack&hellip;
               </p>
             </div>
           </motion.div>
@@ -590,7 +590,7 @@ export function FortunePack() {
                 <div className="flex items-center gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-lacquer animate-glow-pulse" />
                   <span className="text-xs text-gold/50 font-mono tracking-wide">
-                    Send payment
+                    Send on-chain payment
                   </span>
                 </div>
                 <span className="font-mono text-xs text-ember/60">
@@ -633,7 +633,7 @@ export function FortunePack() {
 
             {/* Payment instructions */}
             <div className="rounded-xl border border-gold/8 bg-gold/[0.02] p-4 space-y-2.5">
-              <div className="text-[11px] font-medium text-gold/50">Payment Instructions</div>
+              <div className="text-[11px] font-medium text-gold/50">Payment instructions</div>
               <ol className="space-y-1.5 text-[11px] text-gold/35 leading-relaxed list-decimal list-inside">
                 <li>Send <span className="text-ember/60 font-mono">{state.amountSats.toLocaleString()} sats</span> ({(state.amountSats / 1e8).toFixed(8)} BTC) to the address above</li>
                 <li>Payment is detected automatically when it appears in the mempool</li>
@@ -659,7 +659,7 @@ export function FortunePack() {
               onClick={() => copyToClipboard(state.address, "address")}
               className="btn-lacquer w-full h-11 rounded-xl text-sm font-medium cursor-pointer active:scale-[0.98]"
             >
-              {copied === "address" ? "Copied!" : "Copy BTC Address"}
+              {copied === "address" ? "Copied!" : "Copy Bitcoin address"}
             </button>
 
             {/* ── Paste txid section ── */}
@@ -802,7 +802,7 @@ export function FortunePack() {
                   className="space-y-3"
                 >
                   <h3 className="text-xl font-semibold text-foreground/90">
-                    Payment Verified
+                    Payment verified
                   </h3>
                   <div className="dragon-line w-24 mx-auto" />
                 </motion.div>
@@ -814,10 +814,10 @@ export function FortunePack() {
                   className="space-y-4"
                 >
                   <p className="text-sm text-gold/60 leading-relaxed max-w-[260px] mx-auto">
-                    We appreciate you investing in wisdom.
+                    The pack is unlocked.
                     <br />
                     <span className="text-foreground/70 font-medium">
-                      Enjoy your 100 fortunes.
+                      Open the first fortune when ready.
                     </span>
                   </p>
 
@@ -837,7 +837,7 @@ export function FortunePack() {
                 >
                   <p className="text-[11px] text-cyan/30 italic">
                     {state.txStatus === "mempool"
-                      ? "Transaction seen in mempool \u2014 your fortunes are fully unlocked"
+                      ? "Transaction seen in mempool. Your fortunes are unlocked."
                       : "Transaction confirmed on-chain"}
                   </p>
                 </motion.div>
@@ -853,7 +853,7 @@ export function FortunePack() {
                 onClick={startCracking}
                 className="btn-lacquer w-full h-14 rounded-xl text-sm font-semibold tracking-wide cursor-pointer transition-all active:scale-[0.98]"
               >
-                Start Cracking Fortunes
+                Start opening fortunes
               </button>
             </motion.div>
           </motion.div>
@@ -916,7 +916,7 @@ export function FortunePack() {
 
               {state.txStatus === "mempool" && (
                 <p className="text-[11px] text-center text-cyan/35 leading-relaxed">
-                  Transaction in mempool &mdash; awaiting block confirmation.
+                  Transaction in mempool. Awaiting block confirmation.
                   <br />
                   Your fortunes are fully unlocked.
                 </p>
@@ -927,7 +927,7 @@ export function FortunePack() {
               onClick={revealFortune}
               className="btn-lacquer w-full h-14 rounded-xl text-sm font-semibold tracking-wide cursor-pointer transition-all active:scale-[0.98]"
             >
-              Crack Open a Fortune
+              Open a fortune
             </button>
           </motion.div>
         )}
@@ -951,7 +951,7 @@ export function FortunePack() {
               🥠
             </motion.div>
             <p className="text-xs text-gold/40">
-              Cracking open your fortune&hellip;
+              Opening the next fortune&hellip;
             </p>
             <motion.div
               animate={{ scaleX: [0.3, 1, 0.3] }}
@@ -1080,7 +1080,7 @@ export function FortunePack() {
               <div className="flex items-center gap-3">
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/10 to-transparent" />
                 <span className="text-[11px] tracking-[0.2em] uppercase text-gold/30 font-mono">
-                  Share
+                  Share signal
                 </span>
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/10 to-transparent" />
               </div>
@@ -1144,7 +1144,7 @@ export function FortunePack() {
                   onClick={revealFortune}
                   className="btn-lacquer w-full h-12 rounded-xl text-sm font-semibold cursor-pointer transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                 >
-                  <span>Next Fortune</span>
+                  <span>Next fortune</span>
                   <span className="text-xs opacity-60">
                     ({state.fortunesRemaining} left)
                   </span>
@@ -1158,7 +1158,7 @@ export function FortunePack() {
                 }}
                 className="w-full h-11 rounded-xl text-sm text-muted-foreground/40 hover:text-gold/50 transition-colors cursor-pointer"
               >
-                Pack Complete
+                Pack complete
               </button>
             )}
           </motion.div>
@@ -1173,20 +1173,20 @@ export function FortunePack() {
                 All 100 fortunes revealed
               </h3>
               <p className="text-sm text-muted-foreground/50 leading-relaxed">
-                You&apos;ve claimed every fortune in this pack.
+                You&apos;ve opened every fortune in this pack.
                 <br />
-                May the wisdom serve you well.
+                May the signal keep working on you.
               </p>
               <div className="dragon-line w-16 mx-auto" />
               <p className="text-[11px] text-gold/30 italic">
-                Thank you for investing in wisdom.
+                The ritual is complete.
               </p>
             </div>
             <button
               onClick={() => setState({ step: "idle" })}
               className="btn-lacquer w-full h-12 rounded-xl text-sm font-semibold cursor-pointer active:scale-[0.98]"
             >
-              Buy Another Pack
+              Buy another pack
             </button>
           </motion.div>
         )}
@@ -1201,7 +1201,7 @@ export function FortunePack() {
               onClick={() => setState({ step: "idle" })}
               className="btn-jade w-full h-10 rounded-xl text-sm cursor-pointer active:scale-[0.98]"
             >
-              Try Again
+              Try again
             </button>
           </motion.div>
         )}
@@ -1209,4 +1209,3 @@ export function FortunePack() {
     </div>
   );
 }
-

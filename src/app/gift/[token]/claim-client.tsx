@@ -75,7 +75,7 @@ export function GiftClaimClient({
       const data = await res.json().catch(() => null);
       setState({
         step: "error",
-        message: data?.error?.message ?? "Failed to open gift",
+        message: data?.error?.message ?? "Failed to open the sealed fortune",
       });
     } catch {
       setState({ step: "error", message: "Network error. Please try again." });
@@ -132,14 +132,14 @@ export function GiftClaimClient({
 
                   <div className="space-y-2">
                     <h1 className="text-xl font-semibold text-foreground/90">
-                      You received a fortune gift!
+                      A sealed fortune awaits
                     </h1>
                     <p className="text-sm text-gold/50">
-                      Someone sent you a{" "}
+                      Someone paid the sats and sent you a{" "}
                       <span style={{ color: sealedRarityConfig.color }} className="font-medium">
                         {sealedRarityConfig.label}
                       </span>{" "}
-                      fortune from the oracle.
+                      reveal from the oracle.
                     </p>
                   </div>
 
@@ -159,13 +159,13 @@ export function GiftClaimClient({
                 onClick={claimGift}
                 className="btn-lacquer w-full h-14 rounded-xl text-sm font-semibold tracking-wide cursor-pointer transition-all active:scale-[0.98]"
               >
-                Open Your Gift
+                Open the sealed fortune
               </button>
 
               <div className="flex items-center justify-center gap-4 text-[11px] tracking-[0.15em] uppercase font-mono">
                 <span className="text-lacquer/50">Sealed</span>
                 <div className="h-1 w-1 rounded-full bg-gold/20" />
-                <span className="text-gold/35">Tap to reveal</span>
+                <span className="text-gold/35">Reveal once</span>
               </div>
             </motion.div>
           )}
@@ -181,7 +181,7 @@ export function GiftClaimClient({
               className="flex flex-col items-center gap-5 py-16"
             >
               <OracleSpinner />
-              <p className="text-sm text-gold/50 tracking-wide">Opening your gift&hellip;</p>
+              <p className="text-sm text-gold/50 tracking-wide">Opening the sealed fortune&hellip;</p>
             </motion.div>
           )}
 
@@ -204,7 +204,7 @@ export function GiftClaimClient({
                 <svg className="h-5 w-5 text-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
               </motion.div>
               <div className="text-center space-y-1.5">
-                <p className="text-sm font-medium text-foreground/90">Gift opened!</p>
+                <p className="text-sm font-medium text-foreground/90">Seal broken</p>
                 <p className="text-xs text-gold/40">Revealing your fortune&hellip;</p>
               </div>
               <motion.div
@@ -370,7 +370,7 @@ export function GiftClaimClient({
                   href="/"
                   className="btn-lacquer block w-full h-11 rounded-xl text-sm font-medium text-center leading-[2.75rem] cursor-pointer active:scale-[0.98]"
                 >
-                  Get Your Own Fortune
+                  Request your own fortune
                 </Link>
                 <Link
                   href="/collection"

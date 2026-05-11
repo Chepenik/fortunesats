@@ -11,18 +11,15 @@ import {
   type CollectionStats,
 } from "@/lib/collection";
 import { getStreak, mergeStreaks, type StreakData } from "@/lib/streak";
-import { RARITY_CONFIG, type Rarity } from "@/lib/fortunes";
+import {
+  FORTUNE_POOL_TOTAL,
+  FORTUNE_POOL_TOTALS,
+  RARITY_CONFIG,
+  type Rarity,
+} from "@/lib/fortunes";
 import { encodeFortuneSlug } from "@/lib/og";
 
 /* ─── Constants ─────────────────────────────────────────── */
-
-const POOL_TOTALS: Record<Rarity, number> = {
-  legendary: 8,
-  epic: 18,
-  rare: 38,
-  common: 55,
-};
-const POOL_TOTAL = 119;
 
 type Filter = "all" | Rarity;
 
@@ -99,7 +96,9 @@ export function CollectionView() {
       ? collection
       : collection.filter((f) => f.rarity === filter);
 
-  const pct = POOL_TOTAL > 0 ? Math.round((stats.total / POOL_TOTAL) * 100) : 0;
+  const pct = FORTUNE_POOL_TOTAL > 0
+    ? Math.round((stats.total / FORTUNE_POOL_TOTAL) * 100)
+    : 0;
   const totalPulls = collection.reduce((sum, f) => sum + f.pullCount, 0);
 
   if (!mounted) {
@@ -125,10 +124,10 @@ export function CollectionView() {
             <div>
               <p className="text-3xl font-bold font-mono text-gold tracking-tight">
                 {stats.total}
-                <span className="text-lg text-muted-foreground/30">/{POOL_TOTAL}</span>
+                <span className="text-lg text-muted-foreground/30">/{FORTUNE_POOL_TOTAL}</span>
               </p>
               <p className="text-xs text-muted-foreground/45 mt-0.5">
-                unique fortunes collected
+                unique signals collected
               </p>
             </div>
             <div className="text-right">
@@ -138,7 +137,7 @@ export function CollectionView() {
               </p>
               {totalPulls > stats.total && (
                 <p className="text-[11px] text-muted-foreground/35 font-mono">
-                  {totalPulls} total pulls
+                  {totalPulls} total reveals
                 </p>
               )}
             </div>
@@ -159,7 +158,7 @@ export function CollectionView() {
             {(["legendary", "epic", "rare", "common"] as Rarity[]).map((r) => {
               const cfg = RARITY_CONFIG[r];
               const count = stats[r];
-              const total = POOL_TOTALS[r];
+              const total = FORTUNE_POOL_TOTALS[r];
               const rarityPct = total > 0 ? Math.round((count / total) * 100) : 0;
               return (
                 <div
@@ -194,6 +193,11 @@ export function CollectionView() {
               );
             })}
           </div>
+
+          <p className="text-[11px] text-center text-gold/30 leading-relaxed">
+            Legendary is scarce signal. Common still counts. The full set is
+            {` ${FORTUNE_POOL_TOTAL}`} core fortunes.
+          </p>
         </div>
       </div>
 
@@ -237,13 +241,13 @@ export function CollectionView() {
               <div className="space-y-1.5">
                 <p className="text-sm text-muted-foreground/40">
                   {filter === "all"
-                    ? "No fortunes collected yet"
-                    : `No ${RARITY_CONFIG[filter].label.toLowerCase()} fortunes yet`}
+                    ? "No fortunes sealed here yet"
+                    : `No ${RARITY_CONFIG[filter].label.toLowerCase()} signal yet`}
                 </p>
                 <p className="text-xs text-muted-foreground/25">
                   {filter === "all"
-                    ? "Pull your first fortune to start your collection."
-                    : "Keep pulling — fortune favors the persistent."}
+                    ? "Request your first 100-sat reveal to begin the set."
+                    : "Keep revealing. Scarce wisdom does not arrive on command."}
                 </p>
               </div>
               {filter === "all" && (
@@ -251,7 +255,7 @@ export function CollectionView() {
                   href="/"
                   className="inline-block mt-2 px-4 py-2 rounded-lg text-xs font-medium text-gold/70 border border-gold/15 hover:bg-gold/[0.06] transition-colors"
                 >
-                  Pull a fortune
+                  Request a fortune
                 </Link>
               )}
             </div>
@@ -272,7 +276,7 @@ export function CollectionView() {
 
       {/* Sync note */}
       <p className="text-[11px] text-center text-muted-foreground/30 leading-relaxed">
-        Your collection syncs across sessions automatically.
+        Your collection lives on this device and syncs when the oracle can see it.
       </p>
     </div>
   );

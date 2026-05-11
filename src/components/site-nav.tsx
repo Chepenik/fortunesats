@@ -8,12 +8,12 @@ import { usePathname } from "next/navigation";
 const ALL_NAV_ITEMS = [
   { href: "/collection", label: "Collection" },
   { href: "/leaderboard", label: "Leaderboard" },
-  { href: "/support", label: "Support" },
+  { href: "/support", label: "Fund" },
 ] as const;
 
 /* ─── Component ─────────────────────────────────────────── */
 
-/** @param hiddenRoutes — hrefs to omit from nav (controlled by flags in layout) */
+/** @param hiddenRoutes - hrefs to omit from nav (controlled by flags in layout). */
 export function SiteNav({ hiddenRoutes = [] }: { hiddenRoutes?: string[] }) {
   const pathname = usePathname();
   const hidden = new Set(hiddenRoutes);

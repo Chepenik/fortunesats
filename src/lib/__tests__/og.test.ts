@@ -3,7 +3,7 @@ import { encodeFortuneSlug, decodeFortuneSlug } from "@/lib/og";
 
 describe("fortune slug encoding/decoding", () => {
   it("roundtrips text and rarity correctly", () => {
-    const text = "The obstacle is the way. — Marcus Aurelius";
+    const text = "Trusted third parties are security holes. - Nick Szabo";
     const rarity = "legendary" as const;
     const slug = encodeFortuneSlug(text, rarity);
     const decoded = decodeFortuneSlug(slug);

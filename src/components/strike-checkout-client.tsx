@@ -145,7 +145,7 @@ export function StrikeCheckoutClient({
           href="/"
           className="inline-block mt-2 text-xs text-gold/60 hover:text-gold/80 transition-colors"
         >
-          Start over →
+          Start over
         </Link>
       </div>
     );
@@ -155,7 +155,7 @@ export function StrikeCheckoutClient({
     return (
       <div className="flex flex-col items-center gap-4 py-10">
         <OracleSpinner />
-        <p className="text-sm text-cyan/70">Payment received — revealing your fortune…</p>
+        <p className="text-sm text-cyan/70">Payment received. Revealing your fortune&hellip;</p>
       </div>
     );
   }
@@ -164,7 +164,7 @@ export function StrikeCheckoutClient({
     return (
       <div className="flex flex-col items-center gap-4 py-10">
         <OracleSpinner />
-        <p className="text-sm text-gold/50">Preparing invoice…</p>
+        <p className="text-sm text-gold/50">Preparing invoice&hellip;</p>
       </div>
     );
   }
@@ -228,18 +228,18 @@ export function StrikeCheckoutClient({
       {/* Status strip */}
       <div className="flex items-center justify-center gap-2 text-[11px] font-mono text-gold/35">
         <OracleSpinner />
-        <span>Waiting for payment…</span>
+        <span>Waiting for payment&hellip;</span>
       </div>
 
       {presentation.quoteExpired && (
         <p className="text-center text-[11px] text-gold/40">
-          Refreshing expired invoice…
+          Refreshing expired invoice&hellip;
         </p>
       )}
 
       {error && (
         <p className="text-center text-[11px] text-lacquer/60">
-          Reconnecting…
+          Reconnecting&hellip;
         </p>
       )}
     </div>

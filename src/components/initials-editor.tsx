@@ -53,7 +53,7 @@ export function InitialsEditor() {
       setInitials(data.initials ?? "");
       setEditing(false);
     } catch {
-      setError("Network error — try again");
+      setError("Network error. Try again.");
     } finally {
       setSaving(false);
     }
@@ -82,7 +82,7 @@ export function InitialsEditor() {
       setInitials("");
       setEditing(false);
     } catch {
-      setError("Network error — try again");
+      setError("Network error. Try again.");
     } finally {
       setSaving(false);
     }
@@ -96,7 +96,7 @@ export function InitialsEditor() {
         <div className="flex items-center gap-1.5">
           <div className="h-1 w-1 rounded-full bg-gold/30" />
           <span className="text-[11px] tracking-[0.2em] uppercase text-gold/30 font-mono">
-            Your tag
+            Your signal tag
           </span>
         </div>
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/8 to-transparent" />
@@ -139,7 +139,7 @@ export function InitialsEditor() {
           >
             <div className="flex items-center gap-2">
               <label htmlFor="initials-input" className="sr-only">
-                Your initials (2–4 letters, shown on leaderboard)
+                Your initials, 2 to 4 letters, shown on leaderboard
               </label>
               <input
                 id="initials-input"
@@ -195,7 +195,7 @@ export function InitialsEditor() {
             {/* Help text + clear */}
             <div className="flex items-center justify-between px-1">
               <span id="initials-hint" className="text-[11px] text-gold/25 font-mono">
-                2-4 letters. Shows on leaderboard.
+                2-4 letters. Shows on the Hall of Fortunes.
               </span>
               {saved && (
                 <button

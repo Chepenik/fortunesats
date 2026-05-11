@@ -33,9 +33,9 @@ interface LeaderboardData {
 /* ─── Tab config ─────────────────────────────────────────── */
 
 const TABS: { key: Tab; label: string; emptyLabel: string }[] = [
-  { key: "fortunes", label: "Most Revealed", emptyLabel: "No fortunes revealed yet" },
-  { key: "sats", label: "Top Spenders", emptyLabel: "No sats spent yet" },
-  { key: "legendary", label: "Legendary", emptyLabel: "No legendary fortunes yet" },
+  { key: "fortunes", label: "Reveals", emptyLabel: "No fortunes revealed yet" },
+  { key: "sats", label: "Sats Sent", emptyLabel: "No sats sent yet" },
+  { key: "legendary", label: "Legendary", emptyLabel: "No legendary reveals yet" },
   { key: "streak", label: "Streaks", emptyLabel: "No streaks yet" },
 ];
 
@@ -130,7 +130,7 @@ export function LeaderboardView() {
                 {TABS.find((t) => t.key === tab)?.emptyLabel}
               </p>
               <p className="text-xs text-muted-foreground/25">
-                Be the first to claim your place.
+                Be first to leave proof.
               </p>
             </div>
           ) : (
@@ -201,9 +201,9 @@ export function LeaderboardView() {
 
       {/* Device disclaimer */}
       <p className="text-[11px] text-center text-muted-foreground/30 leading-relaxed">
-        Your progress is tied to this device.
+        Your tag and streak are tied to this device.
         <br />
-        Switching devices or clearing cookies resets your position.
+        Switching devices or clearing cookies starts a new trail.
       </p>
     </div>
   );

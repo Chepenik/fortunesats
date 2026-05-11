@@ -70,7 +70,7 @@ function FortuneSuccessInner() {
 
     const checkoutId = searchParams.get("checkout-id");
     if (!checkoutId) {
-      setState({ step: "error", message: "Missing checkout reference. Please try again from the homepage." }); // eslint-disable-line react-hooks/set-state-in-effect
+      setState({ step: "error", message: "Missing checkout reference. Please request a new fortune." }); // eslint-disable-line react-hooks/set-state-in-effect
       return;
     }
 
@@ -116,7 +116,7 @@ function FortuneSuccessInner() {
         if (cancelled) return;
         const message = res.status === 402
           ? "Payment not confirmed yet. Please wait a moment and refresh."
-          : data?.error?.message ?? "Failed to deliver fortune";
+          : data?.error?.message ?? "Failed to deliver the fortune";
         setState({
           step: "error",
           message: attempt > 1
@@ -136,7 +136,7 @@ function FortuneSuccessInner() {
         if (cancelled) return;
         setState({
           step: "error",
-          message: `Network error — please check your connection and refresh. (tried ${attempt} times)`,
+          message: `Network error. Check your connection and refresh. (tried ${attempt} times)`,
           retriable: true,
           checkoutId: checkoutId ?? undefined,
         });
@@ -436,7 +436,7 @@ function FortuneSuccessInner() {
                 <div className="flex items-center gap-3">
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/10 to-transparent" />
                   <span className="text-[11px] tracking-[0.2em] uppercase text-gold/30 font-mono">
-                    Share your fortune
+                    Share the signal
                   </span>
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/10 to-transparent" />
                 </div>
@@ -501,7 +501,7 @@ function FortuneSuccessInner() {
                       className="w-full h-9 rounded-lg text-xs text-gold/30 hover:text-gold/45 transition-colors cursor-pointer"
                       onClick={() => handleNativeShare(state.fortune, state.rarity)}
                     >
-                      More sharing options&hellip;
+                      More share options&hellip;
                     </button>
                   </motion.div>
                 )}
@@ -517,7 +517,7 @@ function FortuneSuccessInner() {
                   href="/"
                   className="block w-full h-11 rounded-xl text-sm text-center leading-[2.75rem] text-muted-foreground/40 hover:text-gold/50 transition-colors"
                 >
-                  Another Fortune
+                  Another fortune
                 </Link>
               </motion.div>
             </motion.div>
@@ -537,7 +537,7 @@ function FortuneSuccessInner() {
                 <p className="text-sm text-lacquer/70">{state.message}</p>
                 {state.retriable && (
                   <p className="text-xs text-gold/40">
-                    Your payment was received. The lightning node may need a moment to sync.
+                    Your payment was received. The Lightning node may need a moment to sync.
                   </p>
                 )}
               </div>

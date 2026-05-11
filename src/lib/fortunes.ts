@@ -40,51 +40,60 @@ export const RARITY_CONFIG = {
 
 /* ─── Fortune pool ──────────────────────────────────────── */
 
+/*
+ * Source notes for newly verified attributed entries:
+ * - Satoshi Nakamoto, Bitcoin P2P e-cash paper, 2008:
+ *   https://satoshi.nakamotoinstitute.org/emails/cryptography/1/
+ * - Satoshi Nakamoto, P2P Foundation post, 2009:
+ *   https://satoshi.nakamotoinstitute.org/quotes/economics/
+ * - Satoshi Nakamoto, BitcoinTalk scalability reply, 2010:
+ *   https://satoshi.nakamotoinstitute.org/posts/bitcointalk/287/
+ * - Nick Szabo, Trusted Third Parties are Security Holes, 2001:
+ *   https://nakamotoinstitute.org/library/trusted-third-parties/
+ * - Frederic Bastiat, The State, 1848:
+ *   https://oll.libertyfund.org/quotes/frederic-bastiat-on-the-state-as-the-great-fiction-by-which-everyone-seeks-to-live-at-the-expense-of-everyone-else-1848
+ */
 export const fortunes: Fortune[] = [
   // ─── LEGENDARY (most profound, iconic) ───────────────────
-  { text: "The only true wisdom is in knowing you know nothing. — Socrates", rarity: "legendary" },
-  { text: "The measure of a man is what he does with power. — Plato", rarity: "legendary" },
-  { text: "It is the mark of an educated mind to entertain a thought without accepting it. — Aristotle", rarity: "legendary" },
-  { text: "You have power over your mind, not outside events. Realize this, and you will find strength. — Marcus Aurelius", rarity: "legendary" },
-  { text: "We suffer more often in imagination than in reality. — Seneca", rarity: "legendary" },
-  { text: "The obstacle is the way. — Marcus Aurelius", rarity: "legendary" },
-  { text: "The question is not who will let me, but who will stop me. — Ayn Rand", rarity: "legendary" },
-  { text: "Fortune favors the bold. — Virgil", rarity: "legendary" },
+  { text: "The root problem with conventional currency is all the trust that's required to make it work. - Satoshi Nakamoto", rarity: "legendary" },
+  { text: "I've been working on a new electronic cash system that's fully peer-to-peer, with no trusted third party. - Satoshi Nakamoto", rarity: "legendary" },
+  { text: "Trusted third parties are security holes. - Nick Szabo", rarity: "legendary" },
+  { text: "If you don't believe me or don't get it, I don't have time to try to convince you, sorry. - Satoshi Nakamoto", rarity: "legendary" },
+  { text: "The only true wisdom is in knowing you know nothing. - Socrates", rarity: "legendary" },
+  { text: "We suffer more often in imagination than in reality. - Seneca", rarity: "legendary" },
+  { text: "Proof of work is truth without permission.", rarity: "legendary" },
+  { text: "Fortune favors the bold. - Virgil", rarity: "legendary" },
 
   // ─── EPIC (strong philosophical) ─────────────────────────
-  { text: "It is not because things are difficult that we do not dare. It is because we do not dare that they are difficult. — Seneca", rarity: "epic" },
-  { text: "He who has a why to live can bear almost any how. — Friedrich Nietzsche", rarity: "epic" },
-  { text: "Until you make the unconscious conscious, it will direct your life and you will call it fate. — Carl Jung", rarity: "epic" },
-  { text: "The privilege of a lifetime is to become who you truly are. — Carl Jung", rarity: "epic" },
-  { text: "No tree, it is said, can grow to heaven unless its roots reach down to hell. — Carl Jung", rarity: "epic" },
-  { text: "Let everything happen to you: beauty and terror. Just keep going. No feeling is final. — Rainer Maria Rilke", rarity: "epic" },
-  { text: "The wound is the place where the light enters you. — Rumi", rarity: "epic" },
-  { text: "The cave you fear to enter holds the treasure you seek. — Joseph Campbell", rarity: "epic" },
-  { text: "The unexamined life is not worth living. — Socrates", rarity: "epic" },
-  { text: "When I let go of what I am, I become what I might be. — Lao Tzu", rarity: "epic" },
-  { text: "There is a crack in everything. That's how the light gets in. — Leonard Cohen", rarity: "epic" },
-  { text: "Life can only be understood backwards; but it must be lived forwards. — Søren Kierkegaard", rarity: "epic" },
-  { text: "Perfection is achieved, not when there is nothing more to add, but when there is nothing left to take away. — Antoine de Saint-Exupéry", rarity: "epic" },
-  { text: "To live is the rarest thing in the world. Most people exist, that is all. — Oscar Wilde", rarity: "epic" },
-  { text: "The happiness of your life depends upon the quality of your thoughts. — Marcus Aurelius", rarity: "epic" },
-  { text: "Dwell on the beauty of life. Watch the stars, and see yourself running with them. — Marcus Aurelius", rarity: "epic" },
-  { text: "Proof of work is truth without permission.", rarity: "epic" },
+  { text: "The state is the great fictitious entity by which everyone seeks to live at the expense of everyone else. - Frederic Bastiat", rarity: "epic" },
+  { text: "No mint or other trusted parties. - Satoshi Nakamoto", rarity: "epic" },
+  { text: "He who has a why to live can bear almost any how. - Friedrich Nietzsche", rarity: "epic" },
+  { text: "The unexamined life is not worth living. - Socrates", rarity: "epic" },
+  { text: "When I let go of what I am, I become what I might be. - Lao Tzu", rarity: "epic" },
+  { text: "To live is the rarest thing in the world. Most people exist, that is all. - Oscar Wilde", rarity: "epic" },
+  { text: "A hindrance to a given duty becomes a help. - Marcus Aurelius", rarity: "epic" },
   { text: "Low time preference builds cathedrals.", rarity: "epic" },
+  { text: "Self-custody begins in the mind.", rarity: "epic" },
+  { text: "Truth does not need a marketing budget.", rarity: "epic" },
+  { text: "The highest signal is often quiet.", rarity: "epic" },
+  { text: "Consensus begins with the courage to verify.", rarity: "epic" },
+  { text: "A sovereign life is built one refusal at a time.", rarity: "epic" },
+  { text: "Scarcity gives patience a place to live.", rarity: "epic" },
+  { text: "Your proof-of-work is the person you become.", rarity: "epic" },
+  { text: "The longer road may be the low time preference road.", rarity: "epic" },
+  { text: "Sound money asks you to mean what you do.", rarity: "epic" },
+  { text: "Wisdom compounds when ego stops spending it.", rarity: "epic" },
 
   // ─── RARE (solid wisdom) ─────────────────────────────────
-  { text: "The soul becomes dyed with the color of its thoughts. — Marcus Aurelius", rarity: "rare" },
-  { text: "Begin at once to live, and count each separate day as a separate life. — Seneca", rarity: "rare" },
-  { text: "Knowing yourself is the beginning of all wisdom. — Aristotle", rarity: "rare" },
-  { text: "Not what we have but what we enjoy constitutes our abundance. — Epicurus", rarity: "rare" },
-  { text: "Nature does not hurry, yet everything is accomplished. — Lao Tzu", rarity: "rare" },
-  { text: "The journey of a thousand miles begins with a single step. — Lao Tzu", rarity: "rare" },
-  { text: "Mastering others is strength. Mastering yourself is true power. — Lao Tzu", rarity: "rare" },
-  { text: "A disciplined mind brings happiness. — Buddha", rarity: "rare" },
-  { text: "What you are is what you have been. What you will be is what you do now. — Buddha", rarity: "rare" },
-  { text: "In the middle of difficulty lies opportunity. — Albert Einstein", rarity: "rare" },
-  { text: "Be patient toward all that is unsolved in your heart. — Rainer Maria Rilke", rarity: "rare" },
-  { text: "While we wait for life, life passes. — Seneca", rarity: "rare" },
-  { text: "There is no easy way from the earth to the stars. — Seneca", rarity: "rare" },
+  { text: "The soul becomes dyed with the color of its thoughts. - Marcus Aurelius", rarity: "rare" },
+  { text: "Begin at once to live, and count each separate day as a separate life. - Seneca", rarity: "rare" },
+  { text: "Not what we have but what we enjoy constitutes our abundance. - Epicurus", rarity: "rare" },
+  { text: "Nature does not hurry, yet everything is accomplished. - Lao Tzu", rarity: "rare" },
+  { text: "The journey of a thousand miles begins with a single step. - Lao Tzu", rarity: "rare" },
+  { text: "Mastering others is strength. Mastering yourself is true power. - Lao Tzu", rarity: "rare" },
+  { text: "A disciplined mind brings happiness. - Buddha", rarity: "rare" },
+  { text: "While we wait for life, life passes. - Seneca", rarity: "rare" },
+  { text: "There is no easy way from the earth to the stars. - Seneca", rarity: "rare" },
   { text: "Fix the money, fix the incentives.", rarity: "rare" },
   { text: "Savings are stored time.", rarity: "rare" },
   { text: "Sound money makes honest plans possible.", rarity: "rare" },
@@ -109,16 +118,16 @@ export const fortunes: Fortune[] = [
   { text: "Something you lost will soon return in a new form.", rarity: "rare" },
   { text: "A door you thought was closed is quietly opening.", rarity: "rare" },
   { text: "The path reveals itself when you stop demanding to see the end.", rarity: "rare" },
-  { text: "You are closer than you think. One more step.", rarity: "rare" },
+  { text: "You are closer than you think. One more block.", rarity: "rare" },
+  { text: "Verify before you trust the voice.", rarity: "rare" },
+  { text: "A scarce thing teaches patience.", rarity: "rare" },
+  { text: "Keys are held by hand. Sovereignty is held by habit.", rarity: "rare" },
+  { text: "The mempool teaches patience without asking permission.", rarity: "rare" },
 
   // ─── COMMON (sharp one-liners & lighter quotes) ──────────
   { text: "Hard choices, easy life. Easy choices, hard life.", rarity: "common" },
-  { text: "Comparison is the thief of joy. — Theodore Roosevelt", rarity: "common" },
-  { text: "The map is not the territory. — Alfred Korzybski", rarity: "common" },
-  { text: "You do not rise to your goals. You fall to your systems. — James Clear", rarity: "common" },
   { text: "Depth beats noise.", rarity: "common" },
   { text: "Calm is a superpower.", rarity: "common" },
-  { text: "The way out is through. — Robert Frost", rarity: "common" },
   { text: "Pressure reveals character.", rarity: "common" },
   { text: "Small hinges swing big doors.", rarity: "common" },
   { text: "Clarity creates momentum.", rarity: "common" },
@@ -138,24 +147,8 @@ export const fortunes: Fortune[] = [
   { text: "You become credible by keeping promises to yourself.", rarity: "common" },
   { text: "The right path is rarely the crowded one.", rarity: "common" },
   { text: "A little progress, repeated daily, becomes a different life.", rarity: "common" },
-  { text: "There are two types of people: those who can extrapolate from incomplete data.", rarity: "common" },
   { text: "If at first you don't succeed, refine the approach.", rarity: "common" },
-  { text: "Today's forecast: a strong chance of growth.", rarity: "common" },
-  { text: "The code works. Ship it before it changes its mind.", rarity: "common" },
-  { text: "Your future self is already grateful you kept going.", rarity: "common" },
-  { text: "The signal gets clearer when you get quieter.", rarity: "common" },
-  { text: "You are someone's favorite notification.", rarity: "common" },
-  { text: "Plot twist: you were building the story all along.", rarity: "common" },
-  { text: "The universe whispers before it shouts.", rarity: "common" },
-  { text: "The algorithm may notice you soon.", rarity: "common" },
-  { text: "Not all treasure is silver and gold. Some of it is sats.", rarity: "common" },
-  { text: "You're one commit away from something better.", rarity: "common" },
-  { text: "If Plan A fails, the alphabet has range.", rarity: "common" },
-  { text: "Be the person your dog thinks you are.", rarity: "common" },
-  { text: "Everything is a file if you're brave enough.", rarity: "common" },
-  { text: "Your imposter syndrome is not a reliable narrator.", rarity: "common" },
   { text: "This fortune cost 100 sats. The lesson could be worth more.", rarity: "common" },
-  { text: "Someone, somewhere, is searching for exactly what you know.", rarity: "common" },
   { text: "A pleasant surprise is moving in your direction.", rarity: "common" },
   { text: "The next stranger you meet may carry useful truth.", rarity: "common" },
   { text: "Pay attention to your dreams tonight. They are trying to organize something.", rarity: "common" },
@@ -167,6 +160,26 @@ export const fortunes: Fortune[] = [
   { text: "The patience you are practicing now will soon pay interest.", rarity: "common" },
   { text: "A decision you have been postponing will grow clearer soon.", rarity: "common" },
   { text: "The right people are moving toward you already.", rarity: "common" },
+  { text: "Stack patience before opinions.", rarity: "common" },
+  { text: "Noise spends fast. Signal saves.", rarity: "common" },
+  { text: "Keep your keys and your counsel close.", rarity: "common" },
+  { text: "A small sat can still carry intention.", rarity: "common" },
+  { text: "The next block is found by doing the work.", rarity: "common" },
+  { text: "Your wallet should not know your excuses.", rarity: "common" },
+  { text: "Scarcity makes every yes more honest.", rarity: "common" },
+  { text: "A good ritual does not beg for attention.", rarity: "common" },
+  { text: "The oracle shows a signal, not a shortcut.", rarity: "common" },
+  { text: "Sovereignty starts as a private decision.", rarity: "common" },
+  { text: "Low preference days become sovereign years.", rarity: "common" },
+  { text: "Spend slowly. Learn quickly.", rarity: "common" },
+  { text: "A quiet stack is still a stack.", rarity: "common" },
+  { text: "The best receipt is the lesson you keep.", rarity: "common" },
+  { text: "Do the work before asking for luck.", rarity: "common" },
+  { text: "The fee is small. The signal is yours.", rarity: "common" },
+  { text: "Truth travels light.", rarity: "common" },
+  { text: "Some doors open only after proof-of-work.", rarity: "common" },
+  { text: "Make your future self easier to trust.", rarity: "common" },
+  { text: "The code works. Ship it before it changes its mind.", rarity: "common" },
 ];
 
 /* ─── Seasonal bonus pool ───────────────────────────────── */
@@ -183,6 +196,15 @@ export const seasonalFortunes: Fortune[] = [
   { text: "A season of building begins. Trust what you start this week.", rarity: "common" },
   { text: "Even the sun takes turns. Rest is not retreat.", rarity: "rare" },
 ];
+
+export const FORTUNE_POOL_TOTAL = fortunes.length;
+
+export const FORTUNE_POOL_TOTALS = {
+  legendary: fortunes.filter((f) => f.rarity === "legendary").length,
+  epic: fortunes.filter((f) => f.rarity === "epic").length,
+  rare: fortunes.filter((f) => f.rarity === "rare").length,
+  common: fortunes.filter((f) => f.rarity === "common").length,
+} satisfies Record<Rarity, number>;
 
 /* ─── Pre-computed pools for O(1) selection ─────────────── */
 
@@ -273,11 +295,11 @@ function fortuneId(text: string): string {
   return (hash >>> 0).toString(36).padStart(7, "0");
 }
 
-/** Extract author from "text — Author" format. */
+/** Extract author from "text - Author" format, with legacy dash support. */
 function extractAuthor(text: string): string | null {
-  const sep = text.lastIndexOf(" — ");
-  if (sep === -1) return null;
-  const candidate = text.slice(sep + 3).trim();
+  const match = text.match(/\s+[—–-]\s+([A-Z][^—–-]{0,59})$/);
+  if (!match) return null;
+  const candidate = match[1].trim();
   // Only treat as author if it looks like a name (starts uppercase, no sentence-length)
   if (candidate.length > 0 && candidate.length < 60 && /^[A-Z]/.test(candidate)) {
     return candidate;
@@ -291,25 +313,29 @@ function inferCategory(text: string, author: string | null): Category {
 
   // Author-based classification
   if (author) {
+    const sovereigntyAuthors = ["Satoshi Nakamoto", "Nick Szabo", "Frederic Bastiat"];
+    if (sovereigntyAuthors.some((s) => author.includes(s))) return "sovereignty";
+
     const stoics = ["Marcus Aurelius", "Seneca", "Epictetus"];
     if (stoics.some((s) => author.includes(s))) return "stoicism";
 
-    const eastern = ["Lao Tzu", "Buddha", "Rumi", "Confucius"];
+    const eastern = ["Lao Tzu", "Buddha", "Confucius"];
     if (eastern.some((e) => author.includes(e))) return "eastern";
 
     const philosophers = [
       "Socrates", "Plato", "Aristotle", "Nietzsche", "Kierkegaard",
-      "Jung", "Campbell", "Rilke", "Ayn Rand", "Virgil",
-      "Saint-Exupéry", "Oscar Wilde", "Leonard Cohen",
+      "Virgil", "Oscar Wilde", "Epicurus",
     ];
     if (philosophers.some((p) => author.includes(p))) return "philosophy";
   }
 
   // Content-based classification
   const sovereigntyKw = [
-    "sats", " sat ", "money", "bitcoin", "proof of work", "time preference",
+    "sats", " sat ", "money", "currency", "bitcoin", "proof of work",
+    "proof-of-work", "time preference", "trusted third", "peer-to-peer",
+    "mint", "state", "mempool", "keys", "wallet", "scarcity", "stack",
     "fix the", "savings", "sound money", "freedom compounds",
-    "sovereign", "value for value",
+    "sovereign", "value for value", "consensus", "self-custody",
   ];
   if (sovereigntyKw.some((k) => lower.includes(k))) return "sovereignty";
 

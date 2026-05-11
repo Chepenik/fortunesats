@@ -1,6 +1,6 @@
 # Agent Integration Guide
 
-FortuneSats isn't just for humans. If you're building an AI agent, a Telegram bot, a Discord integration, or anything that can make HTTP requests — you can pull fortunes programmatically.
+FortuneSats isn't just for humans. If you're building an AI agent, a Telegram bot, a Discord integration, or anything that can make HTTP requests, you can request fortunes programmatically.
 
 Same fortunes, same rarity system, same 100-sat price. Just structured JSON instead of animations and confetti.
 
@@ -8,7 +8,7 @@ Same fortunes, same rarity system, same 100-sat price. Just structured JSON inst
 
 ## Philosophy
 
-FortuneSats is **human-first** at the experience layer and **agent-first** at the systems layer. The agent API serves the exact same fortune pool as the UI — 170 fortunes across 4 rarity tiers — but in a format machines can parse without scraping HTML.
+FortuneSats is **human-first** at the experience layer and **agent-first** at the systems layer. The agent API serves the same 119-core-fortune pool as the UI in a format machines can parse without scraping HTML.
 
 No API key needed. No signup. Just `curl` and go.
 
@@ -18,7 +18,7 @@ No API key needed. No signup. Just `curl` and go.
 
 ### `GET /api/agent/fortune`
 
-Pull a random fortune with full metadata.
+Request a random fortune with full metadata.
 
 ```bash
 curl https://fortunesats.com/api/agent/fortune
@@ -28,11 +28,11 @@ curl https://fortunesats.com/api/agent/fortune
 {
   "fortune": {
     "id": "0a3f2k1",
-    "text": "The obstacle is the way. -- Marcus Aurelius",
-    "author": "Marcus Aurelius",
+    "text": "Trusted third parties are security holes. - Nick Szabo",
+    "author": "Nick Szabo",
     "rarity": "legendary",
-    "category": "stoicism",
-    "tags": ["stoicism", "attributed", "strength"]
+    "category": "sovereignty",
+    "tags": ["sovereignty", "attributed"]
   },
   "pricing": {
     "amount": 100,
@@ -57,7 +57,7 @@ curl https://fortunesats.com/api/agent/fortune
 # Stoic wisdom only
 curl "https://fortunesats.com/api/agent/fortune?category=stoicism"
 
-# I'm feeling lucky -- legendary or bust
+# Legendary only
 curl "https://fortunesats.com/api/agent/fortune?rarity=legendary"
 
 # Give me that exact fortune again
@@ -74,21 +74,21 @@ curl "https://fortunesats.com/api/agent/fortune?meta=true"
   "fortune": { "..." },
   "pricing": { "..." },
   "meta": {
-    "total": 170,
+    "total": 119,
     "categories": {
-      "stoicism": 20,
-      "philosophy": 15,
-      "eastern": 10,
-      "sovereignty": 15,
-      "growth": 50,
-      "fortune": 30,
-      "wit": 30
+      "sovereignty": 34,
+      "growth": 57,
+      "fortune": 10,
+      "stoicism": 6,
+      "philosophy": 6,
+      "eastern": 5,
+      "wit": 1
     },
     "rarities": {
       "legendary": 8,
       "epic": 18,
-      "rare": 39,
-      "common": 105
+      "rare": 38,
+      "common": 55
     }
   }
 }
@@ -113,18 +113,18 @@ Every fortune comes with:
 
 | Tier | Drop Rate | Pool Size | Vibe |
 |------|-----------|-----------|------|
-| Legendary | 5% | 8 | The ones you screenshot |
-| Epic | 15% | 18 | Worth sharing |
-| Rare | 30% | 39 | Solid pull |
-| Common | 50% | 105 | Still wise, still good |
+| Legendary | 5% | 8 | Scarce signal |
+| Epic | 15% | 18 | Strong medicine |
+| Rare | 30% | 38 | Good proof |
+| Common | 50% | 55 | Still wise, still yours |
 
 ### Categories
 
 | Category | What You'll Find |
 |----------|-----------------|
-| `stoicism` | Marcus Aurelius, Seneca, Epictetus |
-| `philosophy` | Socrates, Plato, Aristotle, Jung, Nietzsche |
-| `eastern` | Lao Tzu, Buddha, Rumi |
+| `stoicism` | Marcus Aurelius, Seneca |
+| `philosophy` | Socrates, Nietzsche, Epicurus, Virgil, Oscar Wilde |
+| `eastern` | Lao Tzu, Buddha |
 | `sovereignty` | Bitcoin, sound money, self-governance |
 | `growth` | Self-improvement, discipline, habits |
 | `fortune` | Classic fortune-cookie predictions |
@@ -194,7 +194,7 @@ All errors return consistent JSON:
 
 - **AI assistants** -- Serve a daily fortune to users based on their vibe
 - **Telegram / Discord / Slack bots** -- Fortune-of-the-day channels
-- **Coding agents** -- Pull a wisdom quote when a build fails (you'll need it)
+- **Coding agents** -- Request a wisdom quote when a build fails
 - **Data dashboards** -- Use `?meta=true` to visualize the fortune pool
 - **MCP servers** -- Expose fortunes as tools for AI agent ecosystems
 - **Daily digest apps** -- Curate fortunes by category and email them out

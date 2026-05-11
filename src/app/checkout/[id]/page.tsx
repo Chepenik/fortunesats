@@ -45,10 +45,10 @@ export default async function CheckoutPage({
             <div className="h-px w-8 bg-gradient-to-l from-transparent to-gold/20" />
           </div>
           <h1 className="text-lg font-semibold text-foreground/90 tracking-tight">
-            Complete Payment
+            Pay the invoice
           </h1>
           <p className="text-xs text-gold/40 font-mono">
-            {record.amountSats.toLocaleString()} sats for one fortune
+            {record.amountSats.toLocaleString()} sats over Lightning
           </p>
         </div>
 
@@ -59,8 +59,8 @@ export default async function CheckoutPage({
         <div className="text-center space-y-3">
           <div className="h-px w-full bg-gradient-to-r from-transparent via-gold/10 to-transparent" />
           <p className="text-xs text-gold/30 leading-relaxed">
-            Scan with any Lightning wallet. Your fortune will unlock automatically
-            once the payment confirms.
+            Scan with any Lightning wallet. Strike handles the invoice.
+            The oracle unlocks your fortune after payment.
           </p>
         </div>
       </div>

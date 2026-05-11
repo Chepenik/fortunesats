@@ -37,14 +37,14 @@ function specFor(purpose: CheckoutPurpose): Spec {
   if (purpose === "gift") {
     return {
       amountSats: config.pricing.fortuneGift,
-      description: "Fortune gift — Fortune Sats",
+      description: "Sealed fortune gift - Fortune Sats",
       successPath: "/gift/success",
       purchaseType: "gift",
     };
   }
   return {
     amountSats: config.pricing.fortuneSingle,
-    description: "One fortune — Fortune Sats",
+    description: "One FortuneSats reveal",
     successPath: "/fortune/success",
     purchaseType: "fortune",
   };

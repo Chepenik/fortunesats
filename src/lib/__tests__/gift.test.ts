@@ -26,7 +26,7 @@ vi.mock("@/lib/fortunes", async (importOriginal) => {
   return {
     ...actual,
     getRandomFortune: vi.fn(() => ({
-      text: "The obstacle is the way. — Marcus Aurelius",
+      text: "Trusted third parties are security holes. - Nick Szabo",
       rarity: "legendary" as const,
     })),
   };
@@ -44,7 +44,7 @@ describe("createGift", () => {
     const gift = await createGift("checkout-1", "device-sender");
 
     expect(gift).not.toBeNull();
-    expect(gift!.fortune).toBe("The obstacle is the way. — Marcus Aurelius");
+    expect(gift!.fortune).toBe("Trusted third parties are security holes. - Nick Szabo");
     expect(gift!.rarity).toBe("legendary");
     expect(gift!.status).toBe("paid");
     expect(gift!.senderDeviceId).toBe("device-sender");
@@ -53,7 +53,7 @@ describe("createGift", () => {
     expect(gift!.expiresAt).toBeTruthy();
   });
 
-  it("is idempotent — same checkoutId returns same gift", async () => {
+  it("is idempotent: same checkoutId returns same gift", async () => {
     const gift1 = await createGift("checkout-2", "device-sender");
     const gift2 = await createGift("checkout-2", "device-sender");
 
@@ -118,7 +118,7 @@ describe("claimGift", () => {
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.gift.fortune).toBe("The obstacle is the way. — Marcus Aurelius");
+      expect(result.gift.fortune).toBe("Trusted third parties are security holes. - Nick Szabo");
       expect(result.gift.rarity).toBe("legendary");
       expect(result.gift.status).toBe("claimed");
       expect(result.gift.claimerDeviceId).toBe("device-recipient");
@@ -179,7 +179,7 @@ describe("claimGift", () => {
     }
   });
 
-  it("concurrent claims — only one wins", async () => {
+  it("concurrent claims: only one wins", async () => {
     const created = await createGift("checkout-11", "device-sender");
     const token = created!.token;
 

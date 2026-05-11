@@ -25,7 +25,7 @@ export function GiftButton() {
       const data = (await res.json().catch(() => null)) as
         | { error?: { message?: string } }
         | null;
-      setError(data?.error?.message ?? "Could not create checkout.");
+      setError(data?.error?.message ?? "Could not create the gift checkout.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Network error");
     } finally {
@@ -38,7 +38,7 @@ export function GiftButton() {
       <div className="flex items-center gap-3">
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/8 to-transparent" />
         <span className="text-[11px] tracking-[0.15em] uppercase text-gold/30 font-mono">
-          Gift a fortune
+        Seal a gift
         </span>
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/8 to-transparent" />
       </div>
@@ -53,7 +53,7 @@ export function GiftButton() {
         ) : (
           <>
             <span>🎁</span>
-            Send a Fortune Gift
+            Send a sealed fortune
             <span className="text-gold/40 font-mono text-xs ml-1">
               {config.pricing.fortuneGift} sats
             </span>
@@ -66,7 +66,7 @@ export function GiftButton() {
       )}
 
       <p className="text-[11px] text-gold/25 text-center leading-relaxed">
-        Pay {config.pricing.fortuneGift} sats, get a unique claim link to share.
+        Pay {config.pricing.fortuneGift} sats. Share one claim link. It opens once.
       </p>
     </div>
   );

@@ -30,7 +30,7 @@ It should feel like cracking open a fortune cookie, not calling an API. The wait
 
 ### 3. Delight over decoration
 
-Animations, rarity reveals, confetti, and the 3D dragon aren't there to look cool. They exist because they make the moment feel *special*. Every visual element earns its place by contributing to the emotional arc of pulling a fortune.
+Animations, rarity reveals, confetti, and the 3D dragon aren't there to look cool. They exist because they make the moment feel *special*. Every visual element earns its place by contributing to the emotional arc of revealing a fortune.
 
 If an animation doesn't serve the moment, cut it. If it does, make it excellent.
 
@@ -94,7 +94,7 @@ Fail any of these? Reconsider. Fail two or more? Kill it.
 - **Not a quote database.** It's an experience that happens to contain quotes.
 - **Not a developer tool.** The API exists, but it's not the product.
 - **Not a gamification platform.** The leaderboard and collections serve the ritual. The moment you optimize for "engagement," you've lost the plot.
-- **Not a crypto project.** It's a product that uses Bitcoin as a payment rail. The tech is invisible. The wisdom is the point.
+- **Not a token project.** It's a product that uses Bitcoin as a payment rail. The tech is invisible. The wisdom is the point.
 
 ---
 

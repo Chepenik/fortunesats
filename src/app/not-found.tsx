@@ -7,12 +7,12 @@ import { fadeUp, scaleFade, ease } from "@/components/shared/animations";
 
 const MISFORTUNES = [
   "The block you seek has been orphaned.",
-  "You have wandered beyond the Silk Road. This path leads nowhere.",
-  "404 sats paid, 0 fortunes received. The oracle is confused.",
-  "Even the dragon cannot find this page.",
-  "Your private key to this page has expired.",
-  "The Lightning Network routed your request to the void.",
-  "Confucius say: wrong URL, no fortune for you.",
+  "You wandered beyond the mempool. This path leads nowhere.",
+  "404 sats went nowhere. The oracle refunded silence.",
+  "The guardian cannot find this page.",
+  "Your claim to this page has expired.",
+  "The route failed before the invoice appeared.",
+  "Wrong URL. No fortune here.",
   "This page was last seen in the mempool.",
 ];
 
@@ -63,7 +63,7 @@ export default function NotFound() {
             Misfortune
           </h1>
           <p className="text-sm text-muted-foreground/60 font-mono tracking-wide">
-            Error 404 — The oracle has no wisdom here
+            Error 404. The oracle has no wisdom here.
           </p>
         </div>
 
@@ -86,7 +86,7 @@ export default function NotFound() {
         </div>
 
         <p className="text-muted-foreground/35 text-[11px] tracking-wide">
-          wait for the next misfortune…
+          await the next misfortune&hellip;
         </p>
 
         {/* Dragon line divider */}
@@ -97,12 +97,12 @@ export default function NotFound() {
           href="/"
           className="btn-lacquer inline-flex items-center justify-center w-full h-12 rounded-xl text-sm font-semibold tracking-wide transition-all active:scale-[0.98]"
         >
-          Return to the Oracle
+          Return to the oracle
         </Link>
 
         {/* Footer quip */}
         <p className="text-[11px] tracking-[0.15em] uppercase text-gold/25 font-mono">
-          The void is not on the Lightning Network
+          The void is not on Lightning
         </p>
       </motion.div>
     </main>

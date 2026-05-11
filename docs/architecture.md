@@ -27,7 +27,7 @@ This is what people see. It's designed to feel like a premium ritual, not a web 
 **Key files:**
 - `src/app/page.tsx` -- Homepage with 3D dragon, fortune machine, activity feed
 - `src/components/fortune-machine.tsx` -- The core pay-and-reveal experience
-- `src/components/fortune-pack.tsx` -- On-chain 100-fortune pack purchase
+- `src/components/fortune-pack.tsx` -- Lightning or on-chain 100-fortune pack purchase
 - `src/app/collection/page.tsx` -- Personal fortune collection
 - `src/app/leaderboard/page.tsx` -- Global rankings
 
@@ -79,7 +79,7 @@ This layer decides who gets in and how they pay.
 
 **Rules of this layer:**
 - Payment is value exchange, not a paywall
-- The Strike webhook is authoritative but optional — client polling against `getStrikeInvoice` provides the same guarantee if the webhook is unregistered
+- The Strike webhook is authoritative but optional; client polling against `getStrikeInvoice` provides the same guarantee if the webhook is unregistered
 - Rate limiting is defense-in-depth, not revenue protection
 
 ---
@@ -89,7 +89,7 @@ This layer decides who gets in and how they pay.
 The foundation. Business logic that both humans and agents share.
 
 **Key files:**
-- `src/lib/fortunes.ts` -- Fortune pool (170 items), rarity system, enriched agent model
+- `src/lib/fortunes.ts` -- Fortune pool (119 core items), rarity system, enriched agent model
 - `src/lib/config.ts` -- Pricing, rarity weights, feature flags
 - `src/lib/leaderboard.ts` -- Redis sorted sets for global rankings
 - `src/lib/activity.ts` -- Activity feed (Redis list)
@@ -99,7 +99,7 @@ The foundation. Business logic that both humans and agents share.
 
 **Data flow:**
 ```
-Fortune Pool (170 items, in-memory)
+Fortune Pool (119 core items, in-memory)
     |-- getRandomFortune()        -> Human API -> UI
     |-- getRandomAgentFortune()   -> Agent API -> JSON
     |-- agentFortuneById          -> Agent API (by ID lookup)

@@ -91,7 +91,7 @@ function GiftSuccessInner() {
         if (cancelled) return;
         setState({
           step: "error",
-          message: data?.error?.message ?? "Failed to create gift",
+          message: data?.error?.message ?? "Failed to seal the gift",
           retriable,
         });
       } catch {
@@ -104,7 +104,7 @@ function GiftSuccessInner() {
         if (cancelled) return;
         setState({
           step: "error",
-          message: "Network error — please check your connection and refresh.",
+          message: "Network error. Check your connection and refresh.",
           retriable: true,
         });
       }
@@ -148,7 +148,7 @@ function GiftSuccessInner() {
               <p className="text-sm text-gold/50 tracking-wide">
                 {state.step === "verifying"
                   ? "Verifying payment\u2026"
-                  : "Preparing your gift\u2026"}
+                  : "Sealing your fortune\u2026"}
               </p>
             </motion.div>
           )}
@@ -183,10 +183,10 @@ function GiftSuccessInner() {
 
                   <div className="text-center space-y-2">
                     <h1 className="text-lg font-semibold text-foreground/90">
-                      Gift Fortune Created
+                      Sealed fortune ready
                     </h1>
                     <p className="text-sm text-gold/50">
-                      A <span style={{ color: rarityConfig?.color }} className="font-medium">{rarityConfig?.label}</span> fortune awaits the recipient.
+                      A <span style={{ color: rarityConfig?.color }} className="font-medium">{rarityConfig?.label}</span> reveal is waiting behind the claim link.
                     </p>
                   </div>
 
@@ -210,7 +210,7 @@ function GiftSuccessInner() {
                       ) : (
                         <>
                           <Copy className="h-4 w-4" />
-                          Copy Gift Link
+                          Copy claim link
                         </>
                       )}
                     </button>
@@ -218,7 +218,7 @@ function GiftSuccessInner() {
 
                   {/* Expiry note */}
                   <p className="text-[11px] text-gold/30 text-center">
-                    Gift expires in 30 days. Can only be claimed once.
+                    Link expires in 30 days. It can only be opened once.
                   </p>
 
                   <div className="dragon-line w-full" />

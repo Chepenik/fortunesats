@@ -17,9 +17,9 @@ interface ActivityEvent {
 
 const VERBS: Record<Rarity, string> = {
   legendary: "unearthed",
-  epic: "pulled",
+  epic: "revealed",
   rare: "revealed",
-  common: "got",
+  common: "opened",
 };
 
 function relativeTime(ts: number): string {
@@ -72,7 +72,7 @@ export function ActivityFeed() {
         <div className="flex items-center gap-1.5">
           <div className="h-1 w-1 rounded-full bg-cyan/40 animate-glow-pulse" />
           <span className="text-[11px] tracking-[0.2em] uppercase text-gold/30 font-mono">
-            Recent fortunes
+            Recent signal
           </span>
         </div>
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/8 to-transparent" />

@@ -93,14 +93,14 @@ describe("applyInvoiceToRecord", () => {
       purchaseType: "fortune",
       amountSats: 100,
       amountBtc: "0.00000100",
-      description: "One fortune — Fortune Sats",
+      description: "One FortuneSats reveal",
       state: "UNPAID",
       createdAt: 1_700_000_000_000,
       lastSyncedAt: 1_700_000_000_000,
     };
   });
 
-  it("marks paidAt on UNPAID→PAID transition", () => {
+  it("marks paidAt on UNPAID to PAID transition", () => {
     const invoice: StrikeInvoice = {
       invoiceId: "inv_1",
       amount: { amount: "0.00000100", currency: "BTC" },

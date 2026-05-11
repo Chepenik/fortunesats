@@ -5,23 +5,23 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Fortune Pack — 100 Bitcoin Fortunes for 10,000 Sats",
+  title: "Fortune Pack - 100 Bitcoin Fortunes for 10,000 Sats",
   description:
-    "Buy a Fortune Pack: 100 wisdom fortunes for 10,000 sats. Pay on-chain Bitcoin, accepted instantly on mempool detection.",
+    "Buy 100 FortuneSats reveals for 10,000 sats. Pay with Lightning or on-chain Bitcoin, then open the pack as collectible wisdom.",
   alternates: { canonical: "https://fortunesats.com/pack" },
   openGraph: {
-    title: "Fortune Pack — 100 Bitcoin Fortunes for 10,000 Sats",
+    title: "Fortune Pack - 100 Bitcoin Fortunes for 10,000 Sats",
     description:
-      "Buy a Fortune Pack: 100 wisdom fortunes for 10,000 sats. Pay on-chain Bitcoin, accepted instantly on mempool detection.",
+      "Buy 100 FortuneSats reveals for 10,000 sats. Pay with Lightning or on-chain Bitcoin, then open the pack as collectible wisdom.",
     url: "https://fortunesats.com/pack",
     siteName: "Fortune Sats",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Fortune Pack — 100 Bitcoin Fortunes for 10,000 Sats",
+    title: "Fortune Pack - 100 Bitcoin Fortunes for 10,000 Sats",
     description:
-      "Buy a Fortune Pack: 100 wisdom fortunes for 10,000 sats. Pay on-chain Bitcoin, accepted instantly on mempool detection.",
+      "Buy 100 FortuneSats reveals for 10,000 sats. Pay with Lightning or on-chain Bitcoin, then open the pack as collectible wisdom.",
   },
 };
 
@@ -59,7 +59,7 @@ export default function PackPage() {
               <span className="text-foreground/60">100 fortunes.</span>
               <br />
               <span className="text-muted-foreground/50 text-[13px]">
-                On-chain Bitcoin. Instant mempool acceptance.
+                Lightning or on-chain Bitcoin. One prepaid ritual.
               </span>
             </p>
           </div>
@@ -73,7 +73,7 @@ export default function PackPage() {
             <p className="text-sm text-muted-foreground/60">New pack purchases are temporarily unavailable.</p>
             <p className="text-xs text-gold/30">Existing packs can still be claimed.</p>
             <Link href="/" className="inline-block text-xs text-gold/50 hover:text-gold/70 transition-colors mt-2">
-              &larr; Back to Fortune Sats
+              Back to Fortune Sats
             </Link>
           </div>
         )}
@@ -82,7 +82,7 @@ export default function PackPage() {
         <footer className="space-y-4 text-center">
           <div className="dragon-line w-16 mx-auto" />
           <p className="text-[11px] tracking-[0.2em] uppercase text-gold/30 font-mono">
-            On-chain &middot; Mempool acceptance &middot; Bitcoin
+            Lightning &middot; On-chain &middot; Bitcoin
           </p>
           <p className="text-xs text-muted-foreground/35">
             Powered by{" "}

@@ -43,14 +43,14 @@ export function decodeFortuneSlug(
 /* ─── Fortune text parsing ──────────────────────────────── */
 
 /**
- * Split "The obstacle is the way. — Marcus Aurelius" into
+ * Split "Trusted third parties are security holes. - Nick Szabo" into
  * { quote: "The obstacle is the way.", author: "Marcus Aurelius" }
  */
 export function parseFortune(text: string): {
   quote: string;
   author: string | null;
 } {
-  // Match " — Author" or " — Author" at the end
+  // Match "- Author" at the end, with legacy dash support.
   const match = text.match(/^(.+?)\s*[—–-]\s+([A-Z].+)$/);
   if (match) {
     return { quote: match[1].trim(), author: match[2].trim() };

@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
+  FORTUNE_POOL_TOTAL,
+  FORTUNE_POOL_TOTALS,
   fortunes,
   agentFortunes,
   agentFortuneById,
@@ -24,6 +26,19 @@ describe("agentFortunes enrichment", () => {
 
   it("produces the same number of enriched fortunes as base fortunes", () => {
     expect(agentFortunes.length).toBe(fortunes.length);
+  });
+
+  it("keeps the public core pool count in sync with rarity totals", () => {
+    expect(FORTUNE_POOL_TOTAL).toBe(119);
+    expect(FORTUNE_POOL_TOTALS).toEqual({
+      legendary: 8,
+      epic: 18,
+      rare: 38,
+      common: 55,
+    });
+    expect(
+      Object.values(FORTUNE_POOL_TOTALS).reduce((sum, count) => sum + count, 0),
+    ).toBe(FORTUNE_POOL_TOTAL);
   });
 
   it("generates stable IDs — same text always produces same ID", () => {
@@ -60,26 +75,31 @@ describe("agentFortuneById map", () => {
 });
 
 describe("author extraction", () => {
-  it("extracts author from 'text — Author' format", () => {
+  it("extracts author from 'text - Author' format", () => {
     const stoic = agentFortunes.find((f) => f.text.includes("Marcus Aurelius"));
     expect(stoic?.author).toBe("Marcus Aurelius");
   });
 
   it("extracts multi-word authors correctly", () => {
-    const seneca = agentFortunes.find((f) => f.text.includes("— Seneca"));
+    const satoshi = agentFortunes.find((f) => f.text.includes("- Satoshi Nakamoto"));
+    expect(satoshi?.author).toBe("Satoshi Nakamoto");
+  });
+
+  it("keeps legacy dash attribution support", () => {
+    const seneca = agentFortunes.find((f) => f.text.includes("- Seneca"));
     expect(seneca?.author).toBe("Seneca");
   });
 
   it("returns null for fortunes without attribution", () => {
-    const unattributed = agentFortunes.find((f) => !f.text.includes(" — "));
+    const unattributed = agentFortunes.find((f) => f.text === "Proof of work is truth without permission.");
     if (unattributed) {
       expect(unattributed.author).toBeNull();
     }
   });
 
-  it("extracts Rumi as author", () => {
-    const rumi = agentFortunes.find((f) => f.text.includes("— Rumi"));
-    expect(rumi?.author).toBe("Rumi");
+  it("extracts Nick Szabo as author", () => {
+    const szabo = agentFortunes.find((f) => f.text.includes("- Nick Szabo"));
+    expect(szabo?.author).toBe("Nick Szabo");
   });
 });
 
@@ -108,10 +128,10 @@ describe("category inference", () => {
     }
   });
 
-  it("classifies Rumi fortunes as eastern", () => {
-    const rumi = agentFortunes.filter((f) => f.author === "Rumi");
-    expect(rumi.length).toBeGreaterThan(0);
-    for (const f of rumi) {
+  it("classifies Buddha fortunes as eastern", () => {
+    const buddha = agentFortunes.filter((f) => f.author === "Buddha");
+    expect(buddha.length).toBeGreaterThan(0);
+    for (const f of buddha) {
       expect(f.category).toBe("eastern");
     }
   });
@@ -119,16 +139,24 @@ describe("category inference", () => {
   it("classifies bitcoin/sovereignty keywords as sovereignty", () => {
     const sovereignty = agentFortunes.filter((f) => f.category === "sovereignty");
     expect(sovereignty.length).toBeGreaterThan(0);
+    const sovereigntyAuthors = ["Satoshi Nakamoto", "Nick Szabo", "Frederic Bastiat"];
     // These keywords mirror inferCategory's sovereigntyKw list exactly
     const sovereigntyKw = [
-      "sats", " sat ", "money", "bitcoin", "proof of work", "time preference",
+      "sats", " sat ", "money", "currency", "bitcoin", "proof of work",
+      "proof-of-work", "time preference", "trusted third", "peer-to-peer",
+      "mint", "state", "mempool", "keys", "wallet", "scarcity", "stack",
       "fix the", "savings", "sound money", "freedom compounds",
-      "sovereign", "value for value",
+      "sovereign", "value for value", "consensus", "self-custody",
     ];
     for (const f of sovereignty) {
       const lower = f.text.toLowerCase();
       const hasSovereigntyKw = sovereigntyKw.some((kw) => lower.includes(kw));
-      expect(hasSovereigntyKw, `"${f.text}" classified as sovereignty but matched no keyword`).toBe(true);
+      const hasSovereigntyAuthor = !!f.author
+        && sovereigntyAuthors.some((author) => f.author?.includes(author));
+      expect(
+        hasSovereigntyKw || hasSovereigntyAuthor,
+        `"${f.text}" classified as sovereignty but matched no keyword or author`,
+      ).toBe(true);
     }
   });
 

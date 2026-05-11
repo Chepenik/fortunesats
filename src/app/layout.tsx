@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SiteNav } from "@/components/site-nav";
 import { getFlags } from "@/lib/flags";
+import { FORTUNE_POOL_TOTAL } from "@/lib/fortunes";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,27 +19,27 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://fortunesats.com"),
   title: {
-    default: "Fortune Sats — Bitcoin Fortune Oracle Powered by Lightning",
+    default: "Fortune Sats - Bitcoin Fortune Oracle Powered by Lightning",
     template: "%s | Fortune Sats",
   },
   description:
-    "Pay 100 sats over Lightning, receive a wisdom fortune. A Bitcoin-native fortune oracle with 119 collectible quotes across 4 rarity tiers.",
+    `Request a fortune, pay 100 sats over Lightning, and reveal collectible Bitcoin wisdom from ${FORTUNE_POOL_TOTAL} core fortunes.`,
   icons: {
     icon: "/icon.svg",
   },
   openGraph: {
-    title: "Fortune Sats — Bitcoin Fortune Oracle",
+    title: "Fortune Sats - Bitcoin Fortune Oracle",
     description:
-      "Pay 100 sats over Lightning, receive a wisdom fortune. 119 collectible quotes across 4 rarity tiers.",
+      `Request a fortune, pay 100 sats over Lightning, and reveal collectible Bitcoin wisdom from ${FORTUNE_POOL_TOTAL} core fortunes.`,
     siteName: "Fortune Sats",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Fortune Sats — Bitcoin Fortune Oracle",
+    title: "Fortune Sats - Bitcoin Fortune Oracle",
     description:
-      "Pay 100 sats over Lightning, receive a wisdom fortune. 119 collectible quotes across 4 rarity tiers.",
+      `Request a fortune, pay 100 sats over Lightning, and reveal collectible Bitcoin wisdom from ${FORTUNE_POOL_TOTAL} core fortunes.`,
     site: "@ConorChepenik",
   },
   alternates: {

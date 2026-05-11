@@ -54,7 +54,7 @@ export async function POST(req: Request) {
   try {
     if (rail === "lightning") {
       const correlationId = makeCorrelationId();
-      const description = `Fortune Pack — ${PACK_SIZE} fortunes`;
+      const description = `Fortune Pack - ${PACK_SIZE} fortunes`;
 
       // Create Strike invoice + quote first so order creation can be rolled
       // back cheaply (Redis set) if Strike is unavailable.
