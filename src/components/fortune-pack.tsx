@@ -1096,14 +1096,14 @@ export function FortunePack() {
                 <button
                   className="btn-jade h-9 w-9 rounded-lg cursor-pointer active:scale-[0.98] flex items-center justify-center"
                   onClick={() => copyShareTextFn(state.fortune, state.rarity)}
-                  title="Copy fortune text"
+                  aria-label={copied === "text" ? "Fortune text copied" : "Copy fortune text"}
                 >
                   <CopyIcon copied={copied === "text"} />
                 </button>
                 <button
                   className="btn-jade h-9 w-9 rounded-lg cursor-pointer active:scale-[0.98] flex items-center justify-center"
                   onClick={() => copyLink(state.fortune, state.rarity)}
-                  title="Copy link"
+                  aria-label={copied === "link" ? "Link copied" : "Copy link"}
                 >
                   <LinkIcon copied={copied === "link"} />
                 </button>
@@ -1111,7 +1111,7 @@ export function FortunePack() {
                   <button
                     className="btn-jade h-9 w-9 rounded-lg cursor-pointer active:scale-[0.98] flex items-center justify-center text-gold/40"
                     onClick={() => handleNativeShare(state.fortune, state.rarity)}
-                    title="More sharing options"
+                    aria-label="More sharing options"
                   >
                     <svg
                       viewBox="0 0 24 24"
