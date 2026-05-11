@@ -56,7 +56,7 @@ type PackStep =
       fortunesRemaining: number;
       fortunesTotal: number;
       txid: string;
-      txStatus: "mempool" | "confirmed";
+      txStatus: "mempool" | "confirmed" | "lightning-paid";
     }
   | {
       step: "paid";
@@ -65,7 +65,7 @@ type PackStep =
       fortunesRemaining: number;
       fortunesTotal: number;
       txid: string;
-      txStatus: "mempool" | "confirmed";
+      txStatus: "mempool" | "confirmed" | "lightning-paid";
     }
   | {
       step: "revealing";
@@ -180,7 +180,12 @@ export function FortunePack() {
               fortunesRemaining: data.fortunesRemaining,
               fortunesTotal: data.fortunesTotal,
               txid: data.txid ?? "",
-              txStatus: data.status === "confirmed" ? "confirmed" : "mempool",
+              txStatus:
+                data.status === "lightning-paid"
+                  ? "lightning-paid"
+                  : data.status === "confirmed"
+                    ? "confirmed"
+                    : "mempool",
             });
           }
         } else if (data.status === "pending") {
@@ -873,13 +878,19 @@ export function FortunePack() {
                 <div className="flex items-center gap-2">
                   <div className="h-1.5 w-1.5 rounded-full bg-cyan shadow-[0_0_6px_rgba(0,200,212,0.4)]" />
                   <span className="text-xs text-cyan/60 font-mono tracking-wide">
-                    {state.txStatus === "confirmed"
-                      ? "Confirmed on-chain"
-                      : "Detected in mempool"}
+                    {state.txStatus === "lightning-paid"
+                      ? "Lightning settled"
+                      : state.txStatus === "confirmed"
+                        ? "Confirmed on-chain"
+                        : "Detected in mempool"}
                   </span>
                 </div>
                 <span className="font-mono text-xs text-gold/40">
-                  {state.txid?.slice(0, 8)}&hellip;
+                  {state.txStatus === "lightning-paid"
+                    ? "Strike"
+                    : state.txid
+                      ? `${state.txid.slice(0, 8)}...`
+                      : ""}
                 </span>
               </div>
 
@@ -919,6 +930,12 @@ export function FortunePack() {
                   &middot; {state.fortunesRemaining} to go
                 </div>
               </div>
+
+              {state.txStatus === "lightning-paid" && (
+                <p className="text-[11px] text-center text-cyan/35 leading-relaxed">
+                  Lightning payment settled. Your fortunes are fully unlocked.
+                </p>
+              )}
 
               {state.txStatus === "mempool" && (
                 <p className="text-[11px] text-center text-cyan/35 leading-relaxed">

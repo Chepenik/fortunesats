@@ -1,4 +1,4 @@
-import { getOrder, claimFortune } from "@/lib/orders";
+import { getOrder, claimFortune, markOrderLightningPaid } from "@/lib/orders";
 import { getUniqueRandomFortune, withLuckyPrimeNumbers } from "@/lib/fortunes";
 import { checkRateLimit } from "@/lib/ratelimit";
 import { getOrCreateDeviceId, attachDeviceCookie, resolveDisplayNameFromReq } from "@/lib/device-id";
@@ -6,6 +6,8 @@ import { recordFortuneReveal } from "@/lib/leaderboard";
 import { recordActivity } from "@/lib/activity";
 import { addToServerCollection, recordServerStreak } from "@/lib/collection-sync";
 import { resolvePackCredentials, attachClearPackCookie } from "@/lib/pack-session";
+import { getStrikeInvoice } from "@/lib/strike";
+import { recordSatsOnce } from "@/lib/idempotency";
 
 /**
  * POST /api/pack/fortune — Claim one fortune from a paid pack.
@@ -39,7 +41,7 @@ export async function POST(req: Request) {
   const { orderId, secret } = creds;
 
   try {
-    const order = await getOrder(orderId, secret);
+    let order = await getOrder(orderId, secret);
     if (!order) {
       return Response.json(
         { error: { code: "not_found", message: "Order not found" } },
@@ -47,7 +49,35 @@ export async function POST(req: Request) {
       );
     }
 
-    if (order.status !== "mempool" && order.status !== "confirmed") {
+    let deviceContext: ReturnType<typeof getOrCreateDeviceId> | null = null;
+    const getDeviceContext = () => {
+      deviceContext ??= getOrCreateDeviceId(req);
+      return deviceContext;
+    };
+
+    if (order.rail === "lightning" && order.status !== "lightning-paid" && order.strikeInvoiceId) {
+      try {
+        const invoice = await getStrikeInvoice(order.strikeInvoiceId);
+        if (invoice.state === "PAID" && invoice.amount?.currency === "BTC") {
+          const updated = await markOrderLightningPaid(orderId);
+          if (updated) order = updated;
+
+          // Webhooks can fail or arrive late, so claim also performs one live
+          // Strike sync before denying a paid Lightning pack.
+          const { deviceId } = getDeviceContext();
+          const displayName = resolveDisplayNameFromReq(req, deviceId);
+          await recordSatsOnce(orderId, deviceId, displayName, order.amountSats);
+        }
+      } catch (e) {
+        console.error("[pack/fortune:strike] sync failed:", e instanceof Error ? e.message : e);
+      }
+    }
+
+    const isPaid =
+      order.status === "mempool" ||
+      order.status === "confirmed" ||
+      order.status === "lightning-paid";
+    if (!isPaid) {
       return Response.json(
         { error: { code: "not_paid", message: "Order not yet paid" } },
         { status: 402 },
@@ -86,7 +116,7 @@ export async function POST(req: Request) {
 
     // Leaderboard: record fortune reveal (sats=0, already tracked at pack payment)
     // Must await — serverless freezes after return
-    const { deviceId, isNew } = getOrCreateDeviceId(req);
+    const { deviceId, isNew } = getDeviceContext();
     const displayName = resolveDisplayNameFromReq(req, deviceId);
     await Promise.all([
       recordFortuneReveal(deviceId, displayName, fortune.rarity, 0),

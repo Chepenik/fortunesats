@@ -56,6 +56,10 @@ describe("verifyStrikeWebhookSignature", () => {
     return createHmac("sha256", s).update(JSON.stringify(b)).digest("hex");
   }
 
+  function signRaw(raw: string, s: string = secret): string {
+    return createHmac("sha256", s).update(raw).digest("hex");
+  }
+
   it("accepts a valid signature", () => {
     expect(verifyStrikeWebhookSignature(body, sign(body), secret)).toBe(true);
   });
@@ -68,6 +72,13 @@ describe("verifyStrikeWebhookSignature", () => {
     const sig = sign(body);
     const tampered = { ...body, eventType: "invoice.created" };
     expect(verifyStrikeWebhookSignature(tampered, sig, secret)).toBe(false);
+  });
+
+  it("verifies the exact raw webhook body Strike signs", () => {
+    const raw = '{\n  "id": "evt_1",\n  "eventType": "invoice.updated",\n  "data": { "entityId": "inv_1" }\n}';
+    const sig = signRaw(raw);
+    expect(verifyStrikeWebhookSignature(raw, sig, secret)).toBe(true);
+    expect(verifyStrikeWebhookSignature(JSON.parse(raw), sig, secret)).toBe(false);
   });
 
   it("rejects missing signature", () => {

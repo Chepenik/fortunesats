@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   }
 
   const signature = req.headers.get("x-webhook-signature");
-  if (!verifyStrikeWebhookSignature(payload, signature)) {
+  if (!verifyStrikeWebhookSignature(rawBody, signature)) {
     // Do not log signature details — could leak attempted forgery attempts.
     console.warn("[strike-webhook] Signature verification failed");
     return new Response("Unauthorized", { status: 401 });

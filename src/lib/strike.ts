@@ -129,7 +129,14 @@ export function verifyStrikeWebhookSignature(
   secret: string | undefined = process.env.STRIKE_WEBHOOK_SECRET,
 ): boolean {
   if (!signature || !secret) return false;
-  const content = JSON.stringify(body);
+  let content: string | Buffer | Uint8Array;
+  if (typeof body === "string" || Buffer.isBuffer(body) || body instanceof Uint8Array) {
+    content = body;
+  } else {
+    const serialized = JSON.stringify(body);
+    if (serialized === undefined) return false;
+    content = serialized;
+  }
   const expected = createHmac("sha256", secret).update(content).digest("hex");
   const a = Buffer.from(signature, "utf8");
   const b = Buffer.from(expected, "utf8");
