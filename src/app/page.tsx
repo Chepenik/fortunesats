@@ -163,7 +163,7 @@ export default function Home() {
             <p className="text-xs text-muted-foreground/60">
               Powered by{" "}
               <a
-                href="https://strike.me/"
+                href="https://strike.me/chepenik/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gold/50 hover:text-gold/70 transition-colors"
