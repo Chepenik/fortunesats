@@ -81,7 +81,7 @@ export function SupportView() {
           </button>
 
           {copied && (
-            <p className="text-[11px] text-center text-emerald-400/70 font-medium">
+            <p role="status" className="text-[11px] text-center text-emerald-400/70 font-medium">
               Address copied
             </p>
           )}
