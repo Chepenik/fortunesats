@@ -198,12 +198,14 @@ export function CollectionView() {
       </div>
 
       {/* ── Filter tabs ────────────────────────────────────── */}
-      <div className="flex gap-1 p-1 rounded-xl bg-background/40 border border-gold/[0.06]">
+      <div role="tablist" className="flex gap-1 p-1 rounded-xl bg-background/40 border border-gold/[0.06]">
         {FILTERS.map((f) => {
           const count = f.key === "all" ? collection.length : stats[f.key];
           return (
             <button
               key={f.key}
+              role="tab"
+              aria-selected={filter === f.key}
               onClick={() => setFilter(f.key)}
               className={`flex-1 px-2 py-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                 filter === f.key
