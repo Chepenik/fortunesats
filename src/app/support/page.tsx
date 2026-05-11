@@ -6,6 +6,18 @@ export const metadata: Metadata = {
   title: "Support the Oracle — Donate Bitcoin to Fortune Sats",
   description: "Support FortuneSats with an on-chain Bitcoin donation. Every sat helps keep the fortune oracle alive and open source.",
   alternates: { canonical: "https://fortunesats.com/support" },
+  openGraph: {
+    title: "Support the Oracle — Donate Bitcoin to Fortune Sats",
+    description: "Support FortuneSats with an on-chain Bitcoin donation. Every sat helps keep the fortune oracle alive and open source.",
+    url: "https://fortunesats.com/support",
+    siteName: "Fortune Sats",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Support the Oracle — Donate Bitcoin to Fortune Sats",
+    description: "Support FortuneSats with an on-chain Bitcoin donation. Every sat helps keep the fortune oracle alive and open source.",
+  },
 };
 
 export default function SupportPage() {
