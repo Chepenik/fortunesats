@@ -6,6 +6,18 @@ export const metadata: Metadata = {
   title: "Fortune Collection — Track Your Bitcoin Wisdom Fortunes",
   description: "Browse and track every wisdom fortune you have revealed. 119 collectible quotes across Legendary, Epic, Rare, and Common rarity tiers.",
   alternates: { canonical: "https://fortunesats.com/collection" },
+  openGraph: {
+    title: "Fortune Collection — Track Your Bitcoin Wisdom Fortunes",
+    description: "Browse and track every wisdom fortune you have revealed. 119 collectible quotes across Legendary, Epic, Rare, and Common rarity tiers.",
+    url: "https://fortunesats.com/collection",
+    siteName: "Fortune Sats",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Fortune Collection — Track Your Bitcoin Wisdom Fortunes",
+    description: "Browse and track every wisdom fortune you have revealed. 119 collectible quotes across Legendary, Epic, Rare, and Common rarity tiers.",
+  },
 };
 
 export default function CollectionPage() {

@@ -8,6 +8,18 @@ export const metadata: Metadata = {
   title: "Hall of Fortunes — Bitcoin Fortune Leaderboard",
   description: "Global leaderboard for Fortune Sats. See who has revealed the most fortunes, earned the most sats, and collected the rarest wisdom.",
   alternates: { canonical: "https://fortunesats.com/leaderboard" },
+  openGraph: {
+    title: "Hall of Fortunes — Bitcoin Fortune Leaderboard",
+    description: "Global leaderboard for Fortune Sats. See who has revealed the most fortunes, earned the most sats, and collected the rarest wisdom.",
+    url: "https://fortunesats.com/leaderboard",
+    siteName: "Fortune Sats",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Hall of Fortunes — Bitcoin Fortune Leaderboard",
+    description: "Global leaderboard for Fortune Sats. See who has revealed the most fortunes, earned the most sats, and collected the rarest wisdom.",
+  },
 };
 
 export default function LeaderboardPage() {
