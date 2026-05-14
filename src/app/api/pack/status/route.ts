@@ -111,9 +111,10 @@ export async function POST(req: Request) {
     // -- On-chain rail (unchanged below) --
     // -- Already paid: check for confirmation upgrade --
     if (order.status === "mempool" && order.txid) {
-      const { confirmed } = await isTxConfirmed(order.txid).catch(() => ({
-        confirmed: false,
-      }));
+      const { confirmed } = await isTxConfirmed(order.txid).catch((e) => {
+        console.error("[pack/status] isTxConfirmed failed:", e instanceof Error ? e.message : e);
+        return { confirmed: false };
+      });
       if (confirmed) {
         try {
           await markOrderConfirmed(orderId);
