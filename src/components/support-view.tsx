@@ -20,15 +20,8 @@ export function SupportView() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
-      const ta = document.createElement("textarea");
-      ta.value = BTC_ADDRESS;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      // clipboard permission denied or secure-context unavailable — the address
+      // is visible on screen and can be copied manually
     }
   };
 
