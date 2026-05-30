@@ -20,7 +20,7 @@ export function SiteNav({ hiddenRoutes = [] }: { hiddenRoutes?: string[] }) {
   const navItems = ALL_NAV_ITEMS.filter((item) => !hidden.has(item.href));
 
   return (
-    <nav className="sticky top-0 z-50 w-full backdrop-blur-md bg-background/70 border-b border-gold/[0.06]">
+    <nav aria-label="Site navigation" className="sticky top-0 z-50 w-full backdrop-blur-md bg-background/70 border-b border-gold/[0.06]">
       <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
         {/* Logo / Home link */}
         <Link
@@ -43,6 +43,7 @@ export function SiteNav({ hiddenRoutes = [] }: { hiddenRoutes?: string[] }) {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
                   isActive
                     ? "bg-gold/[0.08] text-gold border border-gold/15"
