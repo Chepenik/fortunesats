@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/"],
+        disallow: ["/api/", "/checkout/", "/fortune/success", "/gift/success"],
       },
     ],
     sitemap: "https://fortunesats.com/sitemap.xml",
