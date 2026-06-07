@@ -1,8 +1,17 @@
-import confetti from "canvas-confetti";
 import type { Rarity } from "@/lib/fortunes";
 
+// canvas-confetti is loaded lazily so it stays out of the initial JS bundle.
+// It's only needed after a fortune reveal (post-interaction, post-payment),
+// so deferring until first use saves ~17 KB from the initial page payload.
+// The browser caches the module after the first dynamic import.
+async function load() {
+  const { default: confetti } = await import("canvas-confetti");
+  return confetti;
+}
+
 /** Full celebration burst (used for pack payment confirmation) */
-export function fireConfetti() {
+export async function fireConfetti() {
+  const confetti = await load();
   const gold = "#d4a257";
   const red = "#c41e3a";
   const cyan = "#00c8d4";
@@ -44,7 +53,8 @@ export function fireConfetti() {
 }
 
 /** Rarity-scaled confetti for individual fortune reveals */
-export function fireRarityConfetti(rarity: Rarity) {
+export async function fireRarityConfetti(rarity: Rarity) {
+  const confetti = await load();
   if (rarity === "legendary") {
     const gold = "#d4a257";
     const brightGold = "#ffd700";
@@ -79,7 +89,8 @@ export function fireRarityConfetti(rarity: Rarity) {
 }
 
 /** Smaller rarity confetti for pack fortune reveals (no confetti for rare/common) */
-export function firePackRarityConfetti(rarity: Rarity) {
+export async function firePackRarityConfetti(rarity: Rarity) {
+  const confetti = await load();
   if (rarity === "legendary") {
     const gold = "#d4a257";
     const brightGold = "#ffd700";
