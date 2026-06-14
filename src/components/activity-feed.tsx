@@ -79,7 +79,7 @@ export function ActivityFeed() {
       </div>
 
       {/* Events list */}
-      <div className="space-y-1">
+      <div role="log" aria-label="Recent fortune activity" aria-live="polite" aria-relevant="additions" className="space-y-1">
         <AnimatePresence initial={false}>
           {events.slice(0, 5).map((event, i) => (
             <motion.div
