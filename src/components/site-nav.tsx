@@ -20,7 +20,7 @@ export function SiteNav({ hiddenRoutes = [] }: { hiddenRoutes?: string[] }) {
   const navItems = ALL_NAV_ITEMS.filter((item) => !hidden.has(item.href));
 
   return (
-    <nav className="sticky top-0 z-50 w-full backdrop-blur-md bg-background/70 border-b border-gold/[0.06]">
+    <nav aria-label="Main navigation" className="sticky top-0 z-50 w-full backdrop-blur-md bg-background/70 border-b border-gold/[0.06]">
       <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
         {/* Logo / Home link */}
         <Link
