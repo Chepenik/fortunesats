@@ -11,6 +11,7 @@
  */
 
 import { randomUUID, randomBytes } from "crypto";
+import { config } from "@/lib/config";
 
 /* ─── Types ──────────────────────────────────────────────── */
 
@@ -52,8 +53,8 @@ export interface Order {
 
 /* ─── Constants ──────────────────────────────────────────── */
 
-export const PACK_BASE_PRICE_SATS = 10_000;
-export const PACK_SIZE = 100;
+export const PACK_BASE_PRICE_SATS = config.pricing.fortunePack;
+export const PACK_SIZE = config.pricing.packSize;
 /** Random offset range added to base price to disambiguate concurrent orders */
 const PRICE_OFFSET_MAX = 999;
 /** How long an order stays "pending" before the UI shows it as expired */
