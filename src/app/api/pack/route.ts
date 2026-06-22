@@ -22,6 +22,7 @@ import {
 import { checkRateLimit } from "@/lib/ratelimit";
 import { attachPackCookie } from "@/lib/pack-session";
 import { getFlags, unavailableResponse } from "@/lib/flags";
+import { config } from "@/lib/config";
 import {
   applyQuoteToRecord,
   createStrikeInvoice,
@@ -61,7 +62,7 @@ export async function POST(req: Request) {
       const invoice = await createStrikeInvoice({
         correlationId,
         description,
-        amountSats: 10_000,
+        amountSats: config.pricing.fortunePack,
       });
       const quote = await createStrikeQuote(invoice.invoiceId);
 
