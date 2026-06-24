@@ -31,6 +31,7 @@ export const metadata: Metadata = {
     title: "Fortune Sats - Bitcoin Fortune Oracle",
     description:
       `Request a fortune, pay 100 sats over Lightning, and reveal collectible Bitcoin wisdom from ${FORTUNE_POOL_TOTAL} core fortunes.`,
+    url: "https://fortunesats.com",
     siteName: "Fortune Sats",
     type: "website",
     locale: "en_US",
