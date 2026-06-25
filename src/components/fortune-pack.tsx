@@ -617,6 +617,7 @@ export function FortunePack() {
                     level="M"
                     bgColor="transparent"
                     fgColor="#0c0a0e"
+                    aria-label="Bitcoin payment address QR code"
                   />
                 </div>
               </div>

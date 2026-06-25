@@ -52,6 +52,7 @@ export function SupportView() {
                 fgColor="#0c0a0e"
                 level="M"
                 className="rounded-sm"
+                aria-label="Bitcoin donation address QR code"
               />
             </div>
           </div>
