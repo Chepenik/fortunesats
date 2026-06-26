@@ -204,14 +204,16 @@ export function CollectionView() {
       </div>
 
       {/* ── Filter tabs ────────────────────────────────────── */}
-      <div role="tablist" className="flex gap-1 p-1 rounded-xl bg-background/40 border border-gold/[0.06]">
+      <div role="tablist" aria-label="Filter by rarity" className="flex gap-1 p-1 rounded-xl bg-background/40 border border-gold/[0.06]">
         {FILTERS.map((f) => {
           const count = f.key === "all" ? collection.length : stats[f.key];
           return (
             <button
               key={f.key}
               role="tab"
+              id={`col-tab-${f.key}`}
               aria-selected={filter === f.key}
+              aria-controls={`col-panel-${f.key}`}
               onClick={() => setFilter(f.key)}
               className={`flex-1 px-2 py-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                 filter === f.key
@@ -232,6 +234,9 @@ export function CollectionView() {
       <AnimatePresence mode="wait">
         <motion.div
           key={filter}
+          role="tabpanel"
+          id={`col-panel-${filter}`}
+          aria-labelledby={`col-tab-${filter}`}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
