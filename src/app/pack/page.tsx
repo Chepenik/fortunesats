@@ -25,11 +25,39 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  name: "Fortune Pack",
+  description:
+    "100 prepaid Bitcoin fortune reveals. Pay 10,000 sats over Lightning or on-chain Bitcoin and open fortunes one by one from a collectible pool of Bitcoin wisdom.",
+  brand: {
+    "@type": "Brand",
+    name: "Fortune Sats",
+    url: "https://fortunesats.com",
+  },
+  url: "https://fortunesats.com/pack",
+  offers: {
+    "@type": "Offer",
+    availability: "https://schema.org/InStock",
+    url: "https://fortunesats.com/pack",
+    seller: {
+      "@type": "Organization",
+      name: "Fortune Sats",
+      url: "https://fortunesats.com",
+    },
+  },
+};
+
 export default function PackPage() {
   const { fortunePackEnabled } = getFlags();
 
   return (
     <main className="relative flex-1 flex flex-col items-center justify-center px-6 py-12 overflow-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Ambient radial glows */}
       <div className="pointer-events-none absolute inset-0 flex flex-col">
         <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-lacquer/[0.04] blur-[120px]" />
