@@ -43,6 +43,7 @@ export function SiteNav({ hiddenRoutes = [] }: { hiddenRoutes?: string[] }) {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
                   isActive
                     ? "bg-gold/[0.08] text-gold border border-gold/15"
