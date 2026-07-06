@@ -49,7 +49,10 @@ export function GiftButton() {
         className="btn-jade w-full h-10 rounded-xl text-sm font-medium cursor-pointer transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {requesting ? (
-          <OracleSpinner />
+          <>
+            <OracleSpinner />
+            <span className="sr-only">Sending gift, please wait</span>
+          </>
         ) : (
           <>
             <span>🎁</span>
