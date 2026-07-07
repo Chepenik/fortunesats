@@ -105,8 +105,11 @@ async function createRedisStore(): Promise<OrderStore> {
       await redis.rpush("pending_orders", orderId);
     },
     async setTxidMapping(txid, orderId) {
-      await redis.set(`txid:${txid}`, orderId, { ex: REDIS_TTL_SECONDS });
-      await redis.lrem("pending_orders", 0, orderId);
+      // Pipeline SET + LREM into one HTTP request (they're independent).
+      const pipe = redis.pipeline();
+      pipe.set(`txid:${txid}`, orderId, { ex: REDIS_TTL_SECONDS });
+      pipe.lrem("pending_orders", 0, orderId);
+      await pipe.exec();
     },
   };
 }
