@@ -20,14 +20,15 @@ export function SiteNav({ hiddenRoutes = [] }: { hiddenRoutes?: string[] }) {
   const navItems = ALL_NAV_ITEMS.filter((item) => !hidden.has(item.href));
 
   return (
-    <nav className="sticky top-0 z-50 w-full backdrop-blur-md bg-background/70 border-b border-gold/[0.06]">
+    <nav aria-label="Main navigation" className="sticky top-0 z-50 w-full backdrop-blur-md bg-background/70 border-b border-gold/[0.06]">
       <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
         {/* Logo / Home link */}
         <Link
           href="/"
+          aria-label="Fortune Sats home"
           className="flex items-center gap-2.5 group"
         >
-          <span className="text-lg drop-shadow-[0_0_8px_rgba(212,162,87,0.2)] group-hover:drop-shadow-[0_0_12px_rgba(212,162,87,0.35)] transition-all">
+          <span aria-hidden="true" className="text-lg drop-shadow-[0_0_8px_rgba(212,162,87,0.2)] group-hover:drop-shadow-[0_0_12px_rgba(212,162,87,0.35)] transition-all">
             🥠
           </span>
           <span className="text-sm font-bold tracking-tight text-foreground/90 group-hover:text-foreground transition-colors hidden sm:inline">
@@ -43,6 +44,7 @@ export function SiteNav({ hiddenRoutes = [] }: { hiddenRoutes?: string[] }) {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
                   isActive
                     ? "bg-gold/[0.08] text-gold border border-gold/15"
