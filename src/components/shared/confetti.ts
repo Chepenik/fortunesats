@@ -1,8 +1,16 @@
 import type { Rarity } from "@/lib/fortunes";
 
+// Lazy-load canvas-confetti (~25 KB) so it's not in the initial bundle.
+// Confetti only fires after a fortune is revealed (post-payment), so the
+// async import resolves well before the user sees any delay.
+async function getConfetti() {
+  const mod = await import("canvas-confetti");
+  return mod.default;
+}
+
 /** Full celebration burst (used for pack payment confirmation) */
 export async function fireConfetti() {
-  const { default: confetti } = await import("canvas-confetti");
+  const confetti = await getConfetti();
   const gold = "#d4a257";
   const red = "#c41e3a";
   const cyan = "#00c8d4";
@@ -45,7 +53,7 @@ export async function fireConfetti() {
 
 /** Rarity-scaled confetti for individual fortune reveals */
 export async function fireRarityConfetti(rarity: Rarity) {
-  const { default: confetti } = await import("canvas-confetti");
+  const confetti = await getConfetti();
   if (rarity === "legendary") {
     const gold = "#d4a257";
     const brightGold = "#ffd700";
@@ -81,8 +89,7 @@ export async function fireRarityConfetti(rarity: Rarity) {
 
 /** Smaller rarity confetti for pack fortune reveals (no confetti for rare/common) */
 export async function firePackRarityConfetti(rarity: Rarity) {
-  if (rarity !== "legendary" && rarity !== "epic") return;
-  const { default: confetti } = await import("canvas-confetti");
+  const confetti = await getConfetti();
   if (rarity === "legendary") {
     const gold = "#d4a257";
     const brightGold = "#ffd700";
@@ -92,7 +99,7 @@ export async function firePackRarityConfetti(rarity: Rarity) {
       confetti({ particleCount: 40, angle: 60, spread: 55, origin: { x: 0, y: 0.6 }, colors: [gold, brightGold] });
       confetti({ particleCount: 40, angle: 120, spread: 55, origin: { x: 1, y: 0.6 }, colors: [warmGold, brightGold] });
     }, 200);
-  } else {
+  } else if (rarity === "epic") {
     const purple = "#a855f7";
     const violet = "#8b5cf6";
     const lilac = "#c084fc";
