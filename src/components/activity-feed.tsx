@@ -54,8 +54,22 @@ export function ActivityFeed() {
 
   useEffect(() => {
     fetchActivity();
-    const id = setInterval(fetchActivity, POLL_INTERVAL);
-    return () => clearInterval(id);
+    let id = setInterval(fetchActivity, POLL_INTERVAL);
+
+    function onVisibility() {
+      if (document.visibilityState === "visible") {
+        fetchActivity();
+        id = setInterval(fetchActivity, POLL_INTERVAL);
+      } else {
+        clearInterval(id);
+      }
+    }
+
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [fetchActivity]);
 
   // Don't render anything until first load completes (avoid layout jank)
