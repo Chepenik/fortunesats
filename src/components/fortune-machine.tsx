@@ -181,8 +181,22 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
     : null;
   const fortuneParts = state.step === "fortune" ? parseFortune(state.fortune) : null;
 
+  const srStatus =
+    state.step === "requesting"
+      ? freePromo ? "Consulting the oracle…" : "Preparing your Lightning invoice…"
+      : state.step === "revealing" || state.step === "rarity-reveal"
+      ? "Revealing your fortune…"
+      : state.step === "fortune"
+      ? `${RARITY_CONFIG[state.rarity].label} fortune: ${state.fortune}`
+      : state.step === "error"
+      ? `Error: ${state.message}`
+      : "";
+
   return (
     <div className="w-full">
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {srStatus}
+      </div>
       <AnimatePresence mode="wait">
         {/* ────────────────── IDLE ────────────────── */}
         {state.step === "idle" && (
