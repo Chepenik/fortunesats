@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Copy, Link2 } from "lucide-react";
 import { track } from "@vercel/analytics";
 import { getStreak, recordFortune, type StreakData } from "@/lib/streak";
 import { saveToCollection } from "@/lib/collection";
@@ -20,7 +19,7 @@ import { getLuckyPrimeNumbers, RARITY_CONFIG, type Rarity } from "@/lib/fortunes
 import { parseFortune } from "@/lib/og";
 import { ease, fadeUp } from "@/components/shared/animations";
 import { fireRarityConfetti } from "@/components/shared/confetti";
-import { XIcon, GoldDot, OracleSpinner } from "@/components/shared/icons";
+import { XIcon, GoldDot, OracleSpinner, CopyIcon, LinkIcon } from "@/components/shared/icons";
 import { LuckyPrimeRow } from "@/components/shared/lucky-primes";
 
 /* ─── Types ──────────────────────────────────────────────── */
@@ -530,44 +529,14 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
                   className="btn-jade flex-1 h-9 rounded-lg text-xs font-medium cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
                   onClick={() => copyShareText(state.fortune, state.rarity)}
                 >
-                  <span className="relative h-3 w-3">
-                    <span
-                      className={`absolute inset-0 transition-all duration-200 ${
-                        copied === "text" ? "scale-0 opacity-0" : "scale-100 opacity-100"
-                      }`}
-                    >
-                      <Copy className="h-3 w-3" />
-                    </span>
-                    <span
-                      className={`absolute inset-0 transition-all duration-200 ${
-                        copied === "text" ? "scale-100 opacity-100" : "scale-0 opacity-0"
-                      }`}
-                    >
-                      <Check className="h-3 w-3 text-cyan" />
-                    </span>
-                  </span>
+                  <CopyIcon copied={copied === "text"} />
                   {copied === "text" ? "Copied!" : "Copy text"}
                 </button>
                 <button
                   className="btn-jade flex-1 h-9 rounded-lg text-xs font-medium cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
                   onClick={() => copyLink(state.fortune, state.rarity)}
                 >
-                  <span className="relative h-3 w-3">
-                    <span
-                      className={`absolute inset-0 transition-all duration-200 ${
-                        copied === "link" ? "scale-0 opacity-0" : "scale-100 opacity-100"
-                      }`}
-                    >
-                      <Link2 className="h-3 w-3" />
-                    </span>
-                    <span
-                      className={`absolute inset-0 transition-all duration-200 ${
-                        copied === "link" ? "scale-100 opacity-100" : "scale-0 opacity-0"
-                      }`}
-                    >
-                      <Check className="h-3 w-3 text-cyan" />
-                    </span>
-                  </span>
+                  <LinkIcon copied={copied === "link"} />
                   {copied === "link" ? "Copied!" : "Copy link"}
                 </button>
               </motion.div>
