@@ -98,11 +98,27 @@ export default async function FortunePage({ params }: Props) {
     },
   };
 
+  const shortQuote = quote.length > 60 ? quote.slice(0, 57) + "…" : quote;
+  const breadcrumbTitle = author ? `${shortQuote} - ${author}` : shortQuote;
+
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://fortunesats.com" },
+      { "@type": "ListItem", position: 2, name: breadcrumbTitle, item: `https://fortunesats.com/fortune/${slug}` },
+    ],
+  };
+
   return (
     <main className="flex-1 flex flex-col items-center justify-center px-6 py-16 relative overflow-hidden">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
       {/* Ambient glows */}
       <div className="pointer-events-none absolute inset-0 flex flex-col">
