@@ -14,7 +14,8 @@ export function GoldDot() {
 
 export function OracleSpinner() {
   return (
-    <div className="relative h-10 w-10">
+    <div role="status" className="relative h-10 w-10">
+      <span className="sr-only">Loading…</span>
       <div className="absolute inset-0 rounded-full border border-gold/10" />
       <div className="absolute inset-0 rounded-full border border-transparent border-t-lacquer/50 animate-spin" />
       <div className="absolute inset-2 rounded-full bg-lacquer/[0.06] animate-glow-pulse" />
