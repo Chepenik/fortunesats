@@ -182,7 +182,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
   const fortuneParts = state.step === "fortune" ? parseFortune(state.fortune) : null;
 
   return (
-    <div className="w-full">
+    <div className="w-full" aria-live="polite" aria-atomic="false">
       <AnimatePresence mode="wait">
         {/* ────────────────── IDLE ────────────────── */}
         {state.step === "idle" && (
