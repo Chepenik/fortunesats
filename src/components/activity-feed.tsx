@@ -53,9 +53,31 @@ export function ActivityFeed() {
   }, []);
 
   useEffect(() => {
-    fetchActivity();
-    const id = setInterval(fetchActivity, POLL_INTERVAL);
-    return () => clearInterval(id);
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    async function tick() {
+      if (cancelled) return;
+      if (!document.hidden) await fetchActivity();
+      if (!cancelled) timer = setTimeout(tick, POLL_INTERVAL);
+    }
+
+    const onVis = () => {
+      if (!document.hidden && !cancelled) {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(tick, 0);
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVis);
+    fetchActivity(); // initial load always runs
+    timer = setTimeout(tick, POLL_INTERVAL);
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, [fetchActivity]);
 
   // Don't render anything until first load completes (avoid layout jank)
