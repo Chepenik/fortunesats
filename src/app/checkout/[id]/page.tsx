@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCheckoutRecord } from "@/lib/strike";
 import { StrikeCheckoutClient } from "@/components/strike-checkout-client";
+
+export const metadata: Metadata = {
+  robots: { index: false },
+};
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
