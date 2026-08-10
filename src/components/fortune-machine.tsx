@@ -609,7 +609,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
         {state.step === "error" && (
           <motion.div key="error" {...fadeUp} className="space-y-4">
             <div className="rounded-xl border border-lacquer/20 bg-lacquer/[0.04] p-5">
-              <p className="text-sm text-lacquer/70">{state.message}</p>
+              <p role="alert" className="text-sm text-lacquer/70">{state.message}</p>
             </div>
             <button
               onClick={() => setState({ step: "idle" })}

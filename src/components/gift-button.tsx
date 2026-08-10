@@ -62,7 +62,7 @@ export function GiftButton() {
       </button>
 
       {error && (
-        <p className="text-xs text-lacquer/60 text-center">{error}</p>
+        <p role="alert" className="text-xs text-lacquer/60 text-center">{error}</p>
       )}
 
       <p className="text-[11px] text-gold/25 text-center leading-relaxed">
