@@ -1,16 +1,13 @@
 import type { Rarity } from "@/lib/fortunes";
 
-// Lazy-load canvas-confetti (~25 KB) so it's not in the initial bundle.
-// Confetti only fires after a fortune is revealed (post-payment), so the
-// async import resolves well before the user sees any delay.
-async function getConfetti() {
-  const mod = await import("canvas-confetti");
-  return mod.default;
-}
+// canvas-confetti is loaded lazily — it's only needed after a fortune reveal,
+// not on initial page load. Dynamic imports are cached by the module system.
+const lazyConfetti = () =>
+  import("canvas-confetti").then((m) => m.default as (opts?: object) => void);
 
 /** Full celebration burst (used for pack payment confirmation) */
 export async function fireConfetti() {
-  const confetti = await getConfetti();
+  const confetti = await lazyConfetti();
   const gold = "#d4a257";
   const red = "#c41e3a";
   const cyan = "#00c8d4";
@@ -53,7 +50,7 @@ export async function fireConfetti() {
 
 /** Rarity-scaled confetti for individual fortune reveals */
 export async function fireRarityConfetti(rarity: Rarity) {
-  const confetti = await getConfetti();
+  const confetti = await lazyConfetti();
   if (rarity === "legendary") {
     const gold = "#d4a257";
     const brightGold = "#ffd700";
@@ -89,7 +86,7 @@ export async function fireRarityConfetti(rarity: Rarity) {
 
 /** Smaller rarity confetti for pack fortune reveals (no confetti for rare/common) */
 export async function firePackRarityConfetti(rarity: Rarity) {
-  const confetti = await getConfetti();
+  const confetti = await lazyConfetti();
   if (rarity === "legendary") {
     const gold = "#d4a257";
     const brightGold = "#ffd700";
