@@ -4,6 +4,7 @@ import { getCheckoutRecord } from "@/lib/strike";
 import { StrikeCheckoutClient } from "@/components/strike-checkout-client";
 
 export const metadata: Metadata = {
+  title: "Pay Invoice",
   robots: { index: false, follow: false },
 };
 
