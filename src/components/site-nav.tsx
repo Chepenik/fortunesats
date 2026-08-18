@@ -25,12 +25,13 @@ export function SiteNav({ hiddenRoutes = [] }: { hiddenRoutes?: string[] }) {
         {/* Logo / Home link */}
         <Link
           href="/"
+          aria-label="Fortune Sats – home"
           className="flex items-center gap-2.5 group"
         >
           <span className="text-lg drop-shadow-[0_0_8px_rgba(212,162,87,0.2)] group-hover:drop-shadow-[0_0_12px_rgba(212,162,87,0.35)] transition-all" aria-hidden="true">
             🥠
           </span>
-          <span className="text-sm font-bold tracking-tight text-foreground/90 group-hover:text-foreground transition-colors hidden sm:inline">
+          <span aria-hidden="true" className="text-sm font-bold tracking-tight text-foreground/90 group-hover:text-foreground transition-colors hidden sm:inline">
             Fortune Sats
           </span>
         </Link>
