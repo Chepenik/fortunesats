@@ -5,6 +5,12 @@
  * Agents, CLI tools, and external systems can consume this to
  * understand how to interact with the FortuneSats API.
  */
+
+// Fully static: the spec has no request-dependent data, so Next.js
+// prerenders this at build time and Vercel serves it as an edge asset
+// — no function invocation per request.
+export const dynamic = "force-static";
+
 export async function GET() {
   const spec = {
     openapi: "3.1.0",
