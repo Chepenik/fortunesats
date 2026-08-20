@@ -34,6 +34,14 @@ export const metadata: Metadata = {
     siteName: "Fortune Sats",
     type: "website",
     locale: "en_US",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Fortune Sats - 100 sats. One fortune.",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
@@ -41,6 +49,7 @@ export const metadata: Metadata = {
     description:
       `Request a fortune, pay 100 sats over Lightning, and reveal collectible Bitcoin wisdom from ${FORTUNE_POOL_TOTAL} core fortunes.`,
     site: "@ConorChepenik",
+    images: ["/opengraph-image"],
   },
   alternates: {
     canonical: "https://fortunesats.com",
