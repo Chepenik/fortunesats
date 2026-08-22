@@ -182,7 +182,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
   const fortuneParts = state.step === "fortune" ? parseFortune(state.fortune) : null;
 
   return (
-    <div className="w-full">
+    <div className="w-full" aria-live="polite" aria-atomic="false">
       <AnimatePresence mode="wait">
         {/* ────────────────── IDLE ────────────────── */}
         {state.step === "idle" && (
@@ -270,7 +270,7 @@ export function FortuneMachine({ freePromo = false }: { freePromo?: boolean }) {
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
               className="h-10 w-10 rounded-full bg-cyan/10 border border-cyan/20 flex items-center justify-center"
             >
-              <svg className="h-5 w-5 text-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              <svg className="h-5 w-5 text-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
             </motion.div>
 
             <div className="text-center space-y-1.5">
