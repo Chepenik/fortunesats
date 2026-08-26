@@ -52,6 +52,7 @@ export function SupportView() {
                 fgColor="#0c0a0e"
                 level="M"
                 className="rounded-sm"
+                aria-label="Bitcoin address QR code"
               />
             </div>
           </div>
@@ -66,12 +67,13 @@ export function SupportView() {
           {/* Address + copy */}
           <button
             onClick={copyAddress}
+            aria-label="Copy Bitcoin address"
             className="w-full group relative flex items-center gap-2 px-4 py-3 rounded-xl border border-gold/[0.08] bg-background/60 hover:border-gold/15 hover:bg-gold/[0.02] transition-all cursor-pointer"
           >
-            <span className="flex-1 text-[11px] font-mono text-muted-foreground/50 break-all text-left leading-relaxed">
+            <span aria-hidden="true" className="flex-1 text-[11px] font-mono text-muted-foreground/50 break-all text-left leading-relaxed">
               {BTC_ADDRESS}
             </span>
-            <span className="shrink-0 text-gold/30 group-hover:text-gold/60 transition-colors">
+            <span aria-hidden="true" className="shrink-0 text-gold/30 group-hover:text-gold/60 transition-colors">
               {copied ? (
                 <Check className="h-3.5 w-3.5 text-emerald-400" />
               ) : (
