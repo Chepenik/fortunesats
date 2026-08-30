@@ -105,8 +105,8 @@ export function CollectionView() {
 
   if (!mounted) {
     return (
-      <div className="flex items-center justify-center py-16">
-        <div className="h-6 w-6 rounded-full border border-gold/10 border-t-gold/40 animate-spin" />
+      <div role="status" aria-label="Loading collection" className="flex items-center justify-center py-16">
+        <div aria-hidden="true" className="h-6 w-6 rounded-full border border-gold/10 border-t-gold/40 animate-spin" />
       </div>
     );
   }
@@ -146,8 +146,17 @@ export function CollectionView() {
           </div>
 
           {/* Progress bar */}
-          <div className="h-2 rounded-full bg-foreground/[0.04] overflow-hidden">
+          <div
+            role="progressbar"
+            aria-valuenow={pct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuetext={`${stats.total} of ${FORTUNE_POOL_TOTAL} fortunes collected`}
+            aria-label="Fortune collection progress"
+            className="h-2 rounded-full bg-foreground/[0.04] overflow-hidden"
+          >
             <motion.div
+              aria-hidden="true"
               className="h-full rounded-full bg-gradient-to-r from-gold/50 via-gold/70 to-gold/50"
               initial={{ width: 0 }}
               animate={{ width: `${Math.max(pct, 1)}%` }}
@@ -180,8 +189,17 @@ export function CollectionView() {
                         {count}/{total}
                       </span>
                     </div>
-                    <div className="h-1 rounded-full bg-foreground/[0.04] overflow-hidden">
+                    <div
+                      role="progressbar"
+                      aria-valuenow={rarityPct}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuetext={`${count} of ${total} ${cfg.label.toLowerCase()} fortunes`}
+                      aria-label={`${cfg.label} collection progress`}
+                      className="h-1 rounded-full bg-foreground/[0.04] overflow-hidden"
+                    >
                       <div
+                        aria-hidden="true"
                         className="h-full rounded-full transition-all duration-700"
                         style={{
                           width: `${Math.max(rarityPct, count > 0 ? 4 : 0)}%`,
@@ -204,14 +222,16 @@ export function CollectionView() {
       </div>
 
       {/* ── Filter tabs ────────────────────────────────────── */}
-      <div role="tablist" className="flex gap-1 p-1 rounded-xl bg-background/40 border border-gold/[0.06]">
+      <div role="tablist" aria-label="Filter by rarity" className="flex gap-1 p-1 rounded-xl bg-background/40 border border-gold/[0.06]">
         {FILTERS.map((f) => {
           const count = f.key === "all" ? collection.length : stats[f.key];
           return (
             <button
               key={f.key}
               role="tab"
+              id={`col-tab-${f.key}`}
               aria-selected={filter === f.key}
+              aria-controls={`col-panel-${f.key}`}
               onClick={() => setFilter(f.key)}
               className={`flex-1 px-2 py-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
                 filter === f.key
@@ -232,6 +252,9 @@ export function CollectionView() {
       <AnimatePresence mode="wait">
         <motion.div
           key={filter}
+          role="tabpanel"
+          id={`col-panel-${filter}`}
+          aria-labelledby={`col-tab-${filter}`}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
