@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: `${titleQuote} | Fortune Sats`,
       description,
       siteName: "Fortune Sats",
-      type: "article",
+      type: "website",
       url: canonicalUrl,
     },
     twitter: {
