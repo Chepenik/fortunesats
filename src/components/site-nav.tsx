@@ -27,6 +27,7 @@ export function SiteNav({ hiddenRoutes = [] }: { hiddenRoutes?: string[] }) {
           href="/"
           aria-label="Fortune Sats home"
           className="flex items-center gap-2.5 group"
+          aria-current={pathname === "/" ? "page" : undefined}
         >
           <span aria-hidden="true" className="text-lg drop-shadow-[0_0_8px_rgba(212,162,87,0.2)] group-hover:drop-shadow-[0_0_12px_rgba(212,162,87,0.35)] transition-all">
             🥠
