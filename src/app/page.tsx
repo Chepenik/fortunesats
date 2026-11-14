@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { serializeJsonLd } from "@/lib/og";
 import { FortuneMachine } from "@/components/fortune-machine";
 import { GiftButton } from "@/components/gift-button";
 import { ActivityFeedLoader } from "@/components/activity-feed-loader";
@@ -48,7 +49,7 @@ export default function Home() {
     <main className="relative flex-1 flex flex-col items-center justify-center px-6 py-12 overflow-hidden">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       {/* 3D Dragon — background layer, homepage only */}
       <div

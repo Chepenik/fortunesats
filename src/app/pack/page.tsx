@@ -16,9 +16,11 @@ export const metadata: Metadata = {
     url: "https://fortunesats.com/pack",
     siteName: "Fortune Sats",
     type: "website",
+    images: ["/opengraph-image"],
   },
   twitter: {
     card: "summary_large_image",
+    images: ["/twitter-image"],
     title: "Fortune Pack - 100 Bitcoin Fortunes for 10,000 Sats",
     description:
       "Buy 100 FortuneSats reveals for 10,000 sats. Pay with Lightning or on-chain Bitcoin, then open the pack as collectible wisdom.",

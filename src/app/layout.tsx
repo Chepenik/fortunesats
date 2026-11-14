@@ -44,9 +44,6 @@ export const metadata: Metadata = {
     site: "@ConorChepenik",
     creator: "@ConorChepenik",
   },
-  alternates: {
-    canonical: "https://fortunesats.com",
-  },
 };
 
 export default function RootLayout({

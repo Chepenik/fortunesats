@@ -12,9 +12,11 @@ export const metadata: Metadata = {
     url: "https://fortunesats.com/support",
     siteName: "Fortune Sats",
     type: "website",
+    images: ["/opengraph-image"],
   },
   twitter: {
     card: "summary_large_image",
+    images: ["/twitter-image"],
     title: "Fund the Oracle - Donate Bitcoin to Fortune Sats",
     description: "Support FortuneSats with an on-chain Bitcoin donation. Every sat helps keep the oracle online, open source, and weird.",
   },

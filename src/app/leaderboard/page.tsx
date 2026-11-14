@@ -14,9 +14,11 @@ export const metadata: Metadata = {
     url: "https://fortunesats.com/leaderboard",
     siteName: "Fortune Sats",
     type: "website",
+    images: ["/opengraph-image"],
   },
   twitter: {
     card: "summary_large_image",
+    images: ["/twitter-image"],
     title: "Hall of Fortunes - Bitcoin Fortune Leaderboard",
     description: "Global FortuneSats rankings by reveals, sats sent, legendary finds, and streaks.",
   },
