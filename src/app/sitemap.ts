@@ -4,6 +4,10 @@ import { encodeFortuneSlug } from "@/lib/og";
 
 const BASE = "https://fortunesats.com";
 
+// Fortune pages are statically generated from a fixed pool; use the date the
+// pool was last modified so crawlers don't re-index unchanged content daily.
+const FORTUNE_POOL_LAST_MODIFIED = new Date("2026-05-11");
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
@@ -17,7 +21,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const fortunePages: MetadataRoute.Sitemap = fortunes.map((f) => ({
     url: `${BASE}/fortune/${encodeFortuneSlug(f.text, f.rarity)}`,
-    lastModified: now,
+    lastModified: FORTUNE_POOL_LAST_MODIFIED,
     changeFrequency: "yearly" as const,
     priority: f.rarity === "legendary" ? 0.9 : f.rarity === "epic" ? 0.8 : 0.7,
   }));
