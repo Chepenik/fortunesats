@@ -34,6 +34,7 @@ export const metadata: Metadata = {
     siteName: "Fortune Sats",
     type: "website",
     locale: "en_US",
+    url: "https://fortunesats.com",
   },
   twitter: {
     card: "summary_large_image",
@@ -41,6 +42,7 @@ export const metadata: Metadata = {
     description:
       `Request a fortune, pay 100 sats over Lightning, and reveal collectible Bitcoin wisdom from ${FORTUNE_POOL_TOTAL} core fortunes.`,
     site: "@ConorChepenik",
+    creator: "@ConorChepenik",
   },
   alternates: {
     canonical: "https://fortunesats.com",
