@@ -40,6 +40,13 @@ export function decodeFortuneSlug(
   }
 }
 
+/* ─── JSON-LD serialization ─────────────────────────────── */
+
+/** Serialize JSON-LD for an inline <script>; escapes "<" so slug-supplied text can't close the tag. */
+export function serializeJsonLd(data: unknown): string {
+  return JSON.stringify(data).replace(/</g, "\\u003c");
+}
+
 /* ─── Fortune text parsing ──────────────────────────────── */
 
 /**

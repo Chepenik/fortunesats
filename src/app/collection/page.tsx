@@ -13,9 +13,11 @@ export const metadata: Metadata = {
     url: "https://fortunesats.com/collection",
     siteName: "Fortune Sats",
     type: "website",
+    images: ["/opengraph-image"],
   },
   twitter: {
     card: "summary_large_image",
+    images: ["/twitter-image"],
     title: "Fortune Collection - Track Your Bitcoin Wisdom",
     description: `Track every FortuneSats reveal in a ${FORTUNE_POOL_TOTAL}-fortune Bitcoin wisdom set across Legendary, Epic, Rare, and Common tiers.`,
   },

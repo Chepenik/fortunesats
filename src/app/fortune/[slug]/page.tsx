@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { decodeFortuneSlug, encodeFortuneSlug, parseFortune } from "@/lib/og";
+import { decodeFortuneSlug, encodeFortuneSlug, parseFortune, serializeJsonLd } from "@/lib/og";
 import { getLuckyPrimeNumbers, RARITY_CONFIG, fortunes, type Rarity } from "@/lib/fortunes";
 import { LuckyPrimeRow } from "@/components/shared/lucky-primes";
 
@@ -46,9 +46,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const canonicalUrl = `https://fortunesats.com/fortune/${slug}`;
 
+  // Slugs are stateless, so anyone can craft one with arbitrary text; only index real pool fortunes.
+  const inPool = fortunes.some((f) => f.text === decoded.text);
+
   return {
     title,
     description,
+    ...(inPool ? {} : { robots: { index: false, follow: false } }),
     alternates: { canonical: canonicalUrl },
     openGraph: {
       title: `${titleQuote} | Fortune Sats`,
@@ -123,11 +127,11 @@ export default async function FortunePage({ params }: Props) {
     <main className="flex-1 flex flex-col items-center justify-center px-6 py-16 relative overflow-hidden">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbLd) }}
       />
       {/* Ambient glows */}
       <div className="pointer-events-none absolute inset-0 flex flex-col">
