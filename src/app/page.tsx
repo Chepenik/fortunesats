@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { FortuneMachine } from "@/components/fortune-machine";
 import { GiftButton } from "@/components/gift-button";
-import { ActivityFeed } from "@/components/activity-feed";
+import { ActivityFeedLoader } from "@/components/activity-feed-loader";
 import { InitialsEditor } from "@/components/initials-editor";
 import { DragonLoader } from "@/components/dragon/DragonLoader";
 import { getFlags } from "@/lib/flags";
@@ -102,7 +102,7 @@ export default function Home() {
         {giftEnabled && <GiftButton />}
 
         {/* Live activity feed */}
-        {activityFeedEnabled && <ActivityFeed />}
+        {activityFeedEnabled && <ActivityFeedLoader />}
 
         {/* Initials editor */}
         <InitialsEditor />
