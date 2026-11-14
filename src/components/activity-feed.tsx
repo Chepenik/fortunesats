@@ -65,9 +65,9 @@ export function ActivityFeed() {
   if (events.length === 0) return null;
 
   return (
-    <div className="w-full space-y-3">
-      {/* Section header */}
-      <div className="flex items-center gap-3">
+    <section aria-label="Recent fortune activity" className="w-full space-y-3">
+      {/* Section header — decorative */}
+      <div className="flex items-center gap-3" aria-hidden="true">
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/8 to-transparent" />
         <div className="flex items-center gap-1.5">
           <div className="h-1 w-1 rounded-full bg-cyan/40 animate-glow-pulse" />
@@ -78,11 +78,11 @@ export function ActivityFeed() {
         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/8 to-transparent" />
       </div>
 
-      {/* Events list */}
-      <div className="space-y-1">
+      {/* Events list — announces updates to screen readers */}
+      <ul className="space-y-1" aria-live="polite" aria-relevant="additions">
         <AnimatePresence initial={false}>
           {events.slice(0, 5).map((event, i) => (
-            <motion.div
+            <motion.li
               key={`${event.displayName}-${event.timestamp}`}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
@@ -90,8 +90,9 @@ export function ActivityFeed() {
               transition={{ duration: 0.35, delay: i * 0.05, ease }}
               className="flex items-center gap-2 py-1.5 px-3 rounded-lg"
             >
-              {/* Rarity dot */}
+              {/* Rarity dot — color conveyed by adjacent text */}
               <div
+                aria-hidden="true"
                 className="h-1.5 w-1.5 rounded-full shrink-0"
                 style={{
                   backgroundColor: RARITY_CONFIG[event.rarity].color,
@@ -119,10 +120,10 @@ export function ActivityFeed() {
               <span className="text-[11px] text-gold/25 font-mono whitespace-nowrap ml-auto shrink-0">
                 {relativeTime(event.timestamp)}
               </span>
-            </motion.div>
+            </motion.li>
           ))}
         </AnimatePresence>
-      </div>
-    </div>
+      </ul>
+    </section>
   );
 }
