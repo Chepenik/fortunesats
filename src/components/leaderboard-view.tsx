@@ -120,8 +120,9 @@ export function LeaderboardView() {
           transition={{ duration: 0.25 }}
         >
           {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="h-6 w-6 rounded-full border border-gold/10 border-t-gold/40 animate-spin" />
+            <div className="flex items-center justify-center py-16" role="status">
+              <div className="h-6 w-6 rounded-full border border-gold/10 border-t-gold/40 animate-spin" aria-hidden="true" />
+              <span className="sr-only">Loading leaderboard…</span>
             </div>
           ) : entries.length === 0 ? (
             <div className="text-center py-16 space-y-3">
