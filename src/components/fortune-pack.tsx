@@ -458,8 +458,32 @@ export function FortunePack() {
 
   const fortuneParts = state.step === "fortune" ? parseFortune(state.fortune) : null;
 
+  const srStatus =
+    state.step === "loading"
+      ? "Restoring your pack…"
+      : state.step === "creating"
+      ? "Preparing the Fortune Pack order…"
+      : state.step === "awaiting-payment"
+      ? "Awaiting on-chain payment. Send Bitcoin to the displayed address, then paste your transaction ID."
+      : state.step === "verifying"
+      ? "Verifying transaction…"
+      : state.step === "celebration"
+      ? "Payment verified. Your Fortune Pack is unlocked."
+      : state.step === "revealing"
+      ? "Opening the next fortune…"
+      : state.step === "fortune"
+      ? `${RARITY_CONFIG[state.rarity].label} fortune: ${state.fortune}`
+      : state.step === "depleted"
+      ? "All 100 fortunes revealed. The ritual is complete."
+      : state.step === "error"
+      ? `Error: ${state.message}`
+      : "";
+
   return (
     <div className="w-full">
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {srStatus}
+      </div>
       <AnimatePresence mode="wait">
         {/* ────────────────── IDLE ────────────────── */}
         {state.step === "idle" && (
