@@ -7,7 +7,8 @@ import {
   RARITY_LABELS,
 } from "@/lib/og";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 export const alt = "Fortune Sats - A Lightning-powered fortune";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -166,9 +167,9 @@ export default async function OGImage({
               justifyContent: "center",
             }}
           >
-            <span style={{ color: "rgba(212,162,87,0.6)" }}>{"\u201C"}</span>
+            <span style={{ color: "rgba(212,162,87,0.6)" }}>{"“"}</span>
             <span>{quote}</span>
-            <span style={{ color: "rgba(212,162,87,0.6)" }}>{"\u201D"}</span>
+            <span style={{ color: "rgba(212,162,87,0.6)" }}>{"”"}</span>
           </div>
 
           {/* ── Author attribution ── */}
@@ -211,9 +212,9 @@ export default async function OGImage({
           }}
         >
           <span style={{ color: "rgba(240,236,228,0.35)" }}>Fortune Sats</span>
-          <span style={{ color: "rgba(196,30,58,0.25)" }}>{"\u2022"}</span>
+          <span style={{ color: "rgba(196,30,58,0.25)" }}>{"•"}</span>
           <span style={{ color: "rgba(212,162,87,0.2)" }}>100 sats</span>
-          <span style={{ color: "rgba(196,30,58,0.25)" }}>{"\u2022"}</span>
+          <span style={{ color: "rgba(196,30,58,0.25)" }}>{"•"}</span>
           <span style={{ color: "rgba(212,162,87,0.2)" }}>Lightning</span>
         </div>
 
