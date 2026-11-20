@@ -1,5 +1,7 @@
 import { FortunePack } from "@/components/fortune-pack";
 import { getFlags } from "@/lib/flags";
+import { config } from "@/lib/config";
+import { serializeJsonLd } from "@/lib/og";
 import Link from "next/link";
 
 import type { Metadata } from "next";
@@ -27,11 +29,41 @@ export const metadata: Metadata = {
   },
 };
 
+const packJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "@id": "https://fortunesats.com/pack#product",
+  name: "Fortune Pack",
+  description: `${config.pricing.packSize} FortuneSats reveals for ${config.pricing.fortunePack.toLocaleString()} sats. Pay with Lightning or on-chain Bitcoin, then open the pack as collectible Bitcoin wisdom.`,
+  url: "https://fortunesats.com/pack",
+  brand: {
+    "@type": "Brand",
+    name: "Fortune Sats",
+    url: "https://fortunesats.com",
+  },
+  offers: {
+    "@type": "Offer",
+    price: (config.pricing.fortunePack / 100_000_000).toFixed(8),
+    priceCurrency: "BTC",
+    url: "https://fortunesats.com/pack",
+    availability: "https://schema.org/InStock",
+    seller: {
+      "@type": "Organization",
+      name: "Fortune Sats",
+      url: "https://fortunesats.com",
+    },
+  },
+};
+
 export default function PackPage() {
   const { fortunePackEnabled } = getFlags();
 
   return (
     <main className="relative flex-1 flex flex-col items-center justify-center px-6 py-12 overflow-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(packJsonLd) }}
+      />
       {/* Ambient radial glows */}
       <div className="pointer-events-none absolute inset-0 flex flex-col">
         <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-lacquer/[0.04] blur-[120px]" />
