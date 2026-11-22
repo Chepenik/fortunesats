@@ -469,6 +469,8 @@ export function FortunePack() {
       ? "Verifying transaction…"
       : state.step === "celebration"
       ? "Payment verified. Your Fortune Pack is unlocked."
+      : state.step === "paid"
+      ? `${state.fortunesRemaining} of ${state.fortunesTotal} fortunes remaining in your pack.`
       : state.step === "revealing"
       ? "Opening the next fortune…"
       : state.step === "fortune"
@@ -941,7 +943,14 @@ export function FortunePack() {
                   fortunes remaining
                 </div>
 
-                <div className="mt-4 mx-auto w-56 h-1.5 rounded-full bg-gold/5 overflow-hidden">
+                <div
+                  role="progressbar"
+                  aria-label="Fortunes remaining"
+                  aria-valuenow={state.fortunesRemaining}
+                  aria-valuemin={0}
+                  aria-valuemax={state.fortunesTotal}
+                  className="mt-4 mx-auto w-56 h-1.5 rounded-full bg-gold/5 overflow-hidden"
+                >
                   <motion.div
                     className="h-full rounded-full bg-gradient-to-r from-lacquer/60 via-gold/40 to-gold/60"
                     animate={{
@@ -1118,7 +1127,14 @@ export function FortunePack() {
 
             {/* Remaining mini-bar */}
             <div className="flex items-center gap-3 px-1">
-              <div className="flex-1 h-1 rounded-full bg-gold/5 overflow-hidden">
+              <div
+                role="progressbar"
+                aria-label="Fortunes remaining"
+                aria-valuenow={state.fortunesRemaining}
+                aria-valuemin={0}
+                aria-valuemax={state.fortunesTotal}
+                className="flex-1 h-1 rounded-full bg-gold/5 overflow-hidden"
+              >
                 <motion.div
                   className="h-full rounded-full bg-gradient-to-r from-lacquer/50 to-gold/30"
                   initial={{ width: "100%" }}
