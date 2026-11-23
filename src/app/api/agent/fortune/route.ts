@@ -14,6 +14,18 @@ import { config } from "@/lib/config";
  *   ?rarity=<rarity>       — random fortune filtered by rarity
  *   ?meta=true             — include pool metadata (total count, categories, rarities)
  */
+
+// Computed once at module init — the pool never changes at runtime
+const POOL_META = (() => {
+  const categories: Record<string, number> = {};
+  const rarities: Record<string, number> = {};
+  for (const f of agentFortunes) {
+    categories[f.category] = (categories[f.category] || 0) + 1;
+    rarities[f.rarity] = (rarities[f.rarity] || 0) + 1;
+  }
+  return { total: agentFortunes.length, categories, rarities };
+})();
+
 const handler = async (req: Request): Promise<Response> => {
   if (!config.features.agentApi) {
     return agentError("agent_api_disabled", "Agent API is currently disabled.", 503);
@@ -28,16 +40,16 @@ const handler = async (req: Request): Promise<Response> => {
   const rarity = url.searchParams.get("rarity");
   const includeMeta = url.searchParams.get("meta") === "true";
 
-  // Fetch by ID
+  // Fetch by ID — response is fully deterministic, so cache aggressively
   if (id) {
     const fortune = agentFortuneById.get(id);
     if (!fortune) {
       return agentError("not_found", `No fortune found with id "${id}".`, 404);
     }
-    return Response.json({
-      fortune,
-      ...(includeMeta && { meta: poolMeta() }),
-    });
+    return Response.json(
+      { fortune, ...(includeMeta && { meta: POOL_META }) },
+      { headers: { "Cache-Control": "public, max-age=86400, stale-while-revalidate=3600" } },
+    );
   }
 
   // Filtered random selection
@@ -79,24 +91,8 @@ const handler = async (req: Request): Promise<Response> => {
       amount: config.pricing.fortuneSingle,
       currency: "SAT",
     },
-    ...(includeMeta && { meta: poolMeta() }),
+    ...(includeMeta && { meta: POOL_META }),
   });
 };
-
-function poolMeta() {
-  const categories: Record<string, number> = {};
-  const rarities: Record<string, number> = {};
-
-  for (const f of agentFortunes) {
-    categories[f.category] = (categories[f.category] || 0) + 1;
-    rarities[f.rarity] = (rarities[f.rarity] || 0) + 1;
-  }
-
-  return {
-    total: agentFortunes.length,
-    categories,
-    rarities,
-  };
-}
 
 export const GET = withAgentPayment(handler);
