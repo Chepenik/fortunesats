@@ -135,11 +135,22 @@ export function StrikeCheckoutClient({
     setTimeout(() => setCopied(false), 2000);
   }, [presentation.lnInvoice]);
 
+  const srStatus = presentation.paid
+    ? "Payment received. Revealing your fortune."
+    : presentation.state === "CANCELLED"
+    ? "Invoice cancelled."
+    : presentation.quoteExpired
+    ? "Invoice expired, refreshing."
+    : error
+    ? "Network error, reconnecting."
+    : "Waiting for Lightning payment.";
+
   /* ── Render ── */
 
   if (presentation.state === "CANCELLED") {
     return (
       <div className="rounded-xl border border-lacquer/20 bg-lacquer/[0.04] p-5 space-y-2 text-center">
+        <div aria-live="polite" aria-atomic="true" className="sr-only">{srStatus}</div>
         <p className="text-sm text-lacquer/70">This invoice was cancelled.</p>
         <Link
           href="/"
@@ -154,6 +165,7 @@ export function StrikeCheckoutClient({
   if (presentation.paid) {
     return (
       <div className="flex flex-col items-center gap-4 py-10">
+        <div aria-live="polite" aria-atomic="true" className="sr-only">{srStatus}</div>
         <OracleSpinner />
         <p className="text-sm text-cyan/70">Payment received. Revealing your fortune&hellip;</p>
       </div>
@@ -174,6 +186,7 @@ export function StrikeCheckoutClient({
 
   return (
     <div className="space-y-5">
+      <div aria-live="polite" aria-atomic="true" className="sr-only">{srStatus}</div>
       {/* QR */}
       <div className="flex justify-center">
         <div className="rounded-xl bg-white p-4 shadow-[0_0_40px_rgba(212,162,87,0.08)]">
