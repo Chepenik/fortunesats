@@ -483,6 +483,7 @@ function FortuneSuccessInner() {
                   <button
                     className="btn-jade flex-1 h-9 rounded-lg text-xs font-medium cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
                     onClick={() => copyShareText(state.fortune, state.rarity)}
+                    aria-label={copied === "text" ? "Fortune text copied" : "Copy fortune text"}
                   >
                     <span className="relative h-3 w-3">
                       <span className={`absolute inset-0 transition-all duration-200 ${copied === "text" ? "scale-0 opacity-0" : "scale-100 opacity-100"}`}>
@@ -497,6 +498,7 @@ function FortuneSuccessInner() {
                   <button
                     className="btn-jade flex-1 h-9 rounded-lg text-xs font-medium cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
                     onClick={() => copyLink(state.fortune, state.rarity)}
+                    aria-label={copied === "link" ? "Link copied" : "Copy link"}
                   >
                     <span className="relative h-3 w-3">
                       <span className={`absolute inset-0 transition-all duration-200 ${copied === "link" ? "scale-0 opacity-0" : "scale-100 opacity-100"}`}>
