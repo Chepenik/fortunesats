@@ -1,5 +1,6 @@
 import { CollectionView } from "@/components/collection-view";
 import { FORTUNE_POOL_TOTAL } from "@/lib/fortunes";
+import { serializeJsonLd } from "@/lib/og";
 
 import type { Metadata } from "next";
 
@@ -23,9 +24,22 @@ export const metadata: Metadata = {
   },
 };
 
+const breadcrumbLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Fortune Sats", item: "https://fortunesats.com" },
+    { "@type": "ListItem", position: 2, name: "Collection", item: "https://fortunesats.com/collection" },
+  ],
+};
+
 export default function CollectionPage() {
   return (
     <main className="relative flex-1 flex flex-col items-center px-6 py-12 overflow-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbLd) }}
+      />
       {/* Ambient glows */}
       <div className="pointer-events-none absolute inset-0 flex flex-col">
         <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-lacquer/[0.04] blur-[120px]" />
